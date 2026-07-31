@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as CapabilitiesRouteImport } from './routes/capabilities'
 import { Route as ProjectsRouteImport } from './routes/projects'
 import { Route as VerificationRouteImport } from './routes/verification'
 import { Route as ApiPublicAuthConnectRouteImport } from './routes/api/public/auth/connect'
@@ -18,6 +19,11 @@ import { Route as ApiPublicN3SplatRouteImport } from './routes/api/public/n3/$'
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CapabilitiesRoute = CapabilitiesRouteImport.update({
+  id: '/capabilities',
+  path: '/capabilities',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProjectsRoute = ProjectsRouteImport.update({
@@ -43,6 +49,7 @@ const ApiPublicN3SplatRoute = ApiPublicN3SplatRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/capabilities': typeof CapabilitiesRoute
   '/projects': typeof ProjectsRoute
   '/verification': typeof VerificationRoute
   '/api/public/auth/connect': typeof ApiPublicAuthConnectRoute
@@ -50,6 +57,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/capabilities': typeof CapabilitiesRoute
   '/projects': typeof ProjectsRoute
   '/verification': typeof VerificationRoute
   '/api/public/auth/connect': typeof ApiPublicAuthConnectRoute
@@ -58,6 +66,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/capabilities': typeof CapabilitiesRoute
   '/projects': typeof ProjectsRoute
   '/verification': typeof VerificationRoute
   '/api/public/auth/connect': typeof ApiPublicAuthConnectRoute
@@ -67,6 +76,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/capabilities'
     | '/projects'
     | '/verification'
     | '/api/public/auth/connect'
@@ -74,6 +84,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/capabilities'
     | '/projects'
     | '/verification'
     | '/api/public/auth/connect'
@@ -81,6 +92,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/capabilities'
     | '/projects'
     | '/verification'
     | '/api/public/auth/connect'
@@ -89,6 +101,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  CapabilitiesRoute: typeof CapabilitiesRoute
   ProjectsRoute: typeof ProjectsRoute
   VerificationRoute: typeof VerificationRoute
   ApiPublicAuthConnectRoute: typeof ApiPublicAuthConnectRoute
@@ -102,6 +115,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/capabilities': {
+      id: '/capabilities'
+      path: '/capabilities'
+      fullPath: '/capabilities'
+      preLoaderRoute: typeof CapabilitiesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/projects': {
@@ -137,6 +157,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  CapabilitiesRoute: CapabilitiesRoute,
   ProjectsRoute: ProjectsRoute,
   VerificationRoute: VerificationRoute,
   ApiPublicAuthConnectRoute: ApiPublicAuthConnectRoute,
