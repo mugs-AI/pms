@@ -10,33 +10,102 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as CapabilitiesRouteImport } from './routes/capabilities'
+import { Route as ProjectsRouteImport } from './routes/projects'
+import { Route as VerificationRouteImport } from './routes/verification'
+import { Route as ApiPublicAuthConnectRouteImport } from './routes/api/public/auth/connect'
+import { Route as ApiPublicN3SplatRouteImport } from './routes/api/public/n3/$'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CapabilitiesRoute = CapabilitiesRouteImport.update({
+  id: '/capabilities',
+  path: '/capabilities',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProjectsRoute = ProjectsRouteImport.update({
+  id: '/projects',
+  path: '/projects',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const VerificationRoute = VerificationRouteImport.update({
+  id: '/verification',
+  path: '/verification',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicAuthConnectRoute = ApiPublicAuthConnectRouteImport.update({
+  id: '/api/public/auth/connect',
+  path: '/api/public/auth/connect',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicN3SplatRoute = ApiPublicN3SplatRouteImport.update({
+  id: '/api/public/n3/$',
+  path: '/api/public/n3/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/capabilities': typeof CapabilitiesRoute
+  '/projects': typeof ProjectsRoute
+  '/verification': typeof VerificationRoute
+  '/api/public/auth/connect': typeof ApiPublicAuthConnectRoute
+  '/api/public/n3/$': typeof ApiPublicN3SplatRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/capabilities': typeof CapabilitiesRoute
+  '/projects': typeof ProjectsRoute
+  '/verification': typeof VerificationRoute
+  '/api/public/auth/connect': typeof ApiPublicAuthConnectRoute
+  '/api/public/n3/$': typeof ApiPublicN3SplatRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/capabilities': typeof CapabilitiesRoute
+  '/projects': typeof ProjectsRoute
+  '/verification': typeof VerificationRoute
+  '/api/public/auth/connect': typeof ApiPublicAuthConnectRoute
+  '/api/public/n3/$': typeof ApiPublicN3SplatRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/capabilities'
+    | '/projects'
+    | '/verification'
+    | '/api/public/auth/connect'
+    | '/api/public/n3/$'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/capabilities'
+    | '/projects'
+    | '/verification'
+    | '/api/public/auth/connect'
+    | '/api/public/n3/$'
+  id:
+    | '__root__'
+    | '/'
+    | '/capabilities'
+    | '/projects'
+    | '/verification'
+    | '/api/public/auth/connect'
+    | '/api/public/n3/$'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  CapabilitiesRoute: typeof CapabilitiesRoute
+  ProjectsRoute: typeof ProjectsRoute
+  VerificationRoute: typeof VerificationRoute
+  ApiPublicAuthConnectRoute: typeof ApiPublicAuthConnectRoute
+  ApiPublicN3SplatRoute: typeof ApiPublicN3SplatRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,22 +117,52 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/capabilities': {
+      id: '/capabilities'
+      path: '/capabilities'
+      fullPath: '/capabilities'
+      preLoaderRoute: typeof CapabilitiesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/projects': {
+      id: '/projects'
+      path: '/projects'
+      fullPath: '/projects'
+      preLoaderRoute: typeof ProjectsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/verification': {
+      id: '/verification'
+      path: '/verification'
+      fullPath: '/verification'
+      preLoaderRoute: typeof VerificationRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/auth/connect': {
+      id: '/api/public/auth/connect'
+      path: '/api/public/auth/connect'
+      fullPath: '/api/public/auth/connect'
+      preLoaderRoute: typeof ApiPublicAuthConnectRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/n3/$': {
+      id: '/api/public/n3/$'
+      path: '/api/public/n3/$'
+      fullPath: '/api/public/n3/$'
+      preLoaderRoute: typeof ApiPublicN3SplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  CapabilitiesRoute: CapabilitiesRoute,
+  ProjectsRoute: ProjectsRoute,
+  VerificationRoute: VerificationRoute,
+  ApiPublicAuthConnectRoute: ApiPublicAuthConnectRoute,
+  ApiPublicN3SplatRoute: ApiPublicN3SplatRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
