@@ -39,8 +39,9 @@ const FAMILIES: Row[] = [
   { family: "Purchase Orders", scope: "purchase-v1", operation: "GET /api/PurchaseOrders/List", milestone: "Procurement" },
   { family: "Goods Received Notes", scope: "purchase-v1", operation: "GET /api/GoodsReceivedNotes/List", milestone: "Procurement" },
   { family: "Purchase Invoices", scope: "purchase-v1", operation: "GET /api/PurchaseInvoices/List", milestone: "Subcontractor cost" },
-  { family: "Supplier / AP Payments", scope: "purchase-v1", operation: "GET /api/APPayments/List · GET /api/Payments/List", milestone: "Payments" },
-  { family: "GL Journals / Payment Vouchers", scope: "gl-v1", operation: "GET /api/Journals/List", milestone: "Project expenses" },
+  { family: "Supplier / AP Payments", scope: "purchase-v1", operation: "GET /api/APPayments/List", milestone: "Supplier payments" },
+  { family: "GL Journals", scope: "gl-v1", operation: "GET /api/Journals/List", milestone: "Project journals & accruals" },
+  { family: "GL Payment Vouchers (direct payments)", scope: "Contract verification required", operation: "Contract verification required", milestone: "Project expenses" },
 ];
 
 function Capabilities() {
