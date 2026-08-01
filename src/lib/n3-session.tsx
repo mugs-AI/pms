@@ -7,14 +7,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import {
-  clearToken,
-  emailFromJwt,
-  fetchN3Session,
-  getToken,
-  setToken,
-  N3Error,
-} from "./n3-client";
+import { clearToken, emailFromJwt, fetchN3Session, getToken, setToken, N3Error } from "./n3-client";
 
 export type SessionState = {
   status: "loading" | "anonymous" | "authenticated" | "error";
@@ -71,11 +64,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     url.searchParams.delete("token");
     url.searchParams.delete("expiration");
     const search = url.searchParams.toString();
-    window.history.replaceState(
-      {},
-      "",
-      `${url.pathname}${search ? `?${search}` : ""}${url.hash}`,
-    );
+    window.history.replaceState({}, "", `${url.pathname}${search ? `?${search}` : ""}${url.hash}`);
     setTick((t) => t + 1);
   }, []);
 

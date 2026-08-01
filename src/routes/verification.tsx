@@ -48,9 +48,8 @@ function VerificationPage() {
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
           Verification is limited to N3 account owners. Access is decided from the live{" "}
-          <code>CompanyProfile/BasicInfo</code> response for your N3 session, and every
-          underlying read is authorised again by N3 for your token — hiding the menu is
-          not the only control.
+          <code>CompanyProfile/BasicInfo</code> response for your N3 session, and every underlying
+          read is authorised again by N3 for your token — hiding the menu is not the only control.
         </p>
       </section>
     );
@@ -66,8 +65,7 @@ function VerificationPage() {
           Read-only. Nothing on this page creates, updates, voids or posts an N3 record.
         </p>
         <p className="mt-2 text-sm text-foreground">
-          Data below was returned by N3 for{" "}
-          <strong>{companyName ?? "—"}</strong> (tenant{" "}
+          Data below was returned by N3 for <strong>{companyName ?? "—"}</strong> (tenant{" "}
           <code>{tenantCode ?? "—"}</code>) as <strong>{email ?? "—"}</strong>.
         </p>
       </header>
@@ -225,10 +223,7 @@ function DatasetPanel({ dataset }: { dataset: Dataset }) {
             </thead>
             <tbody>
               {rows.map((row, i) => (
-                <tr
-                  key={String(row[dataset.idKey] ?? i)}
-                  className="border-t border-border"
-                >
+                <tr key={String(row[dataset.idKey] ?? i)} className="border-t border-border">
                   {dataset.columns.map((c) => (
                     <td
                       key={c.key}

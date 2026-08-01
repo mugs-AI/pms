@@ -94,8 +94,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                     onClick={() => setOpen(false)}
                     activeOptions={{ exact: item.to === "/" }}
                     activeProps={{
-                      className:
-                        "border-accent text-primary-foreground bg-primary-foreground/10",
+                      className: "border-accent text-primary-foreground bg-primary-foreground/10",
                     }}
                     inactiveProps={{
                       className: "border-transparent text-primary-foreground/70",
@@ -124,9 +123,9 @@ function RoleUnassignedBanner() {
     <section className="mb-6 rounded-lg border border-accent/40 bg-accent/10 p-4">
       <h2 className="text-sm font-semibold text-foreground">Role unassigned</h2>
       <p className="mt-1 text-sm text-muted-foreground">
-        Your N3 user is authenticated but has no ProjectHub role yet. Owner/Admin areas
-        such as N3 Data Verification stay hidden and are also blocked server-side. An N3
-        account owner (<code>isOwner</code>) can grant access.
+        Your N3 user is authenticated but has no ProjectHub role yet. Owner/Admin areas such as N3
+        Data Verification stay hidden and are also blocked server-side. An N3 account owner (
+        <code>isOwner</code>) can grant access.
       </p>
     </section>
   );
@@ -145,8 +144,8 @@ function UnauthenticatedScreen() {
             N3 ProjectHub
           </h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            Open this app from N3 AI Cloud Accounting → Marketplace → My Apps → Open. Your
-            N3 session is the only sign-in.
+            Open this app from N3 AI Cloud Accounting → Marketplace → My Apps → Open. Your N3
+            session is the only sign-in.
           </p>
           {error ? (
             <p role="alert" className="mt-3 text-sm text-destructive">

@@ -18,8 +18,7 @@ export const MAX_UPSTREAM_BYTES = 4 * 1024 * 1024;
 export function getBaseUrl(target: "main" | "reporting") {
   if (target === "reporting") {
     return (
-      process.env["OPEN_API_REPORTING_BASE_URL"] ??
-      "https://openapi-reporting.account.qne.cloud"
+      process.env["OPEN_API_REPORTING_BASE_URL"] ?? "https://openapi-reporting.account.qne.cloud"
     );
   }
   return process.env["OPEN_API_BASE_URL"] ?? "https://openapi.account.qne.cloud";
@@ -62,7 +61,9 @@ export async function n3Get(
   } catch (error) {
     clearTimeout(timer);
     const aborted =
-      typeof error === "object" && error !== null && (error as { name?: string }).name === "AbortError";
+      typeof error === "object" &&
+      error !== null &&
+      (error as { name?: string }).name === "AbortError";
     return { ok: false, status: aborted ? 504 : 502, outcome: aborted ? "timeout" : "unreachable" };
   }
   clearTimeout(timer);

@@ -72,7 +72,11 @@ export async function handleSessionRequest(request: Request): Promise<Response> 
         ...dto,
         provisioning:
           bootstrap.ok === true
-            ? { status: "provisioned", role: bootstrap.role, userPersisted: bootstrap.userPersisted }
+            ? {
+                status: "provisioned",
+                role: bootstrap.role,
+                userPersisted: bootstrap.userPersisted,
+              }
             : { status: "unprovisioned", reason: bootstrap.reason },
       },
     },
@@ -81,10 +85,7 @@ export async function handleSessionRequest(request: Request): Promise<Response> 
 }
 
 /** GET /api/public/n3/<target>/<allowlisted path> */
-export async function handleN3ProxyRequest(
-  request: Request,
-  splat: string,
-): Promise<Response> {
+export async function handleN3ProxyRequest(request: Request, splat: string): Promise<Response> {
   const correlationId = newCorrelationId();
   const startedAt = new Date().toISOString();
 

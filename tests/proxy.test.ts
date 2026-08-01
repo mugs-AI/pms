@@ -22,9 +22,8 @@ vi.mock("@/integrations/supabase/client.server", () => {
   return { supabaseAdmin: { from: (table: string) => makeChain(table) } };
 });
 
-const { handleN3ProxyRequest, handleSessionRequest, methodNotAllowed } = await import(
-  "@/lib/n3-proxy.server"
-);
+const { handleN3ProxyRequest, handleSessionRequest, methodNotAllowed } =
+  await import("@/lib/n3-proxy.server");
 
 const BASE = "http://localhost:8080/api/public/n3/";
 
@@ -54,14 +53,28 @@ afterEach(() => {
 describe("allowlist enforcement", () => {
   it("1. an allowlisted GET reaches the mocked N3 fetch", async () => {
     const up = upstreamFor(true);
-    const res = await handleN3ProxyRequest(get("main/api/Customers/List?$top=25"), "main/api/Customers/List");
+    const res = await handleN3ProxyRequest(
+      get("main/api/Customers/List?$top=25"),
+      "main/api/Customers/List",
+    );
     expect(res.status).toBe(200);
-    expect(up.calls.some((u) => u.includes("/api/Customers/List?%24top=25") || u.includes("/api/Customers/List?$top=25"))).toBe(true);
+    expect(
+      up.calls.some(
+        (u) =>
+          u.includes("/api/Customers/List?%24top=25") || u.includes("/api/Customers/List?$top=25"),
+      ),
+    ).toBe(true);
   });
 
   it("2. an unknown or malformed path is rejected before fetch", async () => {
     const up = upstreamFor(true);
-    for (const p of ["main/api/SalesInvoices/List", "main/api/Customers/Delete", "reporting/api/Projects/All", "api/Users", "other/api/Users"]) {
+    for (const p of [
+      "main/api/SalesInvoices/List",
+      "main/api/Customers/Delete",
+      "reporting/api/Projects/All",
+      "api/Users",
+      "other/api/Users",
+    ]) {
       const res = await handleN3ProxyRequest(get(p), p);
       expect(res.status).toBe(404);
     }
@@ -70,7 +83,13 @@ describe("allowlist enforcement", () => {
 
   it("3. traversal and encoded traversal are rejected before fetch", async () => {
     const up = upstreamFor(true);
-    for (const p of ["main/../api/Users", "main/api/%2e%2e/Users", "main/api//Users", "main\\api\\Users", "main/api/Users%00"]) {
+    for (const p of [
+      "main/../api/Users",
+      "main/api/%2e%2e/Users",
+      "main/api//Users",
+      "main\\api\\Users",
+      "main/api/Users%00",
+    ]) {
       const res = await handleN3ProxyRequest(get(encodeURI(p)), p);
       expect(res.status).toBe(404);
     }
@@ -89,9 +108,13 @@ describe("allowlist enforcement", () => {
     const up = upstreamFor(true);
     const path = "main/api/Customers/List";
     expect((await handleN3ProxyRequest(get(path, null), path)).status).toBe(401);
-    const basicAuth = new Request(`${BASE}${path}`, { headers: { authorization: "Basic abcdefghijklmnop" } });
+    const basicAuth = new Request(`${BASE}${path}`, {
+      headers: { authorization: "Basic abcdefghijklmnop" },
+    });
     expect((await handleN3ProxyRequest(basicAuth, path)).status).toBe(401);
-    const twoTokens = new Request(`${BASE}${path}`, { headers: { authorization: `Bearer ${OWNER_TOKEN}, Bearer ${USER_TOKEN}` } });
+    const twoTokens = new Request(`${BASE}${path}`, {
+      headers: { authorization: `Bearer ${OWNER_TOKEN}, Bearer ${USER_TOKEN}` },
+    });
     expect((await handleN3ProxyRequest(twoTokens, path)).status).toBe(401);
     expect(up.calls).toHaveLength(0);
   });
@@ -99,16 +122,27 @@ describe("allowlist enforcement", () => {
   it("13. query allowlist and $top bounds are enforced", async () => {
     const up = upstreamFor(true);
     const path = "main/api/Customers/List";
-    const cases = ["?apiKey=secret", "?$top=5000", "?$top=0", "?$top=abc", "?$orderby=name;drop", "?$skip=-1"];
+    const cases = [
+      "?apiKey=secret",
+      "?$top=5000",
+      "?$top=0",
+      "?$top=abc",
+      "?$orderby=name;drop",
+      "?$skip=-1",
+    ];
     for (const q of cases) {
-      const req = new Request(`${BASE}${path}${q}`, { headers: { authorization: `Bearer ${OWNER_TOKEN}` } });
+      const req = new Request(`${BASE}${path}${q}`, {
+        headers: { authorization: `Bearer ${OWNER_TOKEN}` },
+      });
       expect((await handleN3ProxyRequest(req, path)).status).toBe(400);
     }
     expect(up.calls).toHaveLength(0);
 
     // Endpoints without OData support reject paging parameters too.
     const noParams = "main/api/Projects/All";
-    const req = new Request(`${BASE}${noParams}?$top=10`, { headers: { authorization: `Bearer ${OWNER_TOKEN}` } });
+    const req = new Request(`${BASE}${noParams}?$top=10`, {
+      headers: { authorization: `Bearer ${OWNER_TOKEN}` },
+    });
     expect((await handleN3ProxyRequest(req, noParams)).status).toBe(400);
   });
 });
@@ -148,9 +182,12 @@ describe("server-side owner enforcement", () => {
     // Unknown query parameters never reach N3 at all.
     expect((await handleN3ProxyRequest(req, path)).status).toBe(400);
 
-    const sessionReq = new Request("http://localhost:8080/api/public/n3/session?tenantId=other-tenant", {
-      headers: { authorization: `Bearer ${OWNER_TOKEN}` },
-    });
+    const sessionReq = new Request(
+      "http://localhost:8080/api/public/n3/session?tenantId=other-tenant",
+      {
+        headers: { authorization: `Bearer ${OWNER_TOKEN}` },
+      },
+    );
     await handleSessionRequest(sessionReq);
     const tenantUpsert = dbCalls.find((c) => c.table === "projecthub_tenants");
     expect((tenantUpsert?.row as { n3_tenant_id: string }).n3_tenant_id).toBe(
@@ -161,15 +198,26 @@ describe("server-side owner enforcement", () => {
 
 describe("session resolution and bootstrap", () => {
   it("9. missing immutable tenant identity fails closed for tenant bootstrap", async () => {
-    mockUpstream(() => jsonResponse(basicInfo({ tenantId: undefined, id: undefined, dbId: undefined, tenantGuid: undefined })));
+    mockUpstream(() =>
+      jsonResponse(
+        basicInfo({ tenantId: undefined, id: undefined, dbId: undefined, tenantGuid: undefined }),
+      ),
+    );
     const res = await handleSessionRequest(get("session"));
-    const body = (await res.json()) as { data: { provisioning: { status: string; reason: string } } };
-    expect(body.data.provisioning).toEqual({ status: "unprovisioned", reason: "missing_tenant_identity" });
+    const body = (await res.json()) as {
+      data: { provisioning: { status: string; reason: string } };
+    };
+    expect(body.data.provisioning).toEqual({
+      status: "unprovisioned",
+      reason: "missing_tenant_identity",
+    });
     expect(dbCalls.some((c) => c.table === "projecthub_tenants")).toBe(false);
   });
 
   it("10. email string and email-array responses normalise safely", async () => {
-    mockUpstream(() => jsonResponse(basicInfo({ email: ["", "not-an-email", "second@acme.test"] })));
+    mockUpstream(() =>
+      jsonResponse(basicInfo({ email: ["", "not-an-email", "second@acme.test"] })),
+    );
     const arrayRes = (await (await handleSessionRequest(get("session"))).json()) as {
       data: { email: string };
     };
@@ -197,7 +245,10 @@ describe("upstream failure handling", () => {
 
     mockUpstream((url) => {
       if (url.includes("BasicInfo")) return jsonResponse(basicInfo());
-      return new Response("<html>gateway</html>", { status: 200, headers: { "content-type": "text/html" } });
+      return new Response("<html>gateway</html>", {
+        status: 200,
+        headers: { "content-type": "text/html" },
+      });
     });
     const nonJson = await handleN3ProxyRequest(get(path), path);
     expect(nonJson.status).toBe(502);

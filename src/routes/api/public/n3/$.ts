@@ -9,9 +9,8 @@ export const Route = createFileRoute("/api/public/n3/$")({
   server: {
     handlers: {
       GET: async ({ params, request }) => {
-        const { handleN3ProxyRequest, handleSessionRequest } = await import(
-          "@/lib/n3-proxy.server"
-        );
+        const { handleN3ProxyRequest, handleSessionRequest } =
+          await import("@/lib/n3-proxy.server");
         const splat = (params as { _splat?: string })._splat ?? "";
         if (splat === "session") return handleSessionRequest(request);
         return handleN3ProxyRequest(request, splat);

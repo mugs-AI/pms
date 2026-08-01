@@ -27,7 +27,9 @@ export function basicInfo(overrides: Record<string, unknown> = {}) {
 }
 
 /** Records every upstream call so tests can assert nothing reached N3. */
-export function mockUpstream(handler: (url: string, init?: RequestInit) => Response | Promise<Response>) {
+export function mockUpstream(
+  handler: (url: string, init?: RequestInit) => Response | Promise<Response>,
+) {
   const calls: string[] = [];
   const fn = vi.fn(async (input: unknown, init?: RequestInit) => {
     const url = String(input);

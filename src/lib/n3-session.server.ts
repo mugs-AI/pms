@@ -21,8 +21,7 @@ export type N3Session = {
 };
 
 export type SessionResolution =
-  | { ok: true; session: N3Session }
-  | { ok: false; status: number; message: string };
+  { ok: true; session: N3Session } | { ok: false; status: number; message: string };
 
 function str(value: unknown): string | null {
   if (typeof value !== "string") return null;
@@ -47,8 +46,7 @@ export function normaliseBasicInfo(raw: unknown): N3Session | null {
   if (!raw || typeof raw !== "object") return null;
   const d = raw as Record<string, unknown>;
   return {
-    n3TenantId:
-      str(d["tenantId"]) ?? str(d["tenantGuid"]) ?? str(d["dbId"]) ?? str(d["id"]),
+    n3TenantId: str(d["tenantId"]) ?? str(d["tenantGuid"]) ?? str(d["dbId"]) ?? str(d["id"]),
     tenantCode: str(d["tenantCode"]),
     companyName: str(d["companyName"]) ?? str(d["name"]),
     n3UserId: str(d["userId"]) ?? str(d["currentUserId"]) ?? str(d["userGuid"]),
