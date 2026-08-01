@@ -78,21 +78,25 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "N3 ProjectHub — Construction PMS for N3" },
+      { title: "Dashboard — N3 ProjectHub" },
       {
         name: "description",
         content:
-          "N3 ProjectHub extends N3 AI Cloud Accounting with construction and renovation project management, launched securely from My Apps.",
+          "ProjectHub dashboard shell showing the live N3 session, company and tenant context for construction project management.",
       },
-      { property: "og:title", content: "N3 ProjectHub — Construction PMS for N3" },
+      { property: "og:title", content: "Dashboard — N3 ProjectHub" },
       {
         property: "og:description",
         content:
-          "Project management for construction and renovation teams, built on the N3 Open API.",
+          "ProjectHub dashboard shell showing the live N3 session, company and tenant context for construction project management.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:site", content: "@Lovable" },
+      { name: "twitter:title", content: "Dashboard — N3 ProjectHub" },
+      { name: "twitter:description", content: "ProjectHub dashboard shell showing the live N3 session, company and tenant context for construction project management." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/b52f1d0a-3ef9-4322-b0ad-c8cfb7683c58/id-preview-fed57f99--b3e9b910-2e99-4ccf-83cd-e1681bfea420.lovable.app-1785561784896.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/b52f1d0a-3ef9-4322-b0ad-c8cfb7683c58/id-preview-fed57f99--b3e9b910-2e99-4ccf-83cd-e1681bfea420.lovable.app-1785561784896.png" },
     ],
     links: [
       {
