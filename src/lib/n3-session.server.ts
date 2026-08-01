@@ -3,6 +3,7 @@
  * tenant/user bootstrap. This is the ONLY authority for tenant identity and the
  * Owner flag — never a client-decoded JWT claim.
  */
+import type { Json } from "@/integrations/supabase/types";
 import { BASIC_INFO_PATH } from "./n3-allowlist";
 import { n3Get } from "./n3-api.server";
 
@@ -194,7 +195,7 @@ export async function writeAudit(
       target_identity: event.targetIdentity ?? null,
       outcome: event.outcome,
       correlation_id: correlationId,
-      metadata: event.metadata ?? {},
+      metadata: (event.metadata ?? {}) as Json,
     });
   } catch {
     // Diagnostics must never break the request path.
