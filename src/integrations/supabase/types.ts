@@ -14,7 +14,183 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      projecthub_integration_audit_events: {
+        Row: {
+          action: string
+          actor_n3_user_id: string | null
+          correlation_id: string
+          event_type: string
+          id: string
+          metadata: Json
+          occurred_at: string
+          outcome: string
+          target_identity: string | null
+          target_type: string | null
+          tenant_id: string | null
+        }
+        Insert: {
+          action: string
+          actor_n3_user_id?: string | null
+          correlation_id: string
+          event_type: string
+          id?: string
+          metadata?: Json
+          occurred_at?: string
+          outcome: string
+          target_identity?: string | null
+          target_type?: string | null
+          tenant_id?: string | null
+        }
+        Update: {
+          action?: string
+          actor_n3_user_id?: string | null
+          correlation_id?: string
+          event_type?: string
+          id?: string
+          metadata?: Json
+          occurred_at?: string
+          outcome?: string
+          target_identity?: string | null
+          target_type?: string | null
+          tenant_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "projecthub_integration_audit_events_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "projecthub_tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      projecthub_n3_request_diagnostics: {
+        Row: {
+          actor_n3_user_id: string | null
+          correlation_id: string
+          ended_at: string
+          error_code: string | null
+          error_message: string | null
+          http_method: string
+          id: string
+          operation_id: string
+          outcome: string
+          response_bytes: number | null
+          started_at: string
+          status_code: number | null
+          tenant_id: string | null
+        }
+        Insert: {
+          actor_n3_user_id?: string | null
+          correlation_id: string
+          ended_at: string
+          error_code?: string | null
+          error_message?: string | null
+          http_method?: string
+          id?: string
+          operation_id: string
+          outcome: string
+          response_bytes?: number | null
+          started_at: string
+          status_code?: number | null
+          tenant_id?: string | null
+        }
+        Update: {
+          actor_n3_user_id?: string | null
+          correlation_id?: string
+          ended_at?: string
+          error_code?: string | null
+          error_message?: string | null
+          http_method?: string
+          id?: string
+          operation_id?: string
+          outcome?: string
+          response_bytes?: number | null
+          started_at?: string
+          status_code?: number | null
+          tenant_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "projecthub_n3_request_diagnostics_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "projecthub_tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      projecthub_tenants: {
+        Row: {
+          company_name: string | null
+          created_at: string
+          id: string
+          n3_tenant_code: string | null
+          n3_tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          company_name?: string | null
+          created_at?: string
+          id?: string
+          n3_tenant_code?: string | null
+          n3_tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          company_name?: string | null
+          created_at?: string
+          id?: string
+          n3_tenant_code?: string | null
+          n3_tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      projecthub_user_roles: {
+        Row: {
+          created_at: string
+          display_email: string | null
+          display_name: string | null
+          id: string
+          is_active: boolean
+          n3_user_id: string
+          role: Database["public"]["Enums"]["projecthub_role"]
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          display_email?: string | null
+          display_name?: string | null
+          id?: string
+          is_active?: boolean
+          n3_user_id: string
+          role?: Database["public"]["Enums"]["projecthub_role"]
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          display_email?: string | null
+          display_name?: string | null
+          id?: string
+          is_active?: boolean
+          n3_user_id?: string
+          role?: Database["public"]["Enums"]["projecthub_role"]
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "projecthub_user_roles_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "projecthub_tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +199,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      projecthub_role: "owner" | "unassigned"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +326,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      projecthub_role: ["owner", "unassigned"],
+    },
   },
 } as const
