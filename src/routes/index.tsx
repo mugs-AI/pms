@@ -35,19 +35,25 @@ function DashboardBody() {
   return (
     <div className="space-y-8">
       <section>
-        <h1 className="font-display text-3xl font-bold tracking-wide text-foreground">
-          Dashboard
-        </h1>
+        <h1 className="font-display text-3xl font-bold tracking-wide text-foreground">Dashboard</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Starter foundation only — project KPIs, cash flow and budget-versus-actual
-          arrive in later milestones.
+          Starter foundation only — project KPIs, cash flow and budget-versus-actual arrive in later
+          milestones.
         </p>
       </section>
 
       <section className="grid gap-4 sm:grid-cols-3">
         <Card title="N3 company" value={companyName ?? "…"} note="From CompanyProfile/BasicInfo" />
-        <Card title="Tenant code" value={tenantCode ?? "…"} note="Never derived from the tenant GUID" />
-        <Card title="Signed-in user" value={email ?? "…"} note={isOwner ? "N3 account owner" : "Standard N3 user"} />
+        <Card
+          title="Tenant code"
+          value={tenantCode ?? "…"}
+          note="Never derived from the tenant GUID"
+        />
+        <Card
+          title="Signed-in user"
+          value={email ?? "…"}
+          note={isOwner ? "N3 account owner" : "Standard N3 user"}
+        />
       </section>
 
       <section className="grid gap-4 md:grid-cols-2">
@@ -67,8 +73,8 @@ function DashboardBody() {
             Verify the integration
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Read N3 master data through the same-origin proxy to prove the tenant, user
-            and paging behaviour before any write milestone begins.
+            Read N3 master data through the same-origin proxy to prove the tenant, user and paging
+            behaviour before any write milestone begins.
           </p>
           <div className="mt-4 flex flex-wrap gap-3">
             <Link
@@ -106,9 +112,7 @@ function Placeholder({ title, body }: { title: string; body: string }) {
   return (
     <div className="rounded-lg border border-dashed border-border bg-card/60 p-5">
       <div className="flex items-center gap-2">
-        <h2 className="font-display text-lg font-bold tracking-wide text-foreground">
-          {title}
-        </h2>
+        <h2 className="font-display text-lg font-bold tracking-wide text-foreground">{title}</h2>
         <span className="rounded-full bg-secondary px-2 py-0.5 text-[0.65rem] font-semibold tracking-wide text-secondary-foreground uppercase">
           Not implemented
         </span>

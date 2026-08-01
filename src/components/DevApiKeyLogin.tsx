@@ -39,20 +39,14 @@ export function DevApiKeyLogin() {
   }
 
   return (
-    <form
-      onSubmit={onSubmit}
-      className="rounded-lg border border-border bg-card p-5 shadow-card"
-    >
+    <form onSubmit={onSubmit} className="rounded-lg border border-border bg-card p-5 shadow-card">
       <h2 className="text-sm font-semibold tracking-wide text-accent uppercase">
         Development only — API key login
       </h2>
       <p className="mt-1 text-sm text-muted-foreground">
         Local testing path. The key is exchanged server-side and never stored.
       </p>
-      <label
-        htmlFor="n3-api-key"
-        className="mt-4 block text-sm font-medium text-foreground"
-      >
+      <label htmlFor="n3-api-key" className="mt-4 block text-sm font-medium text-foreground">
         N3 API key
       </label>
       <input
