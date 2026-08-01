@@ -8,26 +8,20 @@ import {
   type ReactNode,
 } from "react";
 import {
-  claimsFromJwt,
   clearToken,
   emailFromJwt,
+  fetchN3Session,
   getToken,
-  n3Get,
   setToken,
+  N3Error,
 } from "./n3-client";
-
-type BasicInfo = {
-  companyName?: string;
-  tenantCode?: string;
-  tenantId?: string;
-  isOwner?: boolean;
-};
 
 export type SessionState = {
   status: "loading" | "anonymous" | "authenticated" | "error";
   companyName: string | null;
   tenantCode: string | null;
   email: string | null;
+  /** Server-resolved from live N3 BasicInfo. Never from a JWT claim. */
   isOwner: boolean;
   error: string | null;
   signIn: (token: string, expiration?: string | null) => void;
@@ -66,18 +60,26 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     setStatus("anonymous");
   }, []);
 
-  // Path A: pick up ?token= from a My Apps launch, then strip it from the URL.
+  // Path A: pick up ?token= from a My Apps launch, then strip ONLY that
+  // parameter while preserving other query parameters and the hash.
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const urlToken = params.get("token");
-    if (urlToken) {
-      setToken(urlToken);
-      window.history.replaceState({}, "", window.location.pathname);
-      setTick((t) => t + 1);
-    }
+    const url = new URL(window.location.href);
+    const urlToken = url.searchParams.get("token");
+    if (!urlToken) return;
+    const expiration = url.searchParams.get("expiration");
+    setToken(urlToken, expiration);
+    url.searchParams.delete("token");
+    url.searchParams.delete("expiration");
+    const search = url.searchParams.toString();
+    window.history.replaceState(
+      {},
+      "",
+      `${url.pathname}${search ? `?${search}` : ""}${url.hash}`,
+    );
+    setTick((t) => t + 1);
   }, []);
 
-  // Always refresh company/tenant from N3 on every authenticated load.
+  // Session identity is resolved server-side on every authenticated load.
   useEffect(() => {
     let cancelled = false;
     const token = getToken();
@@ -86,30 +88,26 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       return;
     }
     setStatus("loading");
+    // Display-only fallback until the server answers.
     setEmail(emailFromJwt(token));
 
-    n3Get<BasicInfo>("api/CompanyProfile/BasicInfo")
-      .then((info) => {
+    fetchN3Session()
+      .then((dto) => {
         if (cancelled) return;
-        const claims = claimsFromJwt(token);
-        setCompanyName(info?.companyName ?? null);
-        setTenantCode(
-          info?.tenantCode ?? (claims["tenantCode"] as string | undefined) ?? null,
-        );
-        setIsOwner(info?.isOwner === true || claims["isOwner"] === "true");
+        setCompanyName(dto.companyName);
+        setTenantCode(dto.tenantCode);
+        setEmail(dto.email ?? emailFromJwt(token));
+        setIsOwner(dto.isOwner === true);
         setError(null);
         setStatus("authenticated");
       })
       .catch((e: unknown) => {
         if (cancelled) return;
         const message = e instanceof Error ? e.message : "Could not reach N3";
-        if (!getToken()) {
-          setStatus("anonymous");
-          setError(message);
-          return;
-        }
+        const status401 = e instanceof N3Error && e.status === 401;
+        setIsOwner(false);
         setError(message);
-        setStatus("error");
+        setStatus(status401 || !getToken() ? "anonymous" : "error");
       });
 
     return () => {
