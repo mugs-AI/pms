@@ -78,7 +78,10 @@ describe("tenant-scoped diagnostics", () => {
     mockUpstream((url) =>
       url.includes("BasicInfo")
         ? jsonResponse(basicInfo())
-        : new Response("<html>bad</html>", { status: 200, headers: { "content-type": "text/html" } }),
+        : new Response("<html>bad</html>", {
+            status: 200,
+            headers: { "content-type": "text/html" },
+          }),
     );
     expect((await handleN3ProxyRequest(get(PATH), PATH)).status).toBe(502);
 

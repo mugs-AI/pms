@@ -94,9 +94,21 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:site", content: "@Lovable" },
       { name: "twitter:title", content: "Dashboard — N3 ProjectHub" },
-      { name: "twitter:description", content: "ProjectHub dashboard shell showing the live N3 session, company and tenant context for construction project management." },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/b52f1d0a-3ef9-4322-b0ad-c8cfb7683c58/id-preview-fed57f99--b3e9b910-2e99-4ccf-83cd-e1681bfea420.lovable.app-1785561784896.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/b52f1d0a-3ef9-4322-b0ad-c8cfb7683c58/id-preview-fed57f99--b3e9b910-2e99-4ccf-83cd-e1681bfea420.lovable.app-1785561784896.png" },
+      {
+        name: "twitter:description",
+        content:
+          "ProjectHub dashboard shell showing the live N3 session, company and tenant context for construction project management.",
+      },
+      {
+        property: "og:image",
+        content:
+          "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/b52f1d0a-3ef9-4322-b0ad-c8cfb7683c58/id-preview-fed57f99--b3e9b910-2e99-4ccf-83cd-e1681bfea420.lovable.app-1785561784896.png",
+      },
+      {
+        name: "twitter:image",
+        content:
+          "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/b52f1d0a-3ef9-4322-b0ad-c8cfb7683c58/id-preview-fed57f99--b3e9b910-2e99-4ccf-83cd-e1681bfea420.lovable.app-1785561784896.png",
+      },
     ],
     links: [
       {
