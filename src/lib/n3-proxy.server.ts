@@ -8,6 +8,7 @@ import { n3Get, newCorrelationId } from "./n3-api.server";
 import {
   bootstrapProjectHub,
   resolveN3Session,
+  resolveTenantRowId,
   writeDiagnostic,
   type N3Session,
 } from "./n3-session.server";
@@ -101,15 +102,25 @@ export async function handleN3ProxyRequest(request: Request, splat: string): Pro
   if (!query.ok) return jsonError(400, "Unsupported query for this operation", correlationId);
 
   let session: N3Session | null = null;
+  let tenantRowId: string | null = null;
   if (operation.ownerRequired) {
     const resolvedSession = await resolveN3Session(bearer.token);
     if (!resolvedSession.ok) {
       return jsonError(resolvedSession.status, resolvedSession.message, correlationId);
     }
     session = resolvedSession.session;
+
+    // Tenant context must exist BEFORE the requested dataset is called, and is
+    // derived only from the live BasicInfo immutable tenant id.
+    const tenant = await resolveTenantRowId(session);
+    if (!tenant.ok) {
+      return jsonError(503, "Tenant context could not be established", correlationId);
+    }
+    tenantRowId = tenant.tenantRowId;
+
     if (session.isOwner !== true) {
       await writeDiagnostic({
-        tenantRowId: null,
+        tenantRowId,
         actor: session.n3UserId,
         correlationId,
         operationId: operation.id,
@@ -128,7 +139,7 @@ export async function handleN3ProxyRequest(request: Request, splat: string): Pro
 
   if (!upstream.ok) {
     await writeDiagnostic({
-      tenantRowId: null,
+      tenantRowId,
       actor: session?.n3UserId ?? null,
       correlationId,
       operationId: operation.id,
@@ -142,7 +153,7 @@ export async function handleN3ProxyRequest(request: Request, splat: string): Pro
   }
 
   await writeDiagnostic({
-    tenantRowId: null,
+    tenantRowId,
     actor: session?.n3UserId ?? null,
     correlationId,
     operationId: operation.id,
