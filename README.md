@@ -15,7 +15,9 @@ starter database and a read-only verification shell.
     the caller's `Authorization: Bearer` JWT to N3. Base URLs come from
     `OPEN_API_BASE_URL` / `OPEN_API_REPORTING_BASE_URL` (server-side only).
   - `POST /api/public/auth/connect` — **development only** API-key connect (Path B).
-    Returns **404** when `NODE_ENV === "production"`.
+    Available **only** when `NODE_ENV === "development"`. `production`, `test`, `staging`,
+    an empty value and an undefined value all return the same non-revealing **404** before
+    the API key is parsed and before any N3 call.
 - The browser never calls `openapi.account.qne.cloud` directly.
 - **There are no N3 writes anywhere in this repository.** No create, update, void, delete,
   posting, knock-off or stock-deduction call exists.
@@ -72,9 +74,28 @@ Boundary rules:
 - `BasicInfo.isOwner === true` is the **only** Owner/Admin signal. A JWT claim, email,
   name, tenant code or local flag can never grant Owner or tenant authority — the browser
   no longer reads any claim except a non-authoritative display email fallback.
-- Every allowlisted master read except the BasicInfo bootstrap re-resolves the session
-  server-side and returns `403` to authenticated non-owners. Missing, malformed or
-  unauthorised BasicInfo fails closed.
+- Every allowlisted master read except the BasicInfo bootstrap follows this sequence:
+  validate method/path/bearer/query → resolve live BasicInfo → require an immutable N3
+  tenant id → resolve or upsert the internal `projecthub_tenants.id` by `n3_tenant_id` →
+  enforce `isOwner === true` → call the allowlisted dataset. Authenticated non-owners get
+  `403`. A missing tenant identity or a tenant-database failure fails closed with a
+  non-secret `503` and a correlation id **before** the requested dataset is called.
+- Every diagnostic emitted for a protected read (owner denial, upstream failure/timeout and
+  successful completion) carries that internal tenant row id.
+
+## Supabase is server-only
+
+There is **no** Supabase browser authentication in this repository. `src/integrations/supabase/client.ts`,
+`auth-attacher.ts` and `auth-middleware.ts` do not exist; no browser module imports
+`@supabase/supabase-js`, touches `supabase.auth`, persists a Supabase session or attaches a
+Supabase bearer token. `src/start.ts` declares `functionMiddleware: []` as an explicit
+architectural guard.
+
+Only `src/integrations/supabase/client.server.ts` (service role) and the generated database
+types remain. It reads `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` from `process.env` at
+runtime on the server, fails closed when either is missing, and never logs either value.
+No `.env` is committed; `.env`/`.env.*` are git-ignored and only a sanitised `.env.example`
+is tracked. The browser needs no Supabase configuration, so no `VITE_SUPABASE_*` variable exists.
 
 ## Multi-tenant starter database (Lovable Cloud)
 
@@ -99,7 +120,9 @@ write comes from the verified server session resolver — never from a browser p
 Bootstrap after a valid session: upsert the tenant by immutable N3 tenant id, upsert the
 current user by immutable N3 user id **only when N3 supplies one**, assign `owner` only when
 live BasicInfo says `isOwner === true` (otherwise `unassigned`), and emit a sanitised audit
-event. Missing tenant identity fails closed and provisions nothing.
+event. Missing tenant identity fails closed and provisions nothing. When the tenant row is
+written but the user-role upsert fails, the result and the audit outcome are recorded as
+`partial` — never as full success.
 
 ## Scripts and tests
 
@@ -111,7 +134,11 @@ npm run lint       # eslint
 npm run build      # production build
 ```
 
-Tests mock N3 and the database; they never contact the live N3 tenant.
+Tests mock N3 and the database; they never contact the live N3 tenant. `tests/migrations.test.ts`
+performs **static checks of the migration SQL text only** — it does not connect to a database.
+Connected-database verification (tables, RLS, policies/grants, triggers, absence of
+`SECURITY DEFINER`) is run read-only through the Lovable Cloud tooling and is reported
+separately; no service-role credential is present in tests or in this repository.
 
 ## Not in this milestone
 

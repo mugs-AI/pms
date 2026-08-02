@@ -14,7 +14,8 @@ export const Route = createFileRoute("/")({
       { property: "og:title", content: "Dashboard — N3 ProjectHub" },
       {
         property: "og:description",
-        content: "ProjectHub dashboard shell showing the live N3 session, company and tenant context for construction project management.",
+        content:
+          "ProjectHub dashboard shell showing the live N3 session, company and tenant context for construction project management.",
       },
     ],
   }),

@@ -16,7 +16,7 @@ const TABLES = [
   "projecthub_n3_request_diagnostics",
 ];
 
-describe("15. database migrations", () => {
+describe("15. database migrations (static SQL source checks — no database connection)", () => {
   it("create all four starter tables", () => {
     for (const t of TABLES) expect(sql).toContain(`create table public.${t}`);
   });

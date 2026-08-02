@@ -24,8 +24,12 @@ export function getBaseUrl(target: "main" | "reporting") {
   return process.env["OPEN_API_BASE_URL"] ?? "https://openapi.account.qne.cloud";
 }
 
+/**
+ * Strict gate: only an explicit local development runtime counts. production,
+ * test, staging, an empty value and undefined are all NOT development.
+ */
 export function isDevRuntime() {
-  return process.env["NODE_ENV"] !== "production";
+  return process.env["NODE_ENV"] === "development";
 }
 
 export function newCorrelationId() {
