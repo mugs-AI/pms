@@ -85,7 +85,13 @@ export async function resolveN3Session(bearerToken: string): Promise<SessionReso
 }
 
 export type BootstrapResult =
-  | { ok: true; tenantRowId: string; role: "owner" | "unassigned"; userPersisted: boolean }
+  | {
+      ok: true;
+      tenantRowId: string;
+      role: "owner" | "unassigned";
+      userPersisted: boolean;
+      status: "provisioned" | "partial";
+    }
   | { ok: false; reason: "missing_tenant_identity" | "database_error" };
 
 /**
@@ -138,9 +144,11 @@ export async function bootstrapProjectHub(
 
   const role: "owner" | "unassigned" = session.isOwner ? "owner" : "unassigned";
   let userPersisted = false;
+  let userExpected = false;
 
   // If N3 does not provide a stable user id, persist nothing for the user.
   if (session.n3UserId) {
+    userExpected = true;
     const { error: roleError } = await supabaseAdmin.from("projecthub_user_roles").upsert(
       {
         tenant_id: tenant.id,
@@ -155,18 +163,59 @@ export async function bootstrapProjectHub(
     userPersisted = !roleError;
   }
 
+  // A failed user-role upsert is never reported as full success.
+  const partial = userExpected && !userPersisted;
   await writeAudit(correlationId, {
     tenantRowId: tenant.id,
     actor: session.n3UserId,
     eventType: "bootstrap",
     action: "tenant_and_role_upsert",
-    outcome: "succeeded",
+    outcome: partial ? "partial" : "succeeded",
     targetType: "tenant",
     targetIdentity: session.n3TenantId,
     metadata: { role, userPersisted, userIdContract: session.n3UserId ? "present" : "missing" },
   });
 
-  return { ok: true, tenantRowId: tenant.id, role, userPersisted };
+  return {
+    ok: true,
+    tenantRowId: tenant.id,
+    role,
+    userPersisted,
+    status: partial ? "partial" : "provisioned",
+  };
+}
+
+export type TenantContext =
+  | { ok: true; tenantRowId: string }
+  | { ok: false; reason: "missing_tenant_identity" | "database_error" };
+
+/**
+ * Resolves the internal projecthub_tenants.id for a protected read. Identity
+ * comes ONLY from the immutable N3 tenant id in the live BasicInfo response —
+ * never from a URL, header, body, JWT claim, email, tenant code or any other
+ * browser-supplied value.
+ */
+export async function resolveTenantRowId(session: N3Session): Promise<TenantContext> {
+  if (!session.n3TenantId) return { ok: false, reason: "missing_tenant_identity" };
+  try {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data, error } = await supabaseAdmin
+      .from("projecthub_tenants")
+      .upsert(
+        {
+          n3_tenant_id: session.n3TenantId,
+          n3_tenant_code: session.tenantCode,
+          company_name: session.companyName,
+        },
+        { onConflict: "n3_tenant_id" },
+      )
+      .select("id")
+      .single();
+    if (error || !data) return { ok: false, reason: "database_error" };
+    return { ok: true, tenantRowId: data.id };
+  } catch {
+    return { ok: false, reason: "database_error" };
+  }
 }
 
 export async function writeAudit(
