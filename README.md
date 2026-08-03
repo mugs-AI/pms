@@ -111,18 +111,33 @@ Migration `supabase/migrations/20260801051555_*.sql` creates:
   the allowlisted **operation id** (never a caller-supplied URL), with timings, status,
   outcome classification, bounded error text and response size.
 
+A forward-only corrective migration (`supabase/migrations/20260803015809_*.sql`) enforces
+least privilege: it first **revokes all table privileges from `service_role`** (a narrower
+grant does not remove a broader inherited one) and then re-grants only
+`SELECT, INSERT, UPDATE` on `projecthub_tenants` and `projecthub_user_roles`, and only
+`SELECT, INSERT` on `projecthub_integration_audit_events` and
+`projecthub_n3_request_diagnostics`. The service role has no `DELETE`, `TRUNCATE`,
+`REFERENCES` or `TRIGGER` privilege on any ProjectHub table. For the append-only tables,
+update and delete are blocked by row triggers and truncate is blocked by statement-level
+`BEFORE TRUNCATE` triggers.
+
 Security model: RLS is enabled on all four tables, there are **no** `anon` or
 `authenticated` policies or grants (both roles are explicitly revoked), and only the
-server/service role may read or write. No `SECURITY DEFINER` functions are used; the guard
-and append-only trigger functions set an explicit `search_path`. Tenant identity for every
-write comes from the verified server session resolver — never from a browser parameter.
+server/service role may read or write. Supabase is **server-only**: there is no browser
+Supabase client, session or auth middleware. No `SECURITY DEFINER` functions are used; the
+guard and append-only trigger functions set an explicit `search_path`. Tenant identity for
+every write comes from the verified server session resolver — never from a browser parameter.
 
-Bootstrap after a valid session: upsert the tenant by immutable N3 tenant id, upsert the
+Bootstrap after a valid session returns exactly one of `provisioned`, `partial` or
+`unprovisioned`: upsert the tenant by immutable N3 tenant id, upsert the
 current user by immutable N3 user id **only when N3 supplies one**, assign `owner` only when
 live BasicInfo says `isOwner === true` (otherwise `unassigned`), and emit a sanitised audit
-event. Missing tenant identity fails closed and provisions nothing. When the tenant row is
-written but the user-role upsert fails, the result and the audit outcome are recorded as
-`partial` — never as full success.
+event. Missing tenant identity or a tenant-upsert failure fails closed as `unprovisioned`
+(reason `missing_tenant_identity` or `database_error`) and is audited as `failed`. When the
+tenant row is written but an **expected** user-role upsert fails, the status returned to the
+browser and the audit outcome are both `partial` — never full success. When N3 supplies no
+stable user id, no shadow user is created and the status is `provisioned` with
+`userPersisted: false`.
 
 ## Scripts and tests
 
@@ -134,11 +149,16 @@ npm run lint       # eslint
 npm run build      # production build
 ```
 
-Tests mock N3 and the database; they never contact the live N3 tenant. `tests/migrations.test.ts`
-performs **static checks of the migration SQL text only** — it does not connect to a database.
-Connected-database verification (tables, RLS, policies/grants, triggers, absence of
-`SECURITY DEFINER`) is run read-only through the Lovable Cloud tooling and is reported
-separately; no service-role credential is present in tests or in this repository.
+Tests mock N3 and the database; they never contact the live N3 tenant.
+`tests/migrations.test.ts` and `tests/migration-security.test.ts` perform **static checks of
+the migration SQL text only** — they do not connect to a database. Connected-database
+catalog verification (tables, RLS, policy count, exact `has_table_privilege` matrix,
+triggers, function security mode and `search_path`) is a **separate** read-only inspection
+run through the Lovable Cloud tooling and reported apart from the Vitest results; no
+service-role credential is present in tests or in this repository.
+
+No N3 create, update, delete, void, posting, payment or stock write operation exists in this
+milestone; the N3 boundary is GET-only over an 11-operation allowlist.
 
 ## Not in this milestone
 
