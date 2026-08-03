@@ -74,7 +74,8 @@ export async function handleSessionRequest(request: Request): Promise<Response> 
         provisioning:
           bootstrap.ok === true
             ? {
-                status: "provisioned",
+                // The exact server-computed status: "provisioned" or "partial".
+                status: bootstrap.status,
                 role: bootstrap.role,
                 userPersisted: bootstrap.userPersisted,
               }
