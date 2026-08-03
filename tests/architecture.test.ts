@@ -13,14 +13,34 @@ function walk(dir: string): string[] {
 }
 
 const sourceFiles = walk(join(root, "src"));
+/**
+ * Every browser-reachable source file under src. Server-only modules are
+ * excluded by filename, and only the generated Supabase types file is skipped
+ * — the integration directory itself IS scanned so a future browser Supabase
+ * client added there is detected.
+ */
 const browserFiles = sourceFiles.filter(
-  (f) => /\.(ts|tsx)$/.test(f) && !f.endsWith(".server.ts") && !f.includes("integrations/supabase"),
+  (f) =>
+    /\.(ts|tsx)$/.test(f) &&
+    !f.endsWith(".server.ts") &&
+    !f.endsWith(".server.tsx") &&
+    !f.endsWith(join("integrations", "supabase", "types.ts")),
 );
 
+const PROHIBITED_BROWSER_TOKENS = [
+  "supabase.auth",
+  "VITE_SUPABASE",
+  "@supabase/supabase-js",
+  "persistSession",
+  "autoRefreshToken",
+  "attachSupabaseAuth",
+  "client.server",
+  "SUPABASE_SERVICE_ROLE_KEY",
+];
+
 describe("architecture guards", () => {
-  it("has no committed .env and no browser Supabase auth files", () => {
+  it("has no browser Supabase auth files", () => {
     for (const f of [
-      ".env",
       "src/integrations/supabase/client.ts",
       "src/integrations/supabase/auth-attacher.ts",
       "src/integrations/supabase/auth-middleware.ts",
@@ -36,13 +56,28 @@ describe("architecture guards", () => {
     expect(ignore).toMatch(/^!\.env\.example$/m);
   });
 
+  it("keeps .env.example to empty, non-secret, server-only placeholders", () => {
+    const example = readFileSync(join(root, ".env.example"), "utf8");
+    expect(example).not.toContain("VITE_SUPABASE");
+    for (const line of example.split("\n")) {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith("#")) continue;
+      // Every assignment must be an empty placeholder.
+      expect(trimmed, line).toMatch(/^[A-Z0-9_]+=$/);
+    }
+    // No real URL, JWT, key, tenant id or project id may appear.
+    expect(example).not.toMatch(/https?:\/\//);
+    expect(example).not.toMatch(/eyJ[A-Za-z0-9_-]{5,}/);
+    expect(example).not.toMatch(/sb_(publishable|secret)_/);
+    expect(example).not.toMatch(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
+  });
+
   it("has no browser module referencing supabase auth, VITE_SUPABASE or a supabase client", () => {
     for (const file of browserFiles) {
       const src = readFileSync(file, "utf8");
-      expect(src, file).not.toContain("supabase.auth");
-      expect(src, file).not.toContain("VITE_SUPABASE");
-      expect(src, file).not.toContain("@supabase/supabase-js");
-      expect(src, file).not.toContain("persistSession");
+      for (const token of PROHIBITED_BROWSER_TOKENS) {
+        expect(src, `${file} must not contain ${token}`).not.toContain(token);
+      }
     }
   });
 
