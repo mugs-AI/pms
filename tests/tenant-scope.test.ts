@@ -144,7 +144,6 @@ describe("tenant-scoped diagnostics", () => {
     expect(body.correlationId).toMatch(/^[0-9a-f-]{36}$/);
     expect(up.calls.every((u) => u.includes("BasicInfo"))).toBe(true);
   });
-
 });
 
 type Provisioning = { status: string; role?: string; userPersisted?: boolean; reason?: string };
