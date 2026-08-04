@@ -56,6 +56,26 @@ function rescale(value: bigint, shift: number): bigint {
   return negative ? -rounded : rounded;
 }
 
+/** Rounds `numer / denom` half-up. Returns null when the denominator is zero. */
+function divideHalfUp(numer: bigint, denom: bigint): bigint | null {
+  if (denom === 0n) return null;
+  const negative = numer < 0n !== denom < 0n;
+  const a = numer < 0n ? -numer : numer;
+  const b = denom < 0n ? -denom : denom;
+  const quotient = a / b;
+  const rounded = (a % b) * 2n >= b ? quotient + 1n : quotient;
+  return negative ? -rounded : rounded;
+}
+
+/**
+ * `numer / denom` as a percentage with MONEY_DP decimals. Both inputs must
+ * share the same scale; the scale cancels out in the ratio.
+ */
+function percentOf(numer: bigint, denom: bigint): string | null {
+  const scaled = divideHalfUp(numer * 100n * pow10(MONEY_DP), denom);
+  return scaled === null ? null : fromScaled(scaled, MONEY_DP);
+}
+
 export type BoqLineInput = {
   itemType: string;
   quantity: number | string;
@@ -98,8 +118,8 @@ export function calculateLine(line: BoqLineInput): BoqLineTotals {
     taxAmount: fromScaled(tax, MONEY_DP),
     sellingAmountWithTax: fromScaled(selling + tax, MONEY_DP),
     grossProfit: fromScaled(profit, MONEY_DP),
-    grossMarginPercent: selling === 0n ? null : fromScaled(rescale(profit * 10000n, MONEY_DP), MONEY_DP),
-    markupPercent: cost === 0n ? null : fromScaled(rescale(profit * 10000n, MONEY_DP) / 1n, MONEY_DP),
+    grossMarginPercent: percentOf(profit, selling),
+    markupPercent: percentOf(profit, cost),
   };
 }
 
@@ -125,10 +145,7 @@ function finalise(acc: ReturnType<typeof emptyAccumulator>): BoqTotals {
     totalTax: fromScaled(acc.tax, MONEY_DP),
     totalSellingWithTax: fromScaled(acc.selling + acc.tax, MONEY_DP),
     grossProfit: fromScaled(profit, MONEY_DP),
-    grossMarginPercent:
-      acc.selling === 0n
-        ? null
-        : fromScaled(rescale(profit * 10000n * pow10(MONEY_DP), MONEY_DP * 2) / 1n, MONEY_DP),
+    grossMarginPercent: percentOf(profit, acc.selling),
     lineCount: acc.count,
   };
 }
@@ -192,7 +209,7 @@ export function simpleBudgetTotals(cost: number | string | null, selling: number
     totalCost: fromScaled(c, MONEY_DP),
     totalSelling: fromScaled(s, MONEY_DP),
     grossProfit: fromScaled(profit, MONEY_DP),
-    grossMarginPercent: s === 0n ? null : fromScaled(rescale(profit * 10000n, MONEY_DP), MONEY_DP),
+    grossMarginPercent: percentOf(profit, s),
   };
 }
 
