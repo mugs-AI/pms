@@ -6,6 +6,7 @@
 import type { Json } from "@/integrations/supabase/types";
 import { BASIC_INFO_PATH } from "./n3-allowlist";
 import { n3Get } from "./n3-api.server";
+import { isProjectHubRole, type ProjectHubRole } from "./projecthub-rbac";
 
 export type N3Session = {
   /** Immutable N3 tenant identity — required for any tenant-scoped database work. */
@@ -84,20 +85,165 @@ export async function resolveN3Session(bearerToken: string): Promise<SessionReso
   return { ok: true, session };
 }
 
+export type EffectiveRoleStatus =
+  | "owner"
+  | "assigned"
+  | "unassigned"
+  | "disabled"
+  | "identity_missing";
+
 export type BootstrapResult =
   | {
       ok: true;
       tenantRowId: string;
-      role: "owner" | "unassigned";
+      role: ProjectHubRole;
+      roleStatus: EffectiveRoleStatus;
+      roleSource: string | null;
       userPersisted: boolean;
       status: "provisioned" | "partial";
     }
   | { ok: false; reason: "missing_tenant_identity" | "database_error" };
 
 /**
- * Upserts the tenant by immutable N3 tenant id and, when N3 supplies a stable
- * user id, the current user's ProjectHub role. Nothing here is ever taken from
- * the browser.
+ * Resolves the effective ProjectHub role for a live N3 session.
+ *
+ * Rules (see Milestone 1A):
+ * - live BasicInfo.isOwner === true is the ONLY Owner authority;
+ * - an Owner-assigned role for a non-Owner survives every session refresh;
+ * - a stored `owner` row never elevates when live isOwner is false — it is
+ *   repaired down to `unassigned`;
+ * - a deactivated role row is denied.
+ */
+export async function resolveEffectiveRole(
+  session: N3Session,
+  tenantRowId: string,
+): Promise<{
+  role: ProjectHubRole;
+  roleStatus: EffectiveRoleStatus;
+  roleSource: string | null;
+  persisted: boolean;
+  attempted: boolean;
+}> {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+  if (!session.n3UserId) {
+    return {
+      role: "unassigned",
+      roleStatus: "identity_missing",
+      roleSource: null,
+      persisted: false,
+      attempted: false,
+    };
+  }
+
+  const { data: existing, error: readError } = await supabaseAdmin
+    .from("projecthub_user_roles")
+    .select("role, is_active, role_source")
+    .eq("tenant_id", tenantRowId)
+    .eq("n3_user_id", session.n3UserId)
+    .maybeSingle();
+
+  if (readError) {
+    return {
+      role: "unassigned",
+      roleStatus: "unassigned",
+      roleSource: null,
+      persisted: false,
+      attempted: true,
+    };
+  }
+
+  const display = { display_email: session.displayEmail, display_name: session.displayName };
+
+  // Live Owner: always owner, and the stored row is kept consistent for audit.
+  if (session.isOwner) {
+    const { error } = await supabaseAdmin.from("projecthub_user_roles").upsert(
+      {
+        tenant_id: tenantRowId,
+        n3_user_id: session.n3UserId,
+        ...display,
+        role: "owner",
+        role_source: "n3_owner",
+        is_active: true,
+      },
+      { onConflict: "tenant_id,n3_user_id" },
+    );
+    return {
+      role: "owner",
+      roleStatus: "owner",
+      roleSource: "n3_owner",
+      persisted: !error,
+      attempted: true,
+    };
+  }
+
+  // Non-Owner with no row yet: create the deny-by-default unassigned row.
+  if (!existing) {
+    const { error } = await supabaseAdmin.from("projecthub_user_roles").insert({
+      tenant_id: tenantRowId,
+      n3_user_id: session.n3UserId,
+      ...display,
+      role: "unassigned",
+      role_source: "bootstrap_unassigned",
+      is_active: true,
+    });
+    return {
+      role: "unassigned",
+      roleStatus: "unassigned",
+      roleSource: "bootstrap_unassigned",
+      persisted: !error,
+      attempted: true,
+    };
+  }
+
+  // Stale stored owner while live N3 says otherwise: repair, never elevate.
+  if (existing.role === "owner") {
+    const { error } = await supabaseAdmin
+      .from("projecthub_user_roles")
+      .update({
+        ...display,
+        role: "unassigned",
+        role_source: "stale_owner_downgraded",
+        is_active: true,
+      })
+      .eq("tenant_id", tenantRowId)
+      .eq("n3_user_id", session.n3UserId);
+    return {
+      role: "unassigned",
+      roleStatus: "unassigned",
+      roleSource: "stale_owner_downgraded",
+      persisted: !error,
+      attempted: true,
+    };
+  }
+
+  // Assigned role is preserved. Only safe display attributes are refreshed.
+  const { error } = await supabaseAdmin
+    .from("projecthub_user_roles")
+    .update(display)
+    .eq("tenant_id", tenantRowId)
+    .eq("n3_user_id", session.n3UserId);
+
+  const stored = isProjectHubRole(existing.role) ? existing.role : "unassigned";
+  const roleStatus: EffectiveRoleStatus = !existing.is_active
+    ? "disabled"
+    : stored === "unassigned"
+      ? "unassigned"
+      : "assigned";
+
+  return {
+    role: existing.is_active ? stored : "unassigned",
+    roleStatus,
+    roleSource: existing.role_source ?? null,
+    persisted: !error,
+    attempted: true,
+  };
+}
+
+/**
+ * Upserts the tenant by immutable N3 tenant id and resolves/persists the
+ * caller's effective ProjectHub role. Nothing here is ever taken from the
+ * browser.
  */
 export async function bootstrapProjectHub(
   session: N3Session,
@@ -142,29 +288,10 @@ export async function bootstrapProjectHub(
     return { ok: false, reason: "database_error" };
   }
 
-  const role: "owner" | "unassigned" = session.isOwner ? "owner" : "unassigned";
-  let userPersisted = false;
-  let userExpected = false;
+  const resolved = await resolveEffectiveRole(session, tenant.id);
 
-  // If N3 does not provide a stable user id, persist nothing for the user.
-  if (session.n3UserId) {
-    userExpected = true;
-    const { error: roleError } = await supabaseAdmin.from("projecthub_user_roles").upsert(
-      {
-        tenant_id: tenant.id,
-        n3_user_id: session.n3UserId,
-        display_email: session.displayEmail,
-        display_name: session.displayName,
-        role,
-        is_active: true,
-      },
-      { onConflict: "tenant_id,n3_user_id" },
-    );
-    userPersisted = !roleError;
-  }
-
-  // A failed user-role upsert is never reported as full success.
-  const partial = userExpected && !userPersisted;
+  // A failed EXPECTED user-role write is never reported as full success.
+  const partial = resolved.attempted && !resolved.persisted;
   await writeAudit(correlationId, {
     tenantRowId: tenant.id,
     actor: session.n3UserId,
@@ -173,14 +300,21 @@ export async function bootstrapProjectHub(
     outcome: partial ? "partial" : "succeeded",
     targetType: "tenant",
     targetIdentity: session.n3TenantId,
-    metadata: { role, userPersisted, userIdContract: session.n3UserId ? "present" : "missing" },
+    metadata: {
+      role: resolved.role,
+      roleStatus: resolved.roleStatus,
+      userPersisted: resolved.persisted,
+      userIdContract: session.n3UserId ? "present" : "missing",
+    },
   });
 
   return {
     ok: true,
     tenantRowId: tenant.id,
-    role,
-    userPersisted,
+    role: resolved.role,
+    roleStatus: resolved.roleStatus,
+    roleSource: resolved.roleSource,
+    userPersisted: resolved.persisted,
     status: partial ? "partial" : "provisioned",
   };
 }
