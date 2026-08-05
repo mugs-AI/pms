@@ -152,8 +152,8 @@ export async function cloneVersion(
     p_tenant_id: actor.tenantRowId,
     p_project_id: projectId,
     p_source_version_id: input.sourceVersionId,
-    p_revision_label: input.revisionLabel ?? null,
-    p_actor: actor.n3UserId,
+    p_revision_label: (input.revisionLabel ?? null) as unknown as string,
+    p_actor: actor.n3UserId as unknown as string,
   });
   if (error || !data) return { ok: false, status: 503, message: "The BOQ version could not be cloned" };
 
@@ -186,7 +186,7 @@ export async function updateVersion(
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data, error } = await supabaseAdmin
     .from("projecthub_boq_versions")
-    .update(patch)
+    .update(patch as never)
     .eq("tenant_id", actor.tenantRowId)
     .eq("project_id", projectId)
     .eq("id", versionId)
@@ -266,7 +266,7 @@ export async function updateSection(
 
   const { data, error } = await supabaseAdmin
     .from("projecthub_boq_sections")
-    .update(patch)
+    .update(patch as never)
     .eq("tenant_id", actor.tenantRowId)
     .eq("project_id", projectId)
     .eq("id", sectionId)
@@ -431,7 +431,7 @@ export async function updateItem(
 
   const { data, error } = await supabaseAdmin
     .from("projecthub_boq_items")
-    .update(patch)
+    .update(patch as never)
     .eq("tenant_id", actor.tenantRowId)
     .eq("project_id", projectId)
     .eq("id", itemId)

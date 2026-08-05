@@ -278,7 +278,7 @@ export async function createEnquiry(
   const { data, error } = await supabaseAdmin.rpc("projecthub_create_enquiry", {
     p_tenant_id: actor.tenantRowId,
     p_year: new Date().getUTCFullYear(),
-    p_actor: actor.n3UserId,
+    p_actor: actor.n3UserId as unknown as string,
     p_correlation_id: actor.correlationId,
     p_payload: payload as unknown as Json,
   });
@@ -342,7 +342,7 @@ export async function updateProject(
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data, error } = await supabaseAdmin
     .from("projecthub_projects")
-    .update(patch)
+    .update(patch as never)
     .eq("tenant_id", actor.tenantRowId)
     .eq("id", projectId)
     .select(PROJECT_COLUMNS)
@@ -483,7 +483,7 @@ export async function updatePhase(
 
   const { data, error } = await supabaseAdmin
     .from("projecthub_project_phases")
-    .update(patch)
+    .update(patch as never)
     .eq("tenant_id", actor.tenantRowId)
     .eq("project_id", projectId)
     .eq("id", phaseId)
