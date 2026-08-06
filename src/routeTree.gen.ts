@@ -11,7 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as CapabilitiesRouteImport } from './routes/capabilities'
-import { Route as ProjectsRouteImport } from './routes/projects'
+import { Route as RolesRouteImport } from './routes/roles'
 import { Route as VerificationRouteImport } from './routes/verification'
 import { Route as ApiProjecthubSplatRouteImport } from './routes/api/projecthub/$'
 import { Route as ApiPublicAuthConnectRouteImport } from './routes/api/public/auth/connect'
@@ -27,9 +27,9 @@ const CapabilitiesRoute = CapabilitiesRouteImport.update({
   path: '/capabilities',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ProjectsRoute = ProjectsRouteImport.update({
-  id: '/projects',
-  path: '/projects',
+const RolesRoute = RolesRouteImport.update({
+  id: '/roles',
+  path: '/roles',
   getParentRoute: () => rootRouteImport,
 } as any)
 const VerificationRoute = VerificationRouteImport.update({
@@ -56,7 +56,7 @@ const ApiPublicN3SplatRoute = ApiPublicN3SplatRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/capabilities': typeof CapabilitiesRoute
-  '/projects': typeof ProjectsRoute
+  '/roles': typeof RolesRoute
   '/verification': typeof VerificationRoute
   '/api/projecthub/$': typeof ApiProjecthubSplatRoute
   '/api/public/auth/connect': typeof ApiPublicAuthConnectRoute
@@ -65,7 +65,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/capabilities': typeof CapabilitiesRoute
-  '/projects': typeof ProjectsRoute
+  '/roles': typeof RolesRoute
   '/verification': typeof VerificationRoute
   '/api/projecthub/$': typeof ApiProjecthubSplatRoute
   '/api/public/auth/connect': typeof ApiPublicAuthConnectRoute
@@ -75,7 +75,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/capabilities': typeof CapabilitiesRoute
-  '/projects': typeof ProjectsRoute
+  '/roles': typeof RolesRoute
   '/verification': typeof VerificationRoute
   '/api/projecthub/$': typeof ApiProjecthubSplatRoute
   '/api/public/auth/connect': typeof ApiPublicAuthConnectRoute
@@ -86,7 +86,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/capabilities'
-    | '/projects'
+    | '/roles'
     | '/verification'
     | '/api/projecthub/$'
     | '/api/public/auth/connect'
@@ -95,7 +95,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/capabilities'
-    | '/projects'
+    | '/roles'
     | '/verification'
     | '/api/projecthub/$'
     | '/api/public/auth/connect'
@@ -104,7 +104,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/capabilities'
-    | '/projects'
+    | '/roles'
     | '/verification'
     | '/api/projecthub/$'
     | '/api/public/auth/connect'
@@ -114,7 +114,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   CapabilitiesRoute: typeof CapabilitiesRoute
-  ProjectsRoute: typeof ProjectsRoute
+  RolesRoute: typeof RolesRoute
   VerificationRoute: typeof VerificationRoute
   ApiProjecthubSplatRoute: typeof ApiProjecthubSplatRoute
   ApiPublicAuthConnectRoute: typeof ApiPublicAuthConnectRoute
@@ -137,11 +137,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CapabilitiesRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/projects': {
-      id: '/projects'
-      path: '/projects'
-      fullPath: '/projects'
-      preLoaderRoute: typeof ProjectsRouteImport
+    '/roles': {
+      id: '/roles'
+      path: '/roles'
+      fullPath: '/roles'
+      preLoaderRoute: typeof RolesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/verification': {
@@ -178,7 +178,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CapabilitiesRoute: CapabilitiesRoute,
-  ProjectsRoute: ProjectsRoute,
+  RolesRoute: RolesRoute,
   VerificationRoute: VerificationRoute,
   ApiProjecthubSplatRoute: ApiProjecthubSplatRoute,
   ApiPublicAuthConnectRoute: ApiPublicAuthConnectRoute,
@@ -187,13 +187,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
