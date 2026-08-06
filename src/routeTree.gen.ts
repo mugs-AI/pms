@@ -14,6 +14,7 @@ import { Route as CapabilitiesRouteImport } from './routes/capabilities'
 import { Route as RolesRouteImport } from './routes/roles'
 import { Route as VerificationRouteImport } from './routes/verification'
 import { Route as ProjectsIndexRouteImport } from './routes/projects.index'
+import { Route as ProjectsNewRouteImport } from './routes/projects.new'
 import { Route as ApiProjecthubSplatRouteImport } from './routes/api/projecthub/$'
 import { Route as ApiPublicAuthConnectRouteImport } from './routes/api/public/auth/connect'
 import { Route as ApiPublicN3SplatRouteImport } from './routes/api/public/n3/$'
@@ -43,6 +44,11 @@ const ProjectsIndexRoute = ProjectsIndexRouteImport.update({
   path: '/projects/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ProjectsNewRoute = ProjectsNewRouteImport.update({
+  id: '/projects/new',
+  path: '/projects/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiProjecthubSplatRoute = ApiProjecthubSplatRouteImport.update({
   id: '/api/projecthub/$',
   path: '/api/projecthub/$',
@@ -64,6 +70,7 @@ export interface FileRoutesByFullPath {
   '/capabilities': typeof CapabilitiesRoute
   '/roles': typeof RolesRoute
   '/verification': typeof VerificationRoute
+  '/projects/new': typeof ProjectsNewRoute
   '/projects/': typeof ProjectsIndexRoute
   '/api/projecthub/$': typeof ApiProjecthubSplatRoute
   '/api/public/auth/connect': typeof ApiPublicAuthConnectRoute
@@ -74,6 +81,7 @@ export interface FileRoutesByTo {
   '/capabilities': typeof CapabilitiesRoute
   '/roles': typeof RolesRoute
   '/verification': typeof VerificationRoute
+  '/projects/new': typeof ProjectsNewRoute
   '/projects': typeof ProjectsIndexRoute
   '/api/projecthub/$': typeof ApiProjecthubSplatRoute
   '/api/public/auth/connect': typeof ApiPublicAuthConnectRoute
@@ -85,6 +93,7 @@ export interface FileRoutesById {
   '/capabilities': typeof CapabilitiesRoute
   '/roles': typeof RolesRoute
   '/verification': typeof VerificationRoute
+  '/projects/new': typeof ProjectsNewRoute
   '/projects/': typeof ProjectsIndexRoute
   '/api/projecthub/$': typeof ApiProjecthubSplatRoute
   '/api/public/auth/connect': typeof ApiPublicAuthConnectRoute
@@ -97,6 +106,7 @@ export interface FileRouteTypes {
     | '/capabilities'
     | '/roles'
     | '/verification'
+    | '/projects/new'
     | '/projects/'
     | '/api/projecthub/$'
     | '/api/public/auth/connect'
@@ -107,6 +117,7 @@ export interface FileRouteTypes {
     | '/capabilities'
     | '/roles'
     | '/verification'
+    | '/projects/new'
     | '/projects'
     | '/api/projecthub/$'
     | '/api/public/auth/connect'
@@ -117,6 +128,7 @@ export interface FileRouteTypes {
     | '/capabilities'
     | '/roles'
     | '/verification'
+    | '/projects/new'
     | '/projects/'
     | '/api/projecthub/$'
     | '/api/public/auth/connect'
@@ -128,6 +140,7 @@ export interface RootRouteChildren {
   CapabilitiesRoute: typeof CapabilitiesRoute
   RolesRoute: typeof RolesRoute
   VerificationRoute: typeof VerificationRoute
+  ProjectsNewRoute: typeof ProjectsNewRoute
   ProjectsIndexRoute: typeof ProjectsIndexRoute
   ApiProjecthubSplatRoute: typeof ApiProjecthubSplatRoute
   ApiPublicAuthConnectRoute: typeof ApiPublicAuthConnectRoute
@@ -171,6 +184,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProjectsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/projects/new': {
+      id: '/projects/new'
+      path: '/projects/new'
+      fullPath: '/projects/new'
+      preLoaderRoute: typeof ProjectsNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/projecthub/$': {
       id: '/api/projecthub/$'
       path: '/api/projecthub/$'
@@ -200,6 +220,7 @@ const rootRouteChildren: RootRouteChildren = {
   CapabilitiesRoute: CapabilitiesRoute,
   RolesRoute: RolesRoute,
   VerificationRoute: VerificationRoute,
+  ProjectsNewRoute: ProjectsNewRoute,
   ProjectsIndexRoute: ProjectsIndexRoute,
   ApiProjecthubSplatRoute: ApiProjecthubSplatRoute,
   ApiPublicAuthConnectRoute: ApiPublicAuthConnectRoute,
