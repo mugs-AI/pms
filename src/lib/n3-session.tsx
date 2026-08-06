@@ -7,15 +7,24 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { clearToken, emailFromJwt, fetchN3Session, getToken, setToken, N3Error } from "./n3-client";
+import { clearToken, emailFromJwt, getToken, setToken } from "./n3-client";
+import { fetchProjectHubSession, ProjectHubError, type ProjectHubSession } from "./projecthub-client";
+import type { Permission, ProjectHubRole } from "./projecthub-rbac";
 
 export type SessionState = {
   status: "loading" | "anonymous" | "authenticated" | "error";
   companyName: string | null;
   tenantCode: string | null;
   email: string | null;
+  displayName: string | null;
   /** Server-resolved from live N3 BasicInfo. Never from a JWT claim. */
   isOwner: boolean;
+  projectHubRole: ProjectHubRole;
+  roleLabel: string;
+  roleStatus: ProjectHubSession["roleStatus"];
+  permissions: Permission[];
+  hasPermission: (permission: Permission) => boolean;
+  refreshSession: () => void;
   error: string | null;
   signIn: (token: string, expiration?: string | null) => void;
   signOut: () => void;
@@ -31,12 +40,12 @@ export function useSession() {
 
 export function SessionProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<SessionState["status"]>("loading");
-  const [companyName, setCompanyName] = useState<string | null>(null);
-  const [tenantCode, setTenantCode] = useState<string | null>(null);
-  const [email, setEmail] = useState<string | null>(null);
-  const [isOwner, setIsOwner] = useState(false);
+  const [session, setSession] = useState<ProjectHubSession | null>(null);
+  const [fallbackEmail, setFallbackEmail] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [tick, setTick] = useState(0);
+
+  const refreshSession = useCallback(() => setTick((t) => t + 1), []);
 
   const signIn = useCallback((token: string, expiration?: string | null) => {
     setToken(token, expiration ?? null);
@@ -45,10 +54,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   const signOut = useCallback(() => {
     clearToken();
-    setCompanyName(null);
-    setTenantCode(null);
-    setEmail(null);
-    setIsOwner(false);
+    setSession(null);
+    setFallbackEmail(null);
     setError(null);
     setStatus("anonymous");
   }, []);
@@ -68,7 +75,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     setTick((t) => t + 1);
   }, []);
 
-  // Session identity is resolved server-side on every authenticated load.
+  // Effective identity, role and permissions are resolved server-side on every
+  // authenticated load. The browser never derives authority locally.
   useEffect(() => {
     let cancelled = false;
     const token = getToken();
@@ -77,26 +85,22 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       return;
     }
     setStatus("loading");
-    // Display-only fallback until the server answers.
-    setEmail(emailFromJwt(token));
+    setFallbackEmail(emailFromJwt(token));
 
-    fetchN3Session()
+    fetchProjectHubSession()
       .then((dto) => {
         if (cancelled) return;
-        setCompanyName(dto.companyName);
-        setTenantCode(dto.tenantCode);
-        setEmail(dto.email ?? emailFromJwt(token));
-        setIsOwner(dto.isOwner === true);
+        setSession(dto);
         setError(null);
         setStatus("authenticated");
       })
       .catch((e: unknown) => {
         if (cancelled) return;
         const message = e instanceof Error ? e.message : "Could not reach N3";
-        const status401 = e instanceof N3Error && e.status === 401;
-        setIsOwner(false);
+        const unauthenticated = e instanceof ProjectHubError && e.status === 401;
+        setSession(null);
         setError(message);
-        setStatus(status401 || !getToken() ? "anonymous" : "error");
+        setStatus(unauthenticated || !getToken() ? "anonymous" : "error");
       });
 
     return () => {
@@ -104,19 +108,26 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     };
   }, [tick]);
 
-  const value = useMemo<SessionState>(
-    () => ({
+  const value = useMemo<SessionState>(() => {
+    const permissions = session?.permissions ?? [];
+    return {
       status,
-      companyName,
-      tenantCode,
-      email,
-      isOwner,
+      companyName: session?.companyName ?? null,
+      tenantCode: session?.tenantCode ?? null,
+      email: session?.email ?? fallbackEmail,
+      displayName: session?.displayName ?? null,
+      isOwner: session?.isOwner === true,
+      projectHubRole: session?.projectHubRole ?? "unassigned",
+      roleLabel: session?.roleLabel ?? "Role unassigned",
+      roleStatus: session?.roleStatus ?? "unassigned",
+      permissions,
+      hasPermission: (permission: Permission) => permissions.includes(permission),
+      refreshSession,
       error,
       signIn,
       signOut,
-    }),
-    [status, companyName, tenantCode, email, isOwner, error, signIn, signOut],
-  );
+    };
+  }, [status, session, fallbackEmail, error, refreshSession, signIn, signOut]);
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;
 }
