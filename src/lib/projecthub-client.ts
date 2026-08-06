@@ -60,11 +60,9 @@ export async function projectHubRequest<T>(path: string, options: RequestOptions
   const headers: Record<string, string> = { Authorization: `Bearer ${token}` };
   if (options.body !== undefined) headers["Content-Type"] = "application/json";
 
-  const res = await fetch(buildUrl(path, options.query), {
-    method: options.method ?? "GET",
-    headers,
-    body: options.body === undefined ? undefined : JSON.stringify(options.body),
-  });
+  const init: RequestInit = { method: options.method ?? "GET", headers };
+  if (options.body !== undefined) init.body = JSON.stringify(options.body);
+  const res = await fetch(buildUrl(path, options.query), init);
 
   const correlationId = res.headers.get("x-correlation-id");
   const body = (await res.json().catch(() => null)) as (Envelope<T> & { correlationId?: string }) | null;
