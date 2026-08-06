@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as CapabilitiesRouteImport } from './routes/capabilities'
 import { Route as RolesRouteImport } from './routes/roles'
 import { Route as VerificationRouteImport } from './routes/verification'
+import { Route as ProjectsIndexRouteImport } from './routes/projects.index'
 import { Route as ApiProjecthubSplatRouteImport } from './routes/api/projecthub/$'
 import { Route as ApiPublicAuthConnectRouteImport } from './routes/api/public/auth/connect'
 import { Route as ApiPublicN3SplatRouteImport } from './routes/api/public/n3/$'
@@ -37,6 +38,11 @@ const VerificationRoute = VerificationRouteImport.update({
   path: '/verification',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ProjectsIndexRoute = ProjectsIndexRouteImport.update({
+  id: '/projects/',
+  path: '/projects/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiProjecthubSplatRoute = ApiProjecthubSplatRouteImport.update({
   id: '/api/projecthub/$',
   path: '/api/projecthub/$',
@@ -58,6 +64,7 @@ export interface FileRoutesByFullPath {
   '/capabilities': typeof CapabilitiesRoute
   '/roles': typeof RolesRoute
   '/verification': typeof VerificationRoute
+  '/projects/': typeof ProjectsIndexRoute
   '/api/projecthub/$': typeof ApiProjecthubSplatRoute
   '/api/public/auth/connect': typeof ApiPublicAuthConnectRoute
   '/api/public/n3/$': typeof ApiPublicN3SplatRoute
@@ -67,6 +74,7 @@ export interface FileRoutesByTo {
   '/capabilities': typeof CapabilitiesRoute
   '/roles': typeof RolesRoute
   '/verification': typeof VerificationRoute
+  '/projects': typeof ProjectsIndexRoute
   '/api/projecthub/$': typeof ApiProjecthubSplatRoute
   '/api/public/auth/connect': typeof ApiPublicAuthConnectRoute
   '/api/public/n3/$': typeof ApiPublicN3SplatRoute
@@ -77,6 +85,7 @@ export interface FileRoutesById {
   '/capabilities': typeof CapabilitiesRoute
   '/roles': typeof RolesRoute
   '/verification': typeof VerificationRoute
+  '/projects/': typeof ProjectsIndexRoute
   '/api/projecthub/$': typeof ApiProjecthubSplatRoute
   '/api/public/auth/connect': typeof ApiPublicAuthConnectRoute
   '/api/public/n3/$': typeof ApiPublicN3SplatRoute
@@ -88,6 +97,7 @@ export interface FileRouteTypes {
     | '/capabilities'
     | '/roles'
     | '/verification'
+    | '/projects/'
     | '/api/projecthub/$'
     | '/api/public/auth/connect'
     | '/api/public/n3/$'
@@ -97,6 +107,7 @@ export interface FileRouteTypes {
     | '/capabilities'
     | '/roles'
     | '/verification'
+    | '/projects'
     | '/api/projecthub/$'
     | '/api/public/auth/connect'
     | '/api/public/n3/$'
@@ -106,6 +117,7 @@ export interface FileRouteTypes {
     | '/capabilities'
     | '/roles'
     | '/verification'
+    | '/projects/'
     | '/api/projecthub/$'
     | '/api/public/auth/connect'
     | '/api/public/n3/$'
@@ -116,6 +128,7 @@ export interface RootRouteChildren {
   CapabilitiesRoute: typeof CapabilitiesRoute
   RolesRoute: typeof RolesRoute
   VerificationRoute: typeof VerificationRoute
+  ProjectsIndexRoute: typeof ProjectsIndexRoute
   ApiProjecthubSplatRoute: typeof ApiProjecthubSplatRoute
   ApiPublicAuthConnectRoute: typeof ApiPublicAuthConnectRoute
   ApiPublicN3SplatRoute: typeof ApiPublicN3SplatRoute
@@ -151,6 +164,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof VerificationRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/projects/': {
+      id: '/projects/'
+      path: '/projects'
+      fullPath: '/projects/'
+      preLoaderRoute: typeof ProjectsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/projecthub/$': {
       id: '/api/projecthub/$'
       path: '/api/projecthub/$'
@@ -180,6 +200,7 @@ const rootRouteChildren: RootRouteChildren = {
   CapabilitiesRoute: CapabilitiesRoute,
   RolesRoute: RolesRoute,
   VerificationRoute: VerificationRoute,
+  ProjectsIndexRoute: ProjectsIndexRoute,
   ApiProjecthubSplatRoute: ApiProjecthubSplatRoute,
   ApiPublicAuthConnectRoute: ApiPublicAuthConnectRoute,
   ApiPublicN3SplatRoute: ApiPublicN3SplatRoute,
