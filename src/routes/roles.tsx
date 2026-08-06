@@ -1,7 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { AppShell } from "@/components/AppShell";
-import { AccessState, Badge, Card, EmptyState, ErrorState, PageHeading, Skeleton, inputClass } from "@/components/projecthub/ui";
+import {
+  AccessState,
+  Badge,
+  Card,
+  EmptyState,
+  ErrorState,
+  PageHeading,
+  Skeleton,
+  inputClass,
+} from "@/components/projecthub/ui";
 import { useSession } from "@/lib/n3-session";
 import { useAssignRole, useRoleDirectory, type RoleDirectoryEntry } from "@/lib/projecthub-hooks";
 import { ASSIGNABLE_ROLES, ROLE_LABELS, type ProjectHubRole } from "@/lib/projecthub-rbac";
@@ -63,7 +72,9 @@ function RolesPage() {
       </Card>
 
       {directory.isLoading ? <Skeleton rows={5} /> : null}
-      {directory.isError ? <ErrorState error={directory.error} onRetry={() => void directory.refetch()} /> : null}
+      {directory.isError ? (
+        <ErrorState error={directory.error} onRetry={() => void directory.refetch()} />
+      ) : null}
       {directory.data && directory.data.entries.length === 0 ? (
         <EmptyState
           title="No N3 users found"
@@ -78,14 +89,18 @@ function RolesPage() {
       ) : null}
 
       <div className="grid gap-3">
-        {directory.data?.entries.map((entry) => <RoleRow key={entry.n3UserId} entry={entry} />)}
+        {directory.data?.entries.map((entry) => (
+          <RoleRow key={entry.n3UserId} entry={entry} />
+        ))}
       </div>
     </div>
   );
 }
 
 function RoleRow({ entry }: { entry: RoleDirectoryEntry }) {
-  const [role, setRole] = useState<ProjectHubRole>(entry.role === "owner" ? "unassigned" : entry.role);
+  const [role, setRole] = useState<ProjectHubRole>(
+    entry.role === "owner" ? "unassigned" : entry.role,
+  );
   const [isActive, setIsActive] = useState(entry.isActive);
   const [saved, setSaved] = useState(false);
   const assign = useAssignRole();
@@ -95,7 +110,9 @@ function RoleRow({ entry }: { entry: RoleDirectoryEntry }) {
     <Card>
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0">
-          <p className="truncate font-semibold text-foreground">{entry.displayName ?? "Unnamed N3 user"}</p>
+          <p className="truncate font-semibold text-foreground">
+            {entry.displayName ?? "Unnamed N3 user"}
+          </p>
           <p className="truncate text-sm text-muted-foreground">{entry.displayEmail ?? "—"}</p>
           <p className="mt-1 text-xs text-muted-foreground">
             N3 user {maskId(entry.n3UserId)} · {entry.roleLabel}
@@ -106,12 +123,18 @@ function RoleRow({ entry }: { entry: RoleDirectoryEntry }) {
             <Badge tone={entry.isActive ? "success" : "destructive"}>
               {entry.isActive ? "Active" : "Inactive"}
             </Badge>
-            {entry.inN3Directory ? <Badge>In N3 directory</Badge> : <Badge tone="destructive">Not in N3</Badge>}
+            {entry.inN3Directory ? (
+              <Badge>In N3 directory</Badge>
+            ) : (
+              <Badge tone="destructive">Not in N3</Badge>
+            )}
           </div>
         </div>
 
         {isOwnerRow ? (
-          <p className="text-sm text-muted-foreground">Owner authority comes from N3 and cannot be edited.</p>
+          <p className="text-sm text-muted-foreground">
+            Owner authority comes from N3 and cannot be edited.
+          </p>
         ) : (
           <div className="flex flex-wrap items-end gap-2">
             <label className="block">
@@ -161,7 +184,9 @@ function RoleRow({ entry }: { entry: RoleDirectoryEntry }) {
           {describeError(assign.error).message}
         </p>
       ) : null}
-      {saved ? <p className="mt-3 text-sm text-success">Role saved. The user sees it on next refresh.</p> : null}
+      {saved ? (
+        <p className="mt-3 text-sm text-success">Role saved. The user sees it on next refresh.</p>
+      ) : null}
     </Card>
   );
 }

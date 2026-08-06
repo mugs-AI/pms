@@ -1,12 +1,29 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { AppShell } from "@/components/AppShell";
-import { AccessState, Badge, Card, EmptyState, ErrorState, PageHeading, Skeleton } from "@/components/projecthub/ui";
+import {
+  AccessState,
+  Badge,
+  Card,
+  EmptyState,
+  ErrorState,
+  PageHeading,
+  Skeleton,
+} from "@/components/projecthub/ui";
 import { PROJECT_STATUS_LABELS, statusTone } from "@/components/projecthub/status";
 import { useSession } from "@/lib/n3-session";
 import { useBoq, useProjectWorkspace } from "@/lib/projecthub-hooks";
-import { formatMoney, formatPercent, simpleBudgetTotals, summariseBoq } from "@/lib/projecthub-calc";
-import { ITEM_TYPE_LABELS, PHASE_LINK_LABELS, STOCK_DEDUCTION_LABELS } from "@/lib/projecthub-schemas";
+import {
+  formatMoney,
+  formatPercent,
+  simpleBudgetTotals,
+  summariseBoq,
+} from "@/lib/projecthub-calc";
+import {
+  ITEM_TYPE_LABELS,
+  PHASE_LINK_LABELS,
+  STOCK_DEDUCTION_LABELS,
+} from "@/lib/projecthub-schemas";
 
 export const Route = createFileRoute("/projects/$projectId")({
   head: () => ({
@@ -42,7 +59,8 @@ function Workspace() {
   if (query.isLoading) return <Skeleton rows={8} />;
   if (query.isError) return <ErrorState error={query.error} onRetry={() => void query.refetch()} />;
   const ws = query.data?.workspace;
-  if (!ws) return <EmptyState title="Project not found" body="This project is not visible to you." />;
+  if (!ws)
+    return <EmptyState title="Project not found" body="This project is not visible to you." />;
 
   const p = ws.project;
 
@@ -52,7 +70,10 @@ function Workspace() {
         title={p.title}
         subtitle={`${p.enquiry_reference} · ${p.project_type}`}
         actions={
-          <Link to="/projects" className="rounded-md border border-input px-4 py-2 text-sm font-medium hover:bg-secondary">
+          <Link
+            to="/projects"
+            className="rounded-md border border-input px-4 py-2 text-sm font-medium hover:bg-secondary"
+          >
             Back to projects
           </Link>
         }
@@ -86,19 +107,30 @@ function Workspace() {
             value={p.n3_customer_name ?? p.requested_customer_name ?? "Not recorded"}
           />
           <Detail label="Customer link" value={p.customer_link_status} />
-          <Detail label="Primary N3 project code" value={p.primary_project_code ?? "Not linked in N3"} />
+          <Detail
+            label="Primary N3 project code"
+            value={p.primary_project_code ?? "Not linked in N3"}
+          />
           <Detail
             label="Site"
-            value={[p.site_address_line1, p.site_city, p.site_state, p.site_postcode].filter(Boolean).join(", ") || "—"}
+            value={
+              [p.site_address_line1, p.site_city, p.site_state, p.site_postcode]
+                .filter(Boolean)
+                .join(", ") || "—"
+            }
           />
           <Detail label="Description" value={p.description ?? "—"} />
-          {p.cancellation_reason ? <Detail label="Cancellation reason" value={p.cancellation_reason} /> : null}
+          {p.cancellation_reason ? (
+            <Detail label="Cancellation reason" value={p.cancellation_reason} />
+          ) : null}
         </Card>
       ) : null}
 
       {tab === "Phases" ? (
         <div className="grid gap-3">
-          {ws.phases.length === 0 ? <EmptyState title="No phases" body="This project has no phases yet." /> : null}
+          {ws.phases.length === 0 ? (
+            <EmptyState title="No phases" body="This project has no phases yet." />
+          ) : null}
           {ws.phases.map((phase) => (
             <Card key={phase.id}>
               <div className="flex flex-wrap items-center justify-between gap-2">
@@ -108,7 +140,8 @@ function Workspace() {
                     {phase.is_active ? "Active" : "Inactive"}
                   </Badge>
                   <Badge tone="accent">
-                    {PHASE_LINK_LABELS[phase.link_status as keyof typeof PHASE_LINK_LABELS] ?? phase.link_status}
+                    {PHASE_LINK_LABELS[phase.link_status as keyof typeof PHASE_LINK_LABELS] ??
+                      phase.link_status}
                   </Badge>
                 </div>
               </div>
@@ -126,12 +159,16 @@ function Workspace() {
 
       {tab === "Team" ? (
         <div className="grid gap-3">
-          {ws.team.length === 0 ? <EmptyState title="No team members" body="Nobody is assigned to this project yet." /> : null}
+          {ws.team.length === 0 ? (
+            <EmptyState title="No team members" body="Nobody is assigned to this project yet." />
+          ) : null}
           {ws.team.map((member) => (
             <Card key={member.id}>
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
-                  <p className="font-semibold text-foreground">{member.display_name ?? "N3 user"}</p>
+                  <p className="font-semibold text-foreground">
+                    {member.display_name ?? "N3 user"}
+                  </p>
                   <p className="text-sm text-muted-foreground">{member.display_email ?? "—"}</p>
                 </div>
                 <Badge tone={member.is_active ? "success" : "destructive"}>
@@ -145,7 +182,9 @@ function Workspace() {
 
       {tab === "Activity" ? (
         <div className="grid gap-2">
-          {ws.events.length === 0 ? <EmptyState title="No activity yet" body="Project changes appear here." /> : null}
+          {ws.events.length === 0 ? (
+            <EmptyState title="No activity yet" body="Project changes appear here." />
+          ) : null}
           {ws.events.map((event) => (
             <Card key={event.id}>
               <p className="text-sm text-foreground">{event.summary}</p>
@@ -171,7 +210,9 @@ function Workspace() {
 function Detail({ label, value }: { label: string; value: string | null }) {
   return (
     <div>
-      <p className="text-xs font-semibold tracking-widest text-muted-foreground uppercase">{label}</p>
+      <p className="text-xs font-semibold tracking-widest text-muted-foreground uppercase">
+        {label}
+      </p>
       <p className="mt-1 text-sm text-foreground">{value ?? "—"}</p>
     </div>
   );
@@ -197,7 +238,12 @@ function BoqPanel({ projectId }: { projectId: string }) {
   if (query.isError) return <ErrorState error={query.error} onRetry={() => void query.refetch()} />;
   const boq = query.data?.boq;
   if (!boq || !boq.version) {
-    return <EmptyState title="No BOQ version yet" body="An estimator can create the first draft BOQ version for this project." />;
+    return (
+      <EmptyState
+        title="No BOQ version yet"
+        body="An estimator can create the first draft BOQ version for this project."
+      />
+    );
   }
 
   const summary = summariseBoq(
@@ -216,7 +262,9 @@ function BoqPanel({ projectId }: { projectId: string }) {
     <div className="space-y-4">
       <Card className="flex flex-wrap items-center gap-3">
         <label className="text-sm">
-          <span className="mr-2 text-xs font-semibold tracking-widest text-muted-foreground uppercase">Version</span>
+          <span className="mr-2 text-xs font-semibold tracking-widest text-muted-foreground uppercase">
+            Version
+          </span>
           <select
             className="rounded-md border border-input bg-background px-3 py-2 text-sm"
             value={boq.version.id}
@@ -229,7 +277,9 @@ function BoqPanel({ projectId }: { projectId: string }) {
             ))}
           </select>
         </label>
-        <Badge tone={boq.version.status === "superseded" ? "destructive" : "accent"}>{boq.version.status}</Badge>
+        <Badge tone={boq.version.status === "superseded" ? "destructive" : "accent"}>
+          {boq.version.status}
+        </Badge>
       </Card>
 
       <Card className="grid gap-4 sm:grid-cols-5">
@@ -241,7 +291,10 @@ function BoqPanel({ projectId }: { projectId: string }) {
       </Card>
 
       {boq.items.length === 0 ? (
-        <EmptyState title="No BOQ lines yet" body="Add sections and items to build this bill of quantities." />
+        <EmptyState
+          title="No BOQ lines yet"
+          body="Add sections and items to build this bill of quantities."
+        />
       ) : (
         <div className="grid gap-3">
           {boq.items.map((item, index) => (
@@ -250,8 +303,9 @@ function BoqPanel({ projectId }: { projectId: string }) {
                 <div className="min-w-0">
                   <p className="font-medium text-foreground">{item.description}</p>
                   <p className="text-xs text-muted-foreground">
-                    {ITEM_TYPE_LABELS[item.item_type as keyof typeof ITEM_TYPE_LABELS] ?? item.item_type} ·{" "}
-                    {item.quantity} {item.uom_code ?? ""}
+                    {ITEM_TYPE_LABELS[item.item_type as keyof typeof ITEM_TYPE_LABELS] ??
+                      item.item_type}{" "}
+                    · {item.quantity} {item.uom_code ?? ""}
                     {item.stock_deduction_method
                       ? ` · ${STOCK_DEDUCTION_LABELS[item.stock_deduction_method as keyof typeof STOCK_DEDUCTION_LABELS]}`
                       : ""}

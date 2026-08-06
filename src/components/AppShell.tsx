@@ -120,14 +120,18 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       <main className="mx-auto max-w-6xl px-4 py-8">
         {!loading && session.roleStatus === "unassigned" ? <RoleUnassignedBanner /> : null}
-        {!loading && session.roleStatus === "disabled" ? <AccessBanner
-          title="ProjectHub access disabled"
-          body="Your ProjectHub access has been deactivated. Ask your N3 account owner to reactivate it."
-        /> : null}
-        {!loading && session.roleStatus === "identity_missing" ? <AccessBanner
-          title="N3 identity incomplete"
-          body="Your N3 session did not return a usable immutable user identity. Relaunch ProjectHub from N3 My Apps."
-        /> : null}
+        {!loading && session.roleStatus === "disabled" ? (
+          <AccessBanner
+            title="ProjectHub access disabled"
+            body="Your ProjectHub access has been deactivated. Ask your N3 account owner to reactivate it."
+          />
+        ) : null}
+        {!loading && session.roleStatus === "identity_missing" ? (
+          <AccessBanner
+            title="N3 identity incomplete"
+            body="Your N3 session did not return a usable immutable user identity. Relaunch ProjectHub from N3 My Apps."
+          />
+        ) : null}
         {children}
       </main>
     </div>

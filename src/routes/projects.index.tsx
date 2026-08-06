@@ -1,7 +1,16 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { AppShell } from "@/components/AppShell";
-import { AccessState, Badge, Card, EmptyState, ErrorState, PageHeading, Skeleton, inputClass } from "@/components/projecthub/ui";
+import {
+  AccessState,
+  Badge,
+  Card,
+  EmptyState,
+  ErrorState,
+  PageHeading,
+  Skeleton,
+  inputClass,
+} from "@/components/projecthub/ui";
 import { useSession } from "@/lib/n3-session";
 import { useProjects, type ProjectRow } from "@/lib/projecthub-hooks";
 import { PROJECT_STATUS_LABELS, statusTone } from "@/components/projecthub/status";
@@ -68,7 +77,9 @@ function ProjectsPage() {
 
       <Card className="grid gap-3 sm:grid-cols-3">
         <label className="block">
-          <span className="text-xs font-semibold tracking-widest text-muted-foreground uppercase">Search</span>
+          <span className="text-xs font-semibold tracking-widest text-muted-foreground uppercase">
+            Search
+          </span>
           <input
             type="search"
             className={`${inputClass} mt-1`}
@@ -81,7 +92,9 @@ function ProjectsPage() {
           />
         </label>
         <label className="block">
-          <span className="text-xs font-semibold tracking-widest text-muted-foreground uppercase">Status</span>
+          <span className="text-xs font-semibold tracking-widest text-muted-foreground uppercase">
+            Status
+          </span>
           <select
             className={`${inputClass} mt-1`}
             value={status}
@@ -99,7 +112,9 @@ function ProjectsPage() {
           </select>
         </label>
         <label className="block">
-          <span className="text-xs font-semibold tracking-widest text-muted-foreground uppercase">Project type</span>
+          <span className="text-xs font-semibold tracking-widest text-muted-foreground uppercase">
+            Project type
+          </span>
           <select
             className={`${inputClass} mt-1`}
             value={projectType}
@@ -116,7 +131,9 @@ function ProjectsPage() {
       </Card>
 
       {query.isLoading ? <Skeleton rows={6} /> : null}
-      {query.isError ? <ErrorState error={query.error} onRetry={() => void query.refetch()} /> : null}
+      {query.isError ? (
+        <ErrorState error={query.error} onRetry={() => void query.refetch()} />
+      ) : null}
 
       {query.data && rows.length === 0 ? (
         <EmptyState
@@ -173,8 +190,7 @@ function ProjectsPage() {
 }
 
 function ProjectCard({ row }: { row: ProjectRow }) {
-  const customer =
-    row.n3_customer_name ?? row.requested_customer_name ?? "No customer recorded";
+  const customer = row.n3_customer_name ?? row.requested_customer_name ?? "No customer recorded";
   const code = row.primary_project_code ?? "No N3 project code";
   return (
     <Link
@@ -191,7 +207,9 @@ function ProjectCard({ row }: { row: ProjectRow }) {
           <p className="truncate text-sm text-muted-foreground">{customer}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Badge tone={statusTone(row.status)}>{PROJECT_STATUS_LABELS[row.status] ?? row.status}</Badge>
+          <Badge tone={statusTone(row.status)}>
+            {PROJECT_STATUS_LABELS[row.status] ?? row.status}
+          </Badge>
           <Badge>{row.budget_mode === "simple_budget" ? "Simple budget" : "Detailed BOQ"}</Badge>
           <Badge tone="accent">{code}</Badge>
         </div>

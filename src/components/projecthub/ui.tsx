@@ -66,7 +66,15 @@ export function ErrorState({ error, onRetry }: { error: unknown; onRetry?: () =>
   );
 }
 
-export function EmptyState({ title, body, action }: { title: string; body: string; action?: ReactNode }) {
+export function EmptyState({
+  title,
+  body,
+  action,
+}: {
+  title: string;
+  body: string;
+  action?: ReactNode;
+}) {
   return (
     <div className="rounded-lg border border-dashed border-border bg-card/60 p-8 text-center">
       <h2 className="font-display text-lg font-bold tracking-wide text-foreground">{title}</h2>
@@ -82,7 +90,9 @@ export function AccessState() {
   if (roleStatus === "disabled") {
     return (
       <Card>
-        <h2 className="font-display text-lg font-bold text-foreground">ProjectHub access disabled</h2>
+        <h2 className="font-display text-lg font-bold text-foreground">
+          ProjectHub access disabled
+        </h2>
         <p className="mt-2 text-sm text-muted-foreground">
           Your ProjectHub access has been deactivated. Ask your N3 account owner to reactivate it.
         </p>
@@ -141,7 +151,13 @@ export function Field({
 export const inputClass =
   "w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground focus:border-ring focus:outline-none";
 
-export function Badge({ children, tone = "muted" }: { children: ReactNode; tone?: "muted" | "accent" | "success" | "destructive" }) {
+export function Badge({
+  children,
+  tone = "muted",
+}: {
+  children: ReactNode;
+  tone?: "muted" | "accent" | "success" | "destructive";
+}) {
   const tones = {
     muted: "bg-secondary text-secondary-foreground",
     accent: "bg-accent/20 text-foreground",
@@ -149,7 +165,9 @@ export function Badge({ children, tone = "muted" }: { children: ReactNode; tone?
     destructive: "bg-destructive/10 text-destructive",
   } as const;
   return (
-    <span className={`rounded-full px-2 py-0.5 text-[0.65rem] font-semibold tracking-wide uppercase ${tones[tone]}`}>
+    <span
+      className={`rounded-full px-2 py-0.5 text-[0.65rem] font-semibold tracking-wide uppercase ${tones[tone]}`}
+    >
       {children}
     </span>
   );
@@ -166,7 +184,15 @@ export type N3PickerProps = {
 };
 
 /** Searchable picker fed exclusively by sanitized same-origin N3 reads. */
-export function N3Picker({ kind, label, value, onChange, disabled, error, placeholder }: N3PickerProps) {
+export function N3Picker({
+  kind,
+  label,
+  value,
+  onChange,
+  disabled,
+  error,
+  placeholder,
+}: N3PickerProps) {
   const [search, setSearch] = useState("");
   const [debounced, setDebounced] = useState("");
   const [open, setOpen] = useState(false);
@@ -222,7 +248,9 @@ export function N3Picker({ kind, label, value, onChange, disabled, error, placeh
               id={listId}
               className="max-h-56 overflow-auto rounded-md border border-border bg-card text-sm"
             >
-              {query.isLoading ? <li className="px-3 py-2 text-muted-foreground">Searching N3…</li> : null}
+              {query.isLoading ? (
+                <li className="px-3 py-2 text-muted-foreground">Searching N3…</li>
+              ) : null}
               {query.isError ? (
                 <li className="px-3 py-2 text-destructive">{describeError(query.error).message}</li>
               ) : null}

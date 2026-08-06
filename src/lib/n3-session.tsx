@@ -8,7 +8,11 @@ import {
   type ReactNode,
 } from "react";
 import { clearToken, emailFromJwt, getToken, setToken } from "./n3-client";
-import { fetchProjectHubSession, ProjectHubError, type ProjectHubSession } from "./projecthub-client";
+import {
+  fetchProjectHubSession,
+  ProjectHubError,
+  type ProjectHubSession,
+} from "./projecthub-client";
 import type { Permission, ProjectHubRole } from "./projecthub-rbac";
 
 export type SessionState = {

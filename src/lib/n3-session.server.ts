@@ -86,11 +86,7 @@ export async function resolveN3Session(bearerToken: string): Promise<SessionReso
 }
 
 export type EffectiveRoleStatus =
-  | "owner"
-  | "assigned"
-  | "unassigned"
-  | "disabled"
-  | "identity_missing";
+  "owner" | "assigned" | "unassigned" | "disabled" | "identity_missing";
 
 export type BootstrapResult =
   | {

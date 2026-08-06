@@ -81,7 +81,8 @@ export async function listProjects(
   if (scopedIds) builder = builder.in("id", scopedIds);
   if (query.status) builder = builder.eq("status", query.status);
   if (query.projectType) builder = builder.eq("project_type", query.projectType);
-  if (query.customerLinkStatus) builder = builder.eq("customer_link_status", query.customerLinkStatus);
+  if (query.customerLinkStatus)
+    builder = builder.eq("customer_link_status", query.customerLinkStatus);
   if (query.search) {
     const term = query.search.replace(/[%,()]/g, " ").trim();
     if (term) {
@@ -105,14 +106,14 @@ export async function listProjects(
 
   const ids = (data ?? []).map((row) => (row as { id: string }).id);
   const phases = ids.length
-    ? (
+    ? ((
         await supabaseAdmin
           .from("projecthub_project_phases")
           .select("project_id, phase_kind, n3_project_code, requested_n3_project_code, link_status")
           .eq("tenant_id", actor.tenantRowId)
           .in("project_id", ids)
           .eq("phase_kind", "primary")
-      ).data ?? []
+      ).data ?? [])
     : [];
 
   const byProject = new Map(phases.map((p) => [p.project_id, p]));
@@ -126,7 +127,13 @@ export async function listProjects(
     };
   });
 
-  return { ok: true, rows, total: count ?? rows.length, page: query.page, pageSize: query.pageSize };
+  return {
+    ok: true,
+    rows,
+    total: count ?? rows.length,
+    page: query.page,
+    pageSize: query.pageSize,
+  };
 }
 
 /** Tenant + visibility scoped fetch. Non-revealing 404 for anything else. */
@@ -285,13 +292,16 @@ export async function createEnquiry(
 
   if (error) {
     if ((error.message ?? "").includes("projecthub_idempotency_conflict")) {
-      return { ok: false, status: 409, message: "This request id was already used with a different payload" };
+      return {
+        ok: false,
+        status: 409,
+        message: "This request id was already used with a different payload",
+      };
     }
     return { ok: false, status: 503, message: "The enquiry could not be created" };
   }
   const row = (Array.isArray(data) ? data[0] : data) as
-    | { project_id: string; enquiry_reference: string; replayed: boolean }
-    | undefined;
+    { project_id: string; enquiry_reference: string; replayed: boolean } | undefined;
   if (!row) return { ok: false, status: 503, message: "The enquiry could not be created" };
 
   return {
@@ -316,7 +326,11 @@ export async function updateProject(
   const start = input.expectedStartDate ?? (found.project["expected_start_date"] as string | null);
   const end = input.expectedEndDate ?? (found.project["expected_end_date"] as string | null);
   if (start && end && start > end) {
-    return { ok: false, status: 400, message: "The expected end date must not precede the start date" };
+    return {
+      ok: false,
+      status: 400,
+      message: "The expected end date must not precede the start date",
+    };
   }
 
   const patch: Record<string, unknown> = { updated_by_n3_user_id: actor.n3UserId };
@@ -384,7 +398,8 @@ export async function cancelProject(
     .eq("id", projectId)
     .select(PROJECT_COLUMNS)
     .maybeSingle();
-  if (error || !data) return { ok: false, status: 503, message: "The project could not be cancelled" };
+  if (error || !data)
+    return { ok: false, status: 503, message: "The project could not be cancelled" };
 
   await recordEvent(actor, projectId, {
     eventType: "project.cancelled",
@@ -426,7 +441,11 @@ export async function createPhase(
     .select("*")
     .maybeSingle();
   if (error || !data) {
-    return { ok: false, status: 409, message: "The phase could not be added — the N3 project code may already be in use" };
+    return {
+      ok: false,
+      status: 409,
+      message: "The phase could not be added — the N3 project code may already be in use",
+    };
   }
   await recordEvent(actor, projectId, {
     eventType: "phase.created",
@@ -538,7 +557,8 @@ export async function assignTeamMember(
     )
     .select("*")
     .maybeSingle();
-  if (error || !data) return { ok: false, status: 503, message: "The team member could not be saved" };
+  if (error || !data)
+    return { ok: false, status: 503, message: "The team member could not be saved" };
 
   await recordEvent(actor, projectId, {
     eventType: "team.assigned",

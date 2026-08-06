@@ -32,7 +32,10 @@ const decimal = z
   .transform((v) => String(v))
   .refine((v) => /^\d{1,12}(\.\d{1,4})?$/.test(v), "Must be a non-negative number");
 
-const optionalDecimal = decimal.optional().nullable().transform((v) => (v ? v : null));
+const optionalDecimal = decimal
+  .optional()
+  .nullable()
+  .transform((v) => (v ? v : null));
 
 export const PROJECT_TYPES = ["construction", "renovation"] as const;
 export const BUDGET_MODES = ["detailed_boq", "simple_budget"] as const;
@@ -130,7 +133,10 @@ const projectCodeSchema = z
     requestedN3ProjectName: optionalText(200),
   })
   .superRefine((v, ctx) => {
-    if (v.linkStatus === "linked_existing" && (!v.n3ProjectId || !v.n3ProjectCode || !v.n3ProjectName)) {
+    if (
+      v.linkStatus === "linked_existing" &&
+      (!v.n3ProjectId || !v.n3ProjectCode || !v.n3ProjectName)
+    ) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["n3ProjectId"],
@@ -320,9 +326,7 @@ function refineItem<T extends z.ZodTypeAny>(schema: T) {
   });
 }
 
-export const createBoqItemSchema = refineItem(
-  z.object({ boqVersionId: uuid, ...boqItemBase }),
-);
+export const createBoqItemSchema = refineItem(z.object({ boqVersionId: uuid, ...boqItemBase }));
 
 export const updateBoqItemSchema = refineItem(
   z.object({

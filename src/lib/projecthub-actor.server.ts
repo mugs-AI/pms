@@ -78,8 +78,7 @@ export function methodNotAllowed(correlationId: string, allow: string) {
 }
 
 export type ActorResolution =
-  | { ok: true; actor: Actor }
-  | { ok: false; response: Response; correlationId: string };
+  { ok: true; actor: Actor } | { ok: false; response: Response; correlationId: string };
 
 /**
  * Steps 1-7 of the request contract: correlation id, bearer validation, live

@@ -36,7 +36,8 @@ export type RoleSource = (typeof ALLOWED_ROLE_SOURCES)[number];
 /** Server-side lookup of an immutable N3 user id in the live tenant directory. */
 export async function findN3User(actor: Actor, targetN3UserId: string) {
   const picker = await readPicker(actor, "users", { page: 0, pageSize: 1000 });
-  if (!picker.ok) return { ok: false as const, status: 503, message: "The N3 user directory is unavailable" };
+  if (!picker.ok)
+    return { ok: false as const, status: 503, message: "The N3 user directory is unavailable" };
   const match = picker.options.find((option) => option.id === targetN3UserId);
   if (!match) return { ok: false as const, status: 404, message: "Not found" };
   return { ok: true as const, user: match };
@@ -51,11 +52,16 @@ export function maskUserId(id: string): string {
 export async function listRoleDirectory(
   actor: Actor,
   search?: string,
-): Promise<{ ok: true; entries: RoleDirectoryEntry[]; n3DirectoryAvailable: boolean } | { ok: false; status: number; message: string }> {
+): Promise<
+  | { ok: true; entries: RoleDirectoryEntry[]; n3DirectoryAvailable: boolean }
+  | { ok: false; status: number; message: string }
+> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data, error } = await supabaseAdmin
     .from("projecthub_user_roles")
-    .select("n3_user_id, display_name, display_email, role, is_active, role_source, assigned_at, assigned_by_n3_user_id")
+    .select(
+      "n3_user_id, display_name, display_email, role, is_active, role_source, assigned_at, assigned_by_n3_user_id",
+    )
     .eq("tenant_id", actor.tenantRowId)
     .order("display_name", { ascending: true });
 
@@ -108,7 +114,10 @@ export async function assignRole(
   actor: Actor,
   targetN3UserId: string,
   input: z.infer<typeof assignRoleSchema>,
-): Promise<{ ok: true; entry: { n3UserId: string; role: ProjectHubRole; isActive: boolean } } | { ok: false; status: number; message: string }> {
+): Promise<
+  | { ok: true; entry: { n3UserId: string; role: ProjectHubRole; isActive: boolean } }
+  | { ok: false; status: number; message: string }
+> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
   // Owner is never manually assignable, in any spelling.
@@ -118,7 +127,11 @@ export async function assignRole(
 
   // Only a live N3 Owner may assign, and only to a real N3 user of THIS tenant.
   if (!actor.session.isOwner) {
-    return { ok: false, status: 403, message: "Only the N3 account owner can assign ProjectHub roles" };
+    return {
+      ok: false,
+      status: 403,
+      message: "Only the N3 account owner can assign ProjectHub roles",
+    };
   }
   const target = await findN3User(actor, targetN3UserId);
   if (!target.ok) {

@@ -11,7 +11,8 @@ export const qk = {
   roles: (search: string) => ["projecthub", "roles", search] as const,
   projects: (params: Record<string, unknown>) => ["projecthub", "projects", params] as const,
   project: (id: string) => ["projecthub", "project", id] as const,
-  boq: (id: string, versionId?: string) => ["projecthub", "boq", id, versionId ?? "latest"] as const,
+  boq: (id: string, versionId?: string) =>
+    ["projecthub", "boq", id, versionId ?? "latest"] as const,
   picker: (kind: string, search: string) => ["projecthub", "n3", kind, search] as const,
 };
 

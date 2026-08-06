@@ -65,7 +65,8 @@ export async function projectHubRequest<T>(path: string, options: RequestOptions
   const res = await fetch(buildUrl(path, options.query), init);
 
   const correlationId = res.headers.get("x-correlation-id");
-  const body = (await res.json().catch(() => null)) as (Envelope<T> & { correlationId?: string }) | null;
+  const body = (await res.json().catch(() => null)) as
+    (Envelope<T> & { correlationId?: string }) | null;
 
   if (res.status === 401) {
     // The N3 session is gone: drop the token and fall back to the launch state.
