@@ -88,11 +88,7 @@ const ROLE_PERMISSIONS: Record<ProjectHubRole, readonly Permission[]> = {
     "projecthub:n3:taxcodes:read",
   ],
   // Finance sees every tenant project and its commercial values, read-only.
-  finance: [
-    "projecthub:projects:list",
-    "projecthub:projects:view_all",
-    "projecthub:boq:view",
-  ],
+  finance: ["projecthub:projects:list", "projecthub:projects:view_all", "projecthub:boq:view"],
   procurement: [
     "projecthub:projects:list",
     "projecthub:projects:view_assigned",

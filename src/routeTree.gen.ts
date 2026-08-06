@@ -11,8 +11,11 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as CapabilitiesRouteImport } from './routes/capabilities'
-import { Route as ProjectsRouteImport } from './routes/projects'
+import { Route as RolesRouteImport } from './routes/roles'
 import { Route as VerificationRouteImport } from './routes/verification'
+import { Route as ProjectsIndexRouteImport } from './routes/projects.index'
+import { Route as ProjectsProjectIdRouteImport } from './routes/projects.$projectId'
+import { Route as ProjectsNewRouteImport } from './routes/projects.new'
 import { Route as ApiProjecthubSplatRouteImport } from './routes/api/projecthub/$'
 import { Route as ApiPublicAuthConnectRouteImport } from './routes/api/public/auth/connect'
 import { Route as ApiPublicN3SplatRouteImport } from './routes/api/public/n3/$'
@@ -27,14 +30,29 @@ const CapabilitiesRoute = CapabilitiesRouteImport.update({
   path: '/capabilities',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ProjectsRoute = ProjectsRouteImport.update({
-  id: '/projects',
-  path: '/projects',
+const RolesRoute = RolesRouteImport.update({
+  id: '/roles',
+  path: '/roles',
   getParentRoute: () => rootRouteImport,
 } as any)
 const VerificationRoute = VerificationRouteImport.update({
   id: '/verification',
   path: '/verification',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProjectsIndexRoute = ProjectsIndexRouteImport.update({
+  id: '/projects/',
+  path: '/projects/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProjectsProjectIdRoute = ProjectsProjectIdRouteImport.update({
+  id: '/projects/$projectId',
+  path: '/projects/$projectId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProjectsNewRoute = ProjectsNewRouteImport.update({
+  id: '/projects/new',
+  path: '/projects/new',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiProjecthubSplatRoute = ApiProjecthubSplatRouteImport.update({
@@ -56,8 +74,11 @@ const ApiPublicN3SplatRoute = ApiPublicN3SplatRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/capabilities': typeof CapabilitiesRoute
-  '/projects': typeof ProjectsRoute
+  '/roles': typeof RolesRoute
   '/verification': typeof VerificationRoute
+  '/projects/$projectId': typeof ProjectsProjectIdRoute
+  '/projects/new': typeof ProjectsNewRoute
+  '/projects/': typeof ProjectsIndexRoute
   '/api/projecthub/$': typeof ApiProjecthubSplatRoute
   '/api/public/auth/connect': typeof ApiPublicAuthConnectRoute
   '/api/public/n3/$': typeof ApiPublicN3SplatRoute
@@ -65,8 +86,11 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/capabilities': typeof CapabilitiesRoute
-  '/projects': typeof ProjectsRoute
+  '/roles': typeof RolesRoute
   '/verification': typeof VerificationRoute
+  '/projects/$projectId': typeof ProjectsProjectIdRoute
+  '/projects/new': typeof ProjectsNewRoute
+  '/projects': typeof ProjectsIndexRoute
   '/api/projecthub/$': typeof ApiProjecthubSplatRoute
   '/api/public/auth/connect': typeof ApiPublicAuthConnectRoute
   '/api/public/n3/$': typeof ApiPublicN3SplatRoute
@@ -75,8 +99,11 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/capabilities': typeof CapabilitiesRoute
-  '/projects': typeof ProjectsRoute
+  '/roles': typeof RolesRoute
   '/verification': typeof VerificationRoute
+  '/projects/$projectId': typeof ProjectsProjectIdRoute
+  '/projects/new': typeof ProjectsNewRoute
+  '/projects/': typeof ProjectsIndexRoute
   '/api/projecthub/$': typeof ApiProjecthubSplatRoute
   '/api/public/auth/connect': typeof ApiPublicAuthConnectRoute
   '/api/public/n3/$': typeof ApiPublicN3SplatRoute
@@ -86,8 +113,11 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/capabilities'
-    | '/projects'
+    | '/roles'
     | '/verification'
+    | '/projects/$projectId'
+    | '/projects/new'
+    | '/projects/'
     | '/api/projecthub/$'
     | '/api/public/auth/connect'
     | '/api/public/n3/$'
@@ -95,8 +125,11 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/capabilities'
-    | '/projects'
+    | '/roles'
     | '/verification'
+    | '/projects/$projectId'
+    | '/projects/new'
+    | '/projects'
     | '/api/projecthub/$'
     | '/api/public/auth/connect'
     | '/api/public/n3/$'
@@ -104,8 +137,11 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/capabilities'
-    | '/projects'
+    | '/roles'
     | '/verification'
+    | '/projects/$projectId'
+    | '/projects/new'
+    | '/projects/'
     | '/api/projecthub/$'
     | '/api/public/auth/connect'
     | '/api/public/n3/$'
@@ -114,8 +150,11 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   CapabilitiesRoute: typeof CapabilitiesRoute
-  ProjectsRoute: typeof ProjectsRoute
+  RolesRoute: typeof RolesRoute
   VerificationRoute: typeof VerificationRoute
+  ProjectsProjectIdRoute: typeof ProjectsProjectIdRoute
+  ProjectsNewRoute: typeof ProjectsNewRoute
+  ProjectsIndexRoute: typeof ProjectsIndexRoute
   ApiProjecthubSplatRoute: typeof ApiProjecthubSplatRoute
   ApiPublicAuthConnectRoute: typeof ApiPublicAuthConnectRoute
   ApiPublicN3SplatRoute: typeof ApiPublicN3SplatRoute
@@ -137,11 +176,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CapabilitiesRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/projects': {
-      id: '/projects'
-      path: '/projects'
-      fullPath: '/projects'
-      preLoaderRoute: typeof ProjectsRouteImport
+    '/roles': {
+      id: '/roles'
+      path: '/roles'
+      fullPath: '/roles'
+      preLoaderRoute: typeof RolesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/verification': {
@@ -149,6 +188,27 @@ declare module '@tanstack/react-router' {
       path: '/verification'
       fullPath: '/verification'
       preLoaderRoute: typeof VerificationRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/projects/': {
+      id: '/projects/'
+      path: '/projects'
+      fullPath: '/projects/'
+      preLoaderRoute: typeof ProjectsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/projects/$projectId': {
+      id: '/projects/$projectId'
+      path: '/projects/$projectId'
+      fullPath: '/projects/$projectId'
+      preLoaderRoute: typeof ProjectsProjectIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/projects/new': {
+      id: '/projects/new'
+      path: '/projects/new'
+      fullPath: '/projects/new'
+      preLoaderRoute: typeof ProjectsNewRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/projecthub/$': {
@@ -178,8 +238,11 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CapabilitiesRoute: CapabilitiesRoute,
-  ProjectsRoute: ProjectsRoute,
+  RolesRoute: RolesRoute,
   VerificationRoute: VerificationRoute,
+  ProjectsProjectIdRoute: ProjectsProjectIdRoute,
+  ProjectsNewRoute: ProjectsNewRoute,
+  ProjectsIndexRoute: ProjectsIndexRoute,
   ApiProjecthubSplatRoute: ApiProjecthubSplatRoute,
   ApiPublicAuthConnectRoute: ApiPublicAuthConnectRoute,
   ApiPublicN3SplatRoute: ApiPublicN3SplatRoute,

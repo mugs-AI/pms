@@ -2,13 +2,15 @@ import { Link } from "@tanstack/react-router";
 import { useState, type ReactNode } from "react";
 import { useSession } from "@/lib/n3-session";
 import { DevApiKeyLogin } from "@/components/DevApiKeyLogin";
+import type { Permission } from "@/lib/projecthub-rbac";
 
-const NAV = [
+const NAV: { to: string; label: string; permission?: Permission; ownerOnly?: boolean }[] = [
   { to: "/", label: "Dashboard" },
-  { to: "/projects", label: "Projects" },
+  { to: "/projects", label: "Projects", permission: "projecthub:projects:list" },
+  { to: "/roles", label: "Team & Roles", permission: "projecthub:roles:manage" },
   { to: "/verification", label: "N3 Data Verification", ownerOnly: true },
   { to: "/capabilities", label: "Capability Inventory", ownerOnly: true },
-] as const;
+];
 
 function SessionField({ label, value }: { label: string; value: string | null }) {
   return (
@@ -30,7 +32,12 @@ export function AppShell({ children }: { children: ReactNode }) {
     return <UnauthenticatedScreen />;
   }
 
-  const nav = NAV.filter((item) => !("ownerOnly" in item && item.ownerOnly) || session.isOwner);
+  // Navigation follows the server-returned permission set, never a local guess.
+  const nav = NAV.filter((item) => {
+    if (item.ownerOnly) return session.isOwner;
+    if (item.permission) return session.hasPermission(item.permission);
+    return true;
+  });
 
   return (
     <div className="min-h-screen bg-background">
@@ -54,6 +61,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             <SessionField label="Company" value={loading ? "…" : session.companyName} />
             <SessionField label="Tenant code" value={loading ? "…" : session.tenantCode} />
             <SessionField label="User email" value={loading ? "…" : session.email} />
+            <SessionField label="ProjectHub role" value={loading ? "…" : session.roleLabel} />
           </dl>
 
           <div className="flex items-center gap-3">
@@ -111,23 +119,40 @@ export function AppShell({ children }: { children: ReactNode }) {
       </header>
 
       <main className="mx-auto max-w-6xl px-4 py-8">
-        {!session.isOwner && !loading ? <RoleUnassignedBanner /> : null}
+        {!loading && session.roleStatus === "unassigned" ? <RoleUnassignedBanner /> : null}
+        {!loading && session.roleStatus === "disabled" ? (
+          <AccessBanner
+            title="ProjectHub access disabled"
+            body="Your ProjectHub access has been deactivated. Ask your N3 account owner to reactivate it."
+          />
+        ) : null}
+        {!loading && session.roleStatus === "identity_missing" ? (
+          <AccessBanner
+            title="N3 identity incomplete"
+            body="Your N3 session did not return a usable immutable user identity. Relaunch ProjectHub from N3 My Apps."
+          />
+        ) : null}
         {children}
       </main>
     </div>
   );
 }
 
-function RoleUnassignedBanner() {
+function AccessBanner({ title, body }: { title: string; body: string }) {
   return (
     <section className="mb-6 rounded-lg border border-accent/40 bg-accent/10 p-4">
-      <h2 className="text-sm font-semibold text-foreground">Role unassigned</h2>
-      <p className="mt-1 text-sm text-muted-foreground">
-        Your N3 user is authenticated but has no ProjectHub role yet. Owner/Admin areas such as N3
-        Data Verification stay hidden and are also blocked server-side. An N3 account owner (
-        <code>isOwner</code>) can grant access.
-      </p>
+      <h2 className="text-sm font-semibold text-foreground">{title}</h2>
+      <p className="mt-1 text-sm text-muted-foreground">{body}</p>
     </section>
+  );
+}
+
+function RoleUnassignedBanner() {
+  return (
+    <AccessBanner
+      title="Role unassigned"
+      body="Ask your N3 account owner to assign a ProjectHub role."
+    />
   );
 }
 

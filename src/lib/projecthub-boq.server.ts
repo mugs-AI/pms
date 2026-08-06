@@ -58,7 +58,11 @@ export async function getBoq(
 
   const list = versions ?? [];
   const active = versionId ? list.find((v) => v.id === versionId) : list[0];
-  if (!active) return { ok: true, boq: { versions: list, version: null, sections: [], items: [], summary: null } };
+  if (!active)
+    return {
+      ok: true,
+      boq: { versions: list, version: null, sections: [], items: [], summary: null },
+    };
 
   const [sections, items] = await Promise.all([
     supabaseAdmin
@@ -126,7 +130,8 @@ export async function createVersion(
     })
     .select("*")
     .maybeSingle();
-  if (error || !data) return { ok: false, status: 503, message: "The BOQ version could not be created" };
+  if (error || !data)
+    return { ok: false, status: 503, message: "The BOQ version could not be created" };
 
   await recordEvent(actor, projectId, {
     eventType: "boq.version_created",
@@ -155,7 +160,8 @@ export async function cloneVersion(
     p_revision_label: (input.revisionLabel ?? null) as unknown as string,
     p_actor: actor.n3UserId as unknown as string,
   });
-  if (error || !data) return { ok: false, status: 503, message: "The BOQ version could not be cloned" };
+  if (error || !data)
+    return { ok: false, status: 503, message: "The BOQ version could not be cloned" };
 
   await recordEvent(actor, projectId, {
     eventType: "boq.version_cloned",
@@ -192,7 +198,8 @@ export async function updateVersion(
     .eq("id", versionId)
     .select("*")
     .maybeSingle();
-  if (error || !data) return { ok: false, status: 503, message: "The BOQ version could not be saved" };
+  if (error || !data)
+    return { ok: false, status: 503, message: "The BOQ version could not be saved" };
 
   await recordEvent(actor, projectId, {
     eventType: "boq.version_updated",
@@ -314,7 +321,11 @@ export async function createItem(
   const blocked = editableOrFail(version);
   if (blocked) return blocked;
   if (!(await assertPhaseBelongs(actor, projectId, input.projectPhaseId))) {
-    return { ok: false, status: 422, message: "The selected phase does not belong to this project" };
+    return {
+      ok: false,
+      status: 422,
+      message: "The selected phase does not belong to this project",
+    };
   }
 
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -326,7 +337,12 @@ export async function createItem(
       .eq("boq_version_id", input.boqVersionId)
       .eq("id", input.sectionId)
       .maybeSingle();
-    if (!section) return { ok: false, status: 422, message: "The selected section does not belong to this version" };
+    if (!section)
+      return {
+        ok: false,
+        status: 422,
+        message: "The selected section does not belong to this version",
+      };
   }
 
   const { data, error } = await supabaseAdmin
@@ -366,7 +382,10 @@ export async function createItem(
     entityType: "boq_item",
     entityId: data.id,
     summary: `BOQ line added: ${input.description.slice(0, 80)}`,
-    metadata: { itemType: input.itemType, stockDeductionMethod: input.stockDeductionMethod ?? null },
+    metadata: {
+      itemType: input.itemType,
+      stockDeductionMethod: input.stockDeductionMethod ?? null,
+    },
   });
   return { ok: true, item: data as Record<string, unknown> };
 }
@@ -393,7 +412,11 @@ export async function updateItem(
   if (blocked) return blocked;
 
   if (input.projectPhaseId && !(await assertPhaseBelongs(actor, projectId, input.projectPhaseId))) {
-    return { ok: false, status: 422, message: "The selected phase does not belong to this project" };
+    return {
+      ok: false,
+      status: 422,
+      message: "The selected phase does not belong to this project",
+    };
   }
 
   const patch: Record<string, unknown> = { updated_by_n3_user_id: actor.n3UserId };

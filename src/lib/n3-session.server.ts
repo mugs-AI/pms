@@ -86,11 +86,7 @@ export async function resolveN3Session(bearerToken: string): Promise<SessionReso
 }
 
 export type EffectiveRoleStatus =
-  | "owner"
-  | "assigned"
-  | "unassigned"
-  | "disabled"
-  | "identity_missing";
+  "owner" | "assigned" | "unassigned" | "disabled" | "identity_missing";
 
 export type BootstrapResult =
   | {
@@ -203,15 +199,26 @@ export async function resolveEffectiveRole(
       .update({
         ...display,
         role: "unassigned",
-        role_source: "stale_owner_downgraded",
+        // Only the three database-allowed sources may ever be persisted. The
+        // specific reason (`stale_owner_downgraded`) is audit metadata only.
+        role_source: "bootstrap_unassigned",
         is_active: true,
       })
       .eq("tenant_id", tenantRowId)
       .eq("n3_user_id", session.n3UserId);
+    await writeAudit(crypto.randomUUID(), {
+      tenantRowId,
+      actor: session.n3UserId,
+      eventType: "roles",
+      action: "stale_owner_repair",
+      outcome: error ? "failed" : "succeeded",
+      targetType: "n3_user",
+      metadata: { reason: "stale_owner_downgraded", persistedRoleSource: "bootstrap_unassigned" },
+    });
     return {
       role: "unassigned",
       roleStatus: "unassigned",
-      roleSource: "stale_owner_downgraded",
+      roleSource: "bootstrap_unassigned",
       persisted: !error,
       attempted: true,
     };

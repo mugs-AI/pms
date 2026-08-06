@@ -81,7 +81,10 @@ export function isPickerKind(value: string): value is PickerKind {
 
 /** Server-owned OData filter. Only safe characters survive. */
 function buildFilter(fields: string[], search: string): string | null {
-  const cleaned = search.replace(/[^A-Za-z0-9 ._\-/&()]/g, "").trim().slice(0, 60);
+  const cleaned = search
+    .replace(/[^A-Za-z0-9 ._\-/&()]/g, "")
+    .trim()
+    .slice(0, 60);
   if (!cleaned || fields.length === 0) return null;
   return fields.map((f) => `contains(tolower(${f}),'${cleaned.toLowerCase()}')`).join(" or ");
 }

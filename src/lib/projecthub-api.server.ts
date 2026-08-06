@@ -40,7 +40,9 @@ function parse<T extends z.ZodTypeAny>(schema: T, raw: unknown): z.infer<T> | { 
   const result = strict.safeParse(raw);
   if (!result.success) {
     const issue = result.error.issues[0];
-    return { __error: issue ? `${issue.path.join(".") || "request"}: ${issue.message}` : "Invalid request" };
+    return {
+      __error: issue ? `${issue.path.join(".") || "request"}: ${issue.message}` : "Invalid request",
+    };
   }
   return result.data as z.infer<T>;
 }

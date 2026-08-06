@@ -22,6 +22,27 @@ export type RoleDirectoryEntry = {
   inN3Directory: boolean;
 };
 
+/**
+ * The only values the database check constraint
+ * `projecthub_user_roles_role_source_chk` permits.
+ */
+export const ALLOWED_ROLE_SOURCES = [
+  "n3_owner",
+  "owner_assignment",
+  "bootstrap_unassigned",
+] as const;
+export type RoleSource = (typeof ALLOWED_ROLE_SOURCES)[number];
+
+/** Server-side lookup of an immutable N3 user id in the live tenant directory. */
+export async function findN3User(actor: Actor, targetN3UserId: string) {
+  const picker = await readPicker(actor, "users", { page: 0, pageSize: 1000 });
+  if (!picker.ok)
+    return { ok: false as const, status: 503, message: "The N3 user directory is unavailable" };
+  const match = picker.options.find((option) => option.id === targetN3UserId);
+  if (!match) return { ok: false as const, status: 404, message: "Not found" };
+  return { ok: true as const, user: match };
+}
+
 /** Shows the N3 user identity without exposing the whole immutable id. */
 export function maskUserId(id: string): string {
   if (id.length <= 8) return id;
@@ -31,11 +52,16 @@ export function maskUserId(id: string): string {
 export async function listRoleDirectory(
   actor: Actor,
   search?: string,
-): Promise<{ ok: true; entries: RoleDirectoryEntry[]; n3DirectoryAvailable: boolean } | { ok: false; status: number; message: string }> {
+): Promise<
+  | { ok: true; entries: RoleDirectoryEntry[]; n3DirectoryAvailable: boolean }
+  | { ok: false; status: number; message: string }
+> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data, error } = await supabaseAdmin
     .from("projecthub_user_roles")
-    .select("n3_user_id, display_name, display_email, role, is_active, role_source, assigned_at, assigned_by_n3_user_id")
+    .select(
+      "n3_user_id, display_name, display_email, role, is_active, role_source, assigned_at, assigned_by_n3_user_id",
+    )
     .eq("tenant_id", actor.tenantRowId)
     .order("display_name", { ascending: true });
 
@@ -88,12 +114,36 @@ export async function assignRole(
   actor: Actor,
   targetN3UserId: string,
   input: z.infer<typeof assignRoleSchema>,
-): Promise<{ ok: true; entry: { n3UserId: string; role: ProjectHubRole; isActive: boolean } } | { ok: false; status: number; message: string }> {
+): Promise<
+  | { ok: true; entry: { n3UserId: string; role: ProjectHubRole; isActive: boolean } }
+  | { ok: false; status: number; message: string }
+> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
   // Owner is never manually assignable, in any spelling.
   if ((input.role as string) === "owner") {
     return { ok: false, status: 403, message: "Owner authority comes only from N3" };
+  }
+
+  // Only a live N3 Owner may assign, and only to a real N3 user of THIS tenant.
+  if (!actor.session.isOwner) {
+    return {
+      ok: false,
+      status: 403,
+      message: "Only the N3 account owner can assign ProjectHub roles",
+    };
+  }
+  const target = await findN3User(actor, targetN3UserId);
+  if (!target.ok) {
+    await auditAction(actor, {
+      eventType: "roles",
+      action: "assign_role",
+      outcome: "rejected",
+      targetType: "n3_user",
+      targetIdentity: maskUserId(targetN3UserId),
+      metadata: { reason: target.status === 404 ? "not_in_n3_directory" : "directory_unavailable" },
+    });
+    return { ok: false, status: target.status, message: target.message };
   }
 
   const { data: existing, error: readError } = await supabaseAdmin
@@ -109,10 +159,12 @@ export async function assignRole(
     {
       tenant_id: actor.tenantRowId,
       n3_user_id: targetN3UserId,
-      display_name: input.displayName ?? null,
-      display_email: input.displayEmail ?? null,
+      // Display attributes always come from the server-resolved N3 record,
+      // never from browser-supplied fields.
+      display_name: target.user.name,
+      display_email: target.user.detail,
       role: input.role,
-      role_source: "owner_assigned",
+      role_source: "owner_assignment" satisfies RoleSource,
       is_active: isActive,
       assigned_by_n3_user_id: actor.n3UserId,
       assigned_at: new Date().toISOString(),
