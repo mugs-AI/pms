@@ -14,6 +14,7 @@ import { Route as CapabilitiesRouteImport } from './routes/capabilities'
 import { Route as RolesRouteImport } from './routes/roles'
 import { Route as VerificationRouteImport } from './routes/verification'
 import { Route as ProjectsIndexRouteImport } from './routes/projects.index'
+import { Route as ProjectsProjectIdRouteImport } from './routes/projects.$projectId'
 import { Route as ProjectsNewRouteImport } from './routes/projects.new'
 import { Route as ApiProjecthubSplatRouteImport } from './routes/api/projecthub/$'
 import { Route as ApiPublicAuthConnectRouteImport } from './routes/api/public/auth/connect'
@@ -44,6 +45,11 @@ const ProjectsIndexRoute = ProjectsIndexRouteImport.update({
   path: '/projects/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ProjectsProjectIdRoute = ProjectsProjectIdRouteImport.update({
+  id: '/projects/$projectId',
+  path: '/projects/$projectId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProjectsNewRoute = ProjectsNewRouteImport.update({
   id: '/projects/new',
   path: '/projects/new',
@@ -70,6 +76,7 @@ export interface FileRoutesByFullPath {
   '/capabilities': typeof CapabilitiesRoute
   '/roles': typeof RolesRoute
   '/verification': typeof VerificationRoute
+  '/projects/$projectId': typeof ProjectsProjectIdRoute
   '/projects/new': typeof ProjectsNewRoute
   '/projects/': typeof ProjectsIndexRoute
   '/api/projecthub/$': typeof ApiProjecthubSplatRoute
@@ -81,6 +88,7 @@ export interface FileRoutesByTo {
   '/capabilities': typeof CapabilitiesRoute
   '/roles': typeof RolesRoute
   '/verification': typeof VerificationRoute
+  '/projects/$projectId': typeof ProjectsProjectIdRoute
   '/projects/new': typeof ProjectsNewRoute
   '/projects': typeof ProjectsIndexRoute
   '/api/projecthub/$': typeof ApiProjecthubSplatRoute
@@ -93,6 +101,7 @@ export interface FileRoutesById {
   '/capabilities': typeof CapabilitiesRoute
   '/roles': typeof RolesRoute
   '/verification': typeof VerificationRoute
+  '/projects/$projectId': typeof ProjectsProjectIdRoute
   '/projects/new': typeof ProjectsNewRoute
   '/projects/': typeof ProjectsIndexRoute
   '/api/projecthub/$': typeof ApiProjecthubSplatRoute
@@ -106,6 +115,7 @@ export interface FileRouteTypes {
     | '/capabilities'
     | '/roles'
     | '/verification'
+    | '/projects/$projectId'
     | '/projects/new'
     | '/projects/'
     | '/api/projecthub/$'
@@ -117,6 +127,7 @@ export interface FileRouteTypes {
     | '/capabilities'
     | '/roles'
     | '/verification'
+    | '/projects/$projectId'
     | '/projects/new'
     | '/projects'
     | '/api/projecthub/$'
@@ -128,6 +139,7 @@ export interface FileRouteTypes {
     | '/capabilities'
     | '/roles'
     | '/verification'
+    | '/projects/$projectId'
     | '/projects/new'
     | '/projects/'
     | '/api/projecthub/$'
@@ -140,6 +152,7 @@ export interface RootRouteChildren {
   CapabilitiesRoute: typeof CapabilitiesRoute
   RolesRoute: typeof RolesRoute
   VerificationRoute: typeof VerificationRoute
+  ProjectsProjectIdRoute: typeof ProjectsProjectIdRoute
   ProjectsNewRoute: typeof ProjectsNewRoute
   ProjectsIndexRoute: typeof ProjectsIndexRoute
   ApiProjecthubSplatRoute: typeof ApiProjecthubSplatRoute
@@ -184,6 +197,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProjectsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/projects/$projectId': {
+      id: '/projects/$projectId'
+      path: '/projects/$projectId'
+      fullPath: '/projects/$projectId'
+      preLoaderRoute: typeof ProjectsProjectIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/projects/new': {
       id: '/projects/new'
       path: '/projects/new'
@@ -220,6 +240,7 @@ const rootRouteChildren: RootRouteChildren = {
   CapabilitiesRoute: CapabilitiesRoute,
   RolesRoute: RolesRoute,
   VerificationRoute: VerificationRoute,
+  ProjectsProjectIdRoute: ProjectsProjectIdRoute,
   ProjectsNewRoute: ProjectsNewRoute,
   ProjectsIndexRoute: ProjectsIndexRoute,
   ApiProjecthubSplatRoute: ApiProjecthubSplatRoute,
@@ -229,3 +250,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
