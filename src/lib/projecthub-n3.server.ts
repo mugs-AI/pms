@@ -146,6 +146,46 @@ export type PickerResult =
   | { ok: true; options: PickerOption[]; total: number }
   | { ok: false; status: number; message: string };
 
+/** Bounded scan budget for server-side identity re-resolution. */
+export const MAX_RESOLVE_PAGES = 10;
+const RESOLVE_PAGE_SIZE = 100;
+
+export type IdentityResolution =
+  | { ok: true; option: PickerOption }
+  | { ok: false; status: number; message: string };
+
+/**
+ * Re-resolves an immutable N3 identity server-side.
+ *
+ * The browser may only ever send an `id`. Every display snapshot (code, name,
+ * detail, tax rate) is taken from THIS result, so a tampered request body can
+ * never persist a fabricated code, name, UOM, tax rate or stock identity.
+ * GET-only, bounded, uses the caller's own live N3 bearer token, fails closed.
+ */
+export async function resolveN3Identity(
+  actor: Actor,
+  kind: PickerKind,
+  id: string,
+): Promise<IdentityResolution> {
+  const wanted = id.trim();
+  if (!wanted) return { ok: false, status: 422, message: "An N3 record must be selected" };
+
+  for (let page = 0; page < MAX_RESOLVE_PAGES; page += 1) {
+    const result = await readPicker(actor, kind, { page, pageSize: RESOLVE_PAGE_SIZE });
+    if (!result.ok) {
+      return { ok: false, status: 503, message: "N3 master data could not be verified" };
+    }
+    const match = result.options.find((option) => option.id === wanted);
+    if (match) return { ok: true, option: match };
+    if (result.options.length < RESOLVE_PAGE_SIZE) break;
+  }
+  return {
+    ok: false,
+    status: 422,
+    message: "The selected N3 record could not be verified in your live N3 tenant",
+  };
+}
+
 /** Reads one allowlisted master list and maps it to picker DTOs. Fails closed. */
 export async function readPicker(
   actor: Actor,

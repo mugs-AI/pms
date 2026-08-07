@@ -6,7 +6,8 @@
  */
 import type { Actor } from "./projecthub-actor.server";
 import { summariseBoq } from "./projecthub-calc";
-import { getProject, recordEvent } from "./projecthub-projects.server";
+import { resolveN3Identity } from "./projecthub-n3.server";
+import { getProject, recordEvent, requireMutableProject } from "./projecthub-projects.server";
 import type {
   cloneBoqVersionSchema,
   createBoqItemSchema,
@@ -103,7 +104,7 @@ export async function createVersion(
   projectId: string,
   input: z.infer<typeof createBoqVersionSchema>,
 ): Promise<{ ok: true; version: Record<string, unknown> } | Fail> {
-  const found = await getProject(actor, projectId);
+  const found = await requireMutableProject(actor, projectId);
   if (!found.ok) return found;
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
@@ -147,7 +148,7 @@ export async function cloneVersion(
   projectId: string,
   input: z.infer<typeof cloneBoqVersionSchema>,
 ): Promise<{ ok: true; versionId: string } | Fail> {
-  const found = await getProject(actor, projectId);
+  const found = await requireMutableProject(actor, projectId);
   if (!found.ok) return found;
   const source = await loadVersion(actor, projectId, input.sourceVersionId);
   if (!source) return { ok: false, status: 404, message: "Not found" };
@@ -178,7 +179,7 @@ export async function updateVersion(
   versionId: string,
   input: z.infer<typeof updateBoqVersionSchema>,
 ): Promise<{ ok: true; version: Record<string, unknown> } | Fail> {
-  const found = await getProject(actor, projectId);
+  const found = await requireMutableProject(actor, projectId);
   if (!found.ok) return found;
   const version = await loadVersion(actor, projectId, versionId);
   const blocked = editableOrFail(version);
@@ -215,7 +216,7 @@ export async function createSection(
   projectId: string,
   input: z.infer<typeof createSectionSchema>,
 ): Promise<{ ok: true; section: Record<string, unknown> } | Fail> {
-  const found = await getProject(actor, projectId);
+  const found = await requireMutableProject(actor, projectId);
   if (!found.ok) return found;
   const version = await loadVersion(actor, projectId, input.boqVersionId);
   const blocked = editableOrFail(version);
@@ -251,7 +252,7 @@ export async function updateSection(
   sectionId: string,
   input: z.infer<typeof updateSectionSchema>,
 ): Promise<{ ok: true; section: Record<string, unknown> } | Fail> {
-  const found = await getProject(actor, projectId);
+  const found = await requireMutableProject(actor, projectId);
   if (!found.ok) return found;
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
@@ -310,12 +311,60 @@ async function assertPhaseBelongs(actor: Actor, projectId: string, phaseId: stri
   return Boolean(data);
 }
 
+/**
+ * Server-owned N3 snapshots for a BOQ line.
+ *
+ * The browser sends ids only; UOM code/name, tax code/rate and stock
+ * code/name are re-read from live N3 so a tampered request can never persist
+ * a fabricated tax rate or a stock item the tenant does not own.
+ */
+async function resolveItemSnapshots(
+  actor: Actor,
+  input: {
+    itemType?: string | undefined;
+    n3UomId?: string | null | undefined;
+    n3TaxCodeId?: string | null | undefined;
+    n3StockId?: string | null | undefined;
+  },
+): Promise<{ ok: true; snapshot: Record<string, unknown> } | Fail> {
+  const snapshot: Record<string, unknown> = {};
+
+  if (input.n3UomId) {
+    const uom = await resolveN3Identity(actor, "uoms", input.n3UomId);
+    if (!uom.ok) return uom;
+    snapshot["n3_uom_id"] = uom.option.id;
+    snapshot["uom_code"] = uom.option.code;
+    snapshot["uom_name"] = uom.option.name;
+  }
+
+  if (input.n3TaxCodeId) {
+    const tax = await resolveN3Identity(actor, "tax-codes", input.n3TaxCodeId);
+    if (!tax.ok) return tax;
+    snapshot["n3_tax_code_id"] = tax.option.id;
+    snapshot["tax_code"] = tax.option.code;
+    snapshot["tax_rate"] = tax.option.rate ?? null;
+  }
+
+  if (input.n3StockId) {
+    if (input.itemType && input.itemType !== "material") {
+      return { ok: false, status: 422, message: "Only material lines can deduct N3 stock" };
+    }
+    const stock = await resolveN3Identity(actor, "stocks", input.n3StockId);
+    if (!stock.ok) return stock;
+    snapshot["n3_stock_id"] = stock.option.id;
+    snapshot["stock_code"] = stock.option.code;
+    snapshot["stock_name"] = stock.option.name;
+  }
+
+  return { ok: true, snapshot };
+}
+
 export async function createItem(
   actor: Actor,
   projectId: string,
   input: z.infer<typeof createBoqItemSchema>,
 ): Promise<{ ok: true; item: Record<string, unknown> } | Fail> {
-  const found = await getProject(actor, projectId);
+  const found = await requireMutableProject(actor, projectId);
   if (!found.ok) return found;
   const version = await loadVersion(actor, projectId, input.boqVersionId);
   const blocked = editableOrFail(version);
@@ -327,6 +376,9 @@ export async function createItem(
       message: "The selected phase does not belong to this project",
     };
   }
+
+  const snapshots = await resolveItemSnapshots(actor, input);
+  if (!snapshots.ok) return snapshots;
 
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   if (input.sectionId) {
@@ -357,19 +409,22 @@ export async function createItem(
       item_type: input.itemType,
       description: input.description,
       quantity: input.quantity,
-      n3_uom_id: input.n3UomId,
-      uom_code: input.uomCode,
-      uom_name: input.uomName,
+      n3_uom_id: null,
+      uom_code: null,
+      uom_name: null,
       cost_rate: input.costRate,
       selling_rate: input.sellingRate,
-      n3_tax_code_id: input.n3TaxCodeId,
-      tax_code: input.taxCode,
-      tax_rate: input.taxRate,
-      n3_stock_id: input.n3StockId ?? null,
-      stock_code: input.stockCode ?? null,
-      stock_name: input.stockName ?? null,
-      stock_deduction_method: input.stockDeductionMethod ?? null,
+      n3_tax_code_id: null,
+      tax_code: null,
+      tax_rate: null,
+      n3_stock_id: null,
+      stock_code: null,
+      stock_name: null,
+      stock_deduction_method:
+        input.itemType === "material" ? (input.stockDeductionMethod ?? null) : null,
       notes: input.notes,
+      // Server-resolved N3 snapshots always win over browser-supplied values.
+      ...snapshots.snapshot,
       created_by_n3_user_id: actor.n3UserId,
       updated_by_n3_user_id: actor.n3UserId,
     })
@@ -396,7 +451,7 @@ export async function updateItem(
   itemId: string,
   input: z.infer<typeof updateBoqItemSchema>,
 ): Promise<{ ok: true; item: Record<string, unknown> } | Fail> {
-  const found = await getProject(actor, projectId);
+  const found = await requireMutableProject(actor, projectId);
   if (!found.ok) return found;
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
@@ -427,21 +482,20 @@ export async function updateItem(
     item_type: input.itemType,
     description: input.description,
     quantity: input.quantity,
-    n3_uom_id: input.n3UomId,
-    uom_code: input.uomCode,
-    uom_name: input.uomName,
     cost_rate: input.costRate,
     selling_rate: input.sellingRate,
-    n3_tax_code_id: input.n3TaxCodeId,
-    tax_code: input.taxCode,
-    tax_rate: input.taxRate,
-    n3_stock_id: input.n3StockId,
-    stock_code: input.stockCode,
-    stock_name: input.stockName,
     stock_deduction_method: input.stockDeductionMethod,
     notes: input.notes,
   };
   for (const [key, value] of Object.entries(map)) if (value !== undefined) patch[key] = value;
+
+  // Any N3 reference the caller changed is re-resolved server-side.
+  const snapshots = await resolveItemSnapshots(actor, {
+    ...input,
+    itemType: (input.itemType ?? current.item_type) as string,
+  });
+  if (!snapshots.ok) return snapshots;
+  Object.assign(patch, snapshots.snapshot);
 
   // Changing away from material clears the planned stock movement.
   const nextType = (input.itemType ?? current.item_type) as string;

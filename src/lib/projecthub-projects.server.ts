@@ -5,6 +5,8 @@
  */
 import type { Json } from "@/integrations/supabase/types";
 import type { Actor } from "./projecthub-actor.server";
+import { enquiryReferenceYear } from "./projecthub-date";
+import { resolveN3Identity } from "./projecthub-n3.server";
 import { canViewAllProjects, roleHasPermission } from "./projecthub-rbac";
 import type {
   cancelProjectSchema,
@@ -17,6 +19,80 @@ import type {
 import type { z } from "zod";
 
 type Fail = { ok: false; status: number; message: string };
+
+/**
+ * Shared guard: a cancelled project is read-only for EVERY later mutation —
+ * project details, phases, team and BOQ alike.
+ */
+export async function requireMutableProject(
+  actor: Actor,
+  projectId: string,
+): Promise<{ ok: true; project: Record<string, unknown> } | Fail> {
+  const found = await getProject(actor, projectId);
+  if (!found.ok) return found;
+  if (found.project["status"] === "cancelled_lost") {
+    return { ok: false, status: 422, message: "A cancelled project is read-only" };
+  }
+  return found;
+}
+
+/** Server-owned N3 project-code snapshot for a phase or primary phase. */
+async function resolveProjectCodeLink(
+  actor: Actor,
+  input: {
+    linkStatus?: string | undefined;
+    n3ProjectId?: string | null | undefined;
+    requestedN3ProjectCode?: string | null | undefined;
+    requestedN3ProjectName?: string | null | undefined;
+  },
+): Promise<
+  | {
+      ok: true;
+      link: {
+        link_status: string;
+        n3_project_id: string | null;
+        n3_project_code: string | null;
+        n3_project_name: string | null;
+        requested_n3_project_code: string | null;
+        requested_n3_project_name: string | null;
+      };
+    }
+  | Fail
+> {
+  const status = input.linkStatus ?? "unlinked";
+  if (status === "linked_existing") {
+    if (!input.n3ProjectId) {
+      return { ok: false, status: 422, message: "Select a project code from the live N3 list" };
+    }
+    const resolved = await resolveN3Identity(actor, "projects", input.n3ProjectId);
+    if (!resolved.ok) return resolved;
+    return {
+      ok: true,
+      link: {
+        link_status: status,
+        n3_project_id: resolved.option.id,
+        n3_project_code: resolved.option.code,
+        n3_project_name: resolved.option.name,
+        requested_n3_project_code: null,
+        requested_n3_project_name: null,
+      },
+    };
+  }
+  // Pending / unlinked modes are ProjectHub-only: every linked identity clears.
+  return {
+    ok: true,
+    link: {
+      link_status: status,
+      n3_project_id: null,
+      n3_project_code: null,
+      n3_project_name: null,
+      requested_n3_project_code:
+        status === "pending_n3_create_contract" ? (input.requestedN3ProjectCode ?? null) : null,
+      requested_n3_project_name:
+        status === "pending_n3_create_contract" ? (input.requestedN3ProjectName ?? null) : null,
+    },
+  };
+}
 
 const PROJECT_COLUMNS =
   "id, enquiry_reference, title, project_type, status, budget_mode, enquiry_date, expected_start_date, expected_end_date, description, site_address_line1, site_address_line2, site_city, site_state, site_postcode, site_country, customer_link_status, n3_customer_id, n3_customer_code, n3_customer_name, requested_customer_name, requested_customer_contact, requested_customer_email, requested_customer_phone, simple_budget_cost, simple_budget_selling, currency_code, cancellation_reason, cancellation_note, cancelled_at, created_at, updated_at";
@@ -247,6 +323,37 @@ export async function createEnquiry(
   const payloadForHash = { ...rest, customer, primaryProjectCode, initialTeamN3UserIds };
   const hash = await hashPayload(payloadForHash);
 
+  // Never trust N3 display snapshots from the browser: re-resolve the
+  // immutable identity and overwrite the code/name with the server result.
+  let customerLink = {
+    n3_customer_id: null as string | null,
+    n3_customer_code: null as string | null,
+    n3_customer_name: null as string | null,
+    requested_customer_name: customer.requestedCustomerName,
+    requested_customer_contact: customer.requestedCustomerContact,
+    requested_customer_email: customer.requestedCustomerEmail,
+    requested_customer_phone: customer.requestedCustomerPhone,
+  };
+  if (customer.customerLinkStatus === "linked_existing") {
+    if (!customer.n3CustomerId) {
+      return { ok: false, status: 422, message: "Select a customer from the live N3 list" };
+    }
+    const resolved = await resolveN3Identity(actor, "customers", customer.n3CustomerId);
+    if (!resolved.ok) return resolved;
+    customerLink = {
+      n3_customer_id: resolved.option.id,
+      n3_customer_code: resolved.option.code,
+      n3_customer_name: resolved.option.name,
+      requested_customer_name: null,
+      requested_customer_contact: null,
+      requested_customer_email: null,
+      requested_customer_phone: null,
+    };
+  }
+
+  const primaryLink = await resolveProjectCodeLink(actor, primaryProjectCode);
+  if (!primaryLink.ok) return primaryLink;
+
   const payload = {
     client_request_id: clientRequestId,
     client_request_hash: hash,
@@ -266,25 +373,19 @@ export async function createEnquiry(
     simple_budget_cost: input.budgetMode === "simple_budget" ? input.simpleBudgetCost : null,
     simple_budget_selling: input.budgetMode === "simple_budget" ? input.simpleBudgetSelling : null,
     customer_link_status: customer.customerLinkStatus,
-    n3_customer_id: customer.n3CustomerId,
-    n3_customer_code: customer.n3CustomerCode,
-    n3_customer_name: customer.n3CustomerName,
-    requested_customer_name: customer.requestedCustomerName,
-    requested_customer_contact: customer.requestedCustomerContact,
-    requested_customer_email: customer.requestedCustomerEmail,
-    requested_customer_phone: customer.requestedCustomerPhone,
+    ...customerLink,
     primary_phase_name: input.primaryPhaseName ?? "Main contract",
-    primary_link_status: primaryProjectCode.linkStatus,
-    n3_project_id: primaryProjectCode.n3ProjectId,
-    n3_project_code: primaryProjectCode.n3ProjectCode,
-    n3_project_name: primaryProjectCode.n3ProjectName,
-    requested_n3_project_code: primaryProjectCode.requestedN3ProjectCode,
-    requested_n3_project_name: primaryProjectCode.requestedN3ProjectName,
+    primary_link_status: primaryLink.link.link_status,
+    n3_project_id: primaryLink.link.n3_project_id,
+    n3_project_code: primaryLink.link.n3_project_code,
+    n3_project_name: primaryLink.link.n3_project_name,
+    requested_n3_project_code: primaryLink.link.requested_n3_project_code,
+    requested_n3_project_name: primaryLink.link.requested_n3_project_name,
   };
 
   const { data, error } = await supabaseAdmin.rpc("projecthub_create_enquiry", {
     p_tenant_id: actor.tenantRowId,
-    p_year: new Date().getUTCFullYear(),
+    p_year: enquiryReferenceYear(input.enquiryDate),
     p_actor: actor.n3UserId as unknown as string,
     p_correlation_id: actor.correlationId,
     p_payload: payload as unknown as Json,
@@ -317,11 +418,8 @@ export async function updateProject(
   projectId: string,
   input: z.infer<typeof updateProjectSchema>,
 ): Promise<{ ok: true; project: Record<string, unknown> } | Fail> {
-  const found = await getProject(actor, projectId);
+  const found = await requireMutableProject(actor, projectId);
   if (!found.ok) return found;
-  if (found.project["status"] === "cancelled_lost") {
-    return { ok: false, status: 422, message: "A cancelled project is read-only" };
-  }
 
   const start = input.expectedStartDate ?? (found.project["expected_start_date"] as string | null);
   const end = input.expectedEndDate ?? (found.project["expected_end_date"] as string | null);
@@ -416,23 +514,21 @@ export async function createPhase(
   projectId: string,
   input: z.infer<typeof createPhaseSchema>,
 ): Promise<{ ok: true; phase: Record<string, unknown> } | Fail> {
-  const found = await getProject(actor, projectId);
+  const found = await requireMutableProject(actor, projectId);
   if (!found.ok) return found;
+  const link = await resolveProjectCodeLink(actor, input);
+  if (!link.ok) return link;
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data, error } = await supabaseAdmin
     .from("projecthub_project_phases")
     .insert({
       tenant_id: actor.tenantRowId,
       project_id: projectId,
-      phase_kind: "secondary",
+      // The applied schema constraint accepts only 'primary' or 'phase'.
+      phase_kind: "phase",
       phase_name: input.phaseName,
       sort_order: input.sortOrder,
-      link_status: input.linkStatus,
-      n3_project_id: input.n3ProjectId,
-      n3_project_code: input.n3ProjectCode,
-      n3_project_name: input.n3ProjectName,
-      requested_n3_project_code: input.requestedN3ProjectCode,
-      requested_n3_project_name: input.requestedN3ProjectName,
+      ...link.link,
       expected_start_date: input.expectedStartDate,
       expected_end_date: input.expectedEndDate,
       created_by_n3_user_id: actor.n3UserId,
@@ -452,7 +548,7 @@ export async function createPhase(
     entityType: "project_phase",
     entityId: data.id,
     summary: `Phase added: ${input.phaseName}`,
-    metadata: { linkStatus: input.linkStatus },
+    metadata: { linkStatus: link.link.link_status },
   });
   return { ok: true, phase: data as Record<string, unknown> };
 }
@@ -463,7 +559,7 @@ export async function updatePhase(
   phaseId: string,
   input: z.infer<typeof updatePhaseSchema>,
 ): Promise<{ ok: true; phase: Record<string, unknown> } | Fail> {
-  const found = await getProject(actor, projectId);
+  const found = await requireMutableProject(actor, projectId);
   if (!found.ok) return found;
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
@@ -489,14 +585,11 @@ export async function updatePhase(
     expected_end_date: input.expectedEndDate,
   };
   if (!current.n3_project_id) {
-    Object.assign(map, {
-      link_status: input.linkStatus,
-      n3_project_id: input.n3ProjectId,
-      n3_project_code: input.n3ProjectCode,
-      n3_project_name: input.n3ProjectName,
-      requested_n3_project_code: input.requestedN3ProjectCode,
-      requested_n3_project_name: input.requestedN3ProjectName,
-    });
+    if (input.linkStatus !== undefined) {
+      const link = await resolveProjectCodeLink(actor, input);
+      if (!link.ok) return link;
+      Object.assign(map, link.link);
+    }
   }
   for (const [key, value] of Object.entries(map)) if (value !== undefined) patch[key] = value;
 
@@ -523,16 +616,16 @@ export async function assignTeamMember(
   actor: Actor,
   projectId: string,
   targetN3UserId: string,
-  display: { displayName?: string | null; displayEmail?: string | null },
 ): Promise<{ ok: true; member: Record<string, unknown> } | Fail> {
-  const found = await getProject(actor, projectId);
+  const found = await requireMutableProject(actor, projectId);
   if (!found.ok) return found;
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-  // The target must already hold an active ProjectHub role in THIS tenant.
+  // The target must already hold an active ProjectHub role in THIS tenant, and
+  // every stored display value comes from that server row — never the browser.
   const { data: roleRow } = await supabaseAdmin
     .from("projecthub_user_roles")
-    .select("role, is_active")
+    .select("role, is_active, display_name, display_email")
     .eq("tenant_id", actor.tenantRowId)
     .eq("n3_user_id", targetN3UserId)
     .maybeSingle();
@@ -547,8 +640,8 @@ export async function assignTeamMember(
         tenant_id: actor.tenantRowId,
         project_id: projectId,
         n3_user_id: targetN3UserId,
-        display_name: display.displayName ?? null,
-        display_email: display.displayEmail ?? null,
+        display_name: roleRow.display_name ?? null,
+        display_email: roleRow.display_email ?? null,
         project_role_snapshot: roleRow.role,
         is_active: true,
         assigned_by_n3_user_id: actor.n3UserId,
@@ -596,4 +689,103 @@ export async function deactivateTeamMember(
     summary: "Team member deactivated",
   });
   return { ok: true };
+}
+
+/**
+ * Bounded dashboard aggregate. Visibility is server-authoritative: a role that
+ * only sees assigned projects gets counts for those projects only.
+ */
+export async function getDashboard(
+  actor: Actor,
+): Promise<
+  | {
+      ok: true;
+      dashboard: {
+        total: number;
+        enquiries: number;
+        active: number;
+        cancelled: number;
+        recent: unknown[];
+      };
+    }
+  | Fail
+> {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+  let scopedIds: string[] | null = null;
+  if (!seesEveryProject(actor)) {
+    scopedIds = await assignedProjectIds(actor);
+    if (scopedIds === null) return { ok: false, status: 503, message: "Projects are unavailable" };
+    if (scopedIds.length === 0) {
+      return {
+        ok: true,
+        dashboard: { total: 0, enquiries: 0, active: 0, cancelled: 0, recent: [] },
+      };
+    }
+  }
+
+  const ACTIVE = ["awarded", "planning", "in_progress"];
+
+  // One tenant-scoped read; the aggregate is computed in memory so the
+  // visibility rule is applied exactly once and can never drift per counter.
+  let query = supabaseAdmin
+    .from("projecthub_projects")
+    .select("id, enquiry_reference, title, status, project_type, updated_at")
+    .eq("tenant_id", actor.tenantRowId);
+  if (scopedIds) query = query.in("id", scopedIds);
+
+  const { data, error } = await query.order("updated_at", { ascending: false }).limit(500);
+  if (error) return { ok: false, status: 503, message: "Projects are unavailable" };
+
+  const rows = data ?? [];
+  return {
+    ok: true,
+    dashboard: {
+      total: rows.length,
+      enquiries: rows.filter((r) => r.status === "enquiry").length,
+      active: rows.filter((r) => ACTIVE.includes(r.status)).length,
+      cancelled: rows.filter((r) => r.status === "cancelled_lost").length,
+      recent: rows.slice(0, 5),
+    },
+  };
+}
+
+/**
+ * Minimal team-candidate DTO: tenant users that already hold an active,
+ * non-unassigned ProjectHub role. Internal tenant ids are never exposed.
+ */
+export async function listTeamCandidates(
+  actor: Actor,
+): Promise<
+  | {
+      ok: true;
+      candidates: {
+        n3UserId: string;
+        displayName: string | null;
+        displayEmail: string | null;
+        role: string;
+      }[];
+    }
+  | Fail
+> {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data, error } = await supabaseAdmin
+    .from("projecthub_user_roles")
+    .select("n3_user_id, display_name, display_email, role, is_active")
+    .eq("tenant_id", actor.tenantRowId)
+    .eq("is_active", true)
+    .order("display_name", { ascending: true });
+  if (error) return { ok: false, status: 503, message: "Team candidates are unavailable" };
+
+  return {
+    ok: true,
+    candidates: (data ?? [])
+      .filter((row) => row.role !== "unassigned")
+      .map((row) => ({
+        n3UserId: row.n3_user_id,
+        displayName: row.display_name,
+        displayEmail: row.display_email,
+        role: row.role as string,
+      })),
+  };
 }

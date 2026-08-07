@@ -120,6 +120,18 @@ export async function handleProjectHubRequest(request: Request, splat: string): 
 
   // ---- projects ----------------------------------------------------------
   if (segments[0] === "projects") {
+    if (segments.length === 2 && segments[1] === "dashboard") {
+      if (method !== "GET") return methodNotAllowed(correlationId, "GET");
+      const denied = requirePermission(actor, "projecthub:projects:list");
+      if (denied) return denied;
+      return respond(actor, await projects.getDashboard(actor));
+    }
+    if (segments.length === 2 && segments[1] === "team-candidates") {
+      if (method !== "GET") return methodNotAllowed(correlationId, "GET");
+      const denied = requirePermission(actor, "projecthub:projects:manage_team");
+      if (denied) return denied;
+      return respond(actor, await projects.listTeamCandidates(actor));
+    }
     if (segments.length === 1) {
       if (method === "GET") {
         const denied = requirePermission(actor, "projecthub:projects:list");
@@ -202,13 +214,9 @@ export async function handleProjectHubRequest(request: Request, splat: string): 
       if (method === "PUT") {
         const input = parse(S.assignTeamSchema, { ...(body as object), n3UserId: targetId });
         if (isParseError(input)) return fail(400, input.__error, correlationId);
-        return respond(
-          actor,
-          await projects.assignTeamMember(actor, projectId, targetId, {
-            displayName: input.displayName,
-            displayEmail: input.displayEmail,
-          }),
-        );
+        // Display values are never accepted from the browser; the server reads
+        // them from the tenant-scoped projecthub_user_roles row.
+        return respond(actor, await projects.assignTeamMember(actor, projectId, targetId));
       }
       if (method === "DELETE") {
         return respond(actor, await projects.deactivateTeamMember(actor, projectId, targetId));

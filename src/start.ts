@@ -27,6 +27,8 @@ const csrfMiddleware = createCsrfMiddleware({
 export const startInstance = createStart(() => ({
   // Architectural guard: this app has NO Supabase browser authentication and
   // never attaches a Supabase bearer token to server-function calls.
+  // Architectural guard: this app has NO Supabase browser authentication and
+  // never attaches a Supabase bearer token to server-function calls.
   functionMiddleware: [],
   requestMiddleware: [errorMiddleware, csrfMiddleware],
 }));
