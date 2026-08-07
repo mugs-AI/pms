@@ -5,6 +5,18 @@ const dbCalls: { table: string; op: string; row: unknown }[] = [];
 
 vi.mock("@/integrations/supabase/client.server", () => {
   const makeChain = (table: string) => ({
+    select() {
+      const chain: Record<string, unknown> = {
+        eq: () => chain,
+        order: () => chain,
+        limit: () => chain,
+        maybeSingle: async () => ({ data: null, error: null }),
+        single: async () => ({ data: null, error: null }),
+        then: (resolve: (v: unknown) => unknown) =>
+          Promise.resolve({ data: [], error: null, count: 0 }).then(resolve),
+      };
+      return chain;
+    },
     upsert(row: unknown) {
       dbCalls.push({ table, op: "upsert", row });
       return {
