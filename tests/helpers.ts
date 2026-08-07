@@ -44,7 +44,12 @@ export function mockUpstream(
 // Chainable Supabase test double
 // ---------------------------------------------------------------------------
 
-export type DbCall = { table: string; op: string; row?: unknown; filters?: Record<string, unknown> };
+export type DbCall = {
+  table: string;
+  op: string;
+  row?: unknown;
+  filters?: Record<string, unknown>;
+};
 
 type TableFixture = {
   /** Rows returned by select reads on this table. */

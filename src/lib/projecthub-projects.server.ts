@@ -695,9 +695,7 @@ export async function deactivateTeamMember(
  * Bounded dashboard aggregate. Visibility is server-authoritative: a role that
  * only sees assigned projects gets counts for those projects only.
  */
-export async function getDashboard(
-  actor: Actor,
-): Promise<
+export async function getDashboard(actor: Actor): Promise<
   | {
       ok: true;
       dashboard: {
@@ -754,9 +752,7 @@ export async function getDashboard(
  * Minimal team-candidate DTO: tenant users that already hold an active,
  * non-unassigned ProjectHub role. Internal tenant ids are never exposed.
  */
-export async function listTeamCandidates(
-  actor: Actor,
-): Promise<
+export async function listTeamCandidates(actor: Actor): Promise<
   | {
       ok: true;
       candidates: {

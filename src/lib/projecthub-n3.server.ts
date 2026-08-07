@@ -151,8 +151,7 @@ export const MAX_RESOLVE_PAGES = 10;
 const RESOLVE_PAGE_SIZE = 100;
 
 export type IdentityResolution =
-  | { ok: true; option: PickerOption }
-  | { ok: false; status: number; message: string };
+  { ok: true; option: PickerOption } | { ok: false; status: number; message: string };
 
 /**
  * Re-resolves an immutable N3 identity server-side.
