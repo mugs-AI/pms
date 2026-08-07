@@ -96,9 +96,8 @@ export const PHASE_LINK_LABELS: Record<(typeof PHASE_LINK_STATUSES)[number], str
 const customerSchema = z
   .object({
     customerLinkStatus: z.enum(CUSTOMER_LINK_STATUSES),
+    // Ids only: the server re-reads code and name from live N3.
     n3CustomerId: optionalText(120),
-    n3CustomerCode: optionalText(60),
-    n3CustomerName: optionalText(200),
     requestedCustomerName: optionalText(200),
     requestedCustomerContact: optionalText(120),
     requestedCustomerEmail: optionalText(200),
@@ -106,7 +105,7 @@ const customerSchema = z
   })
   .superRefine((v, ctx) => {
     if (v.customerLinkStatus === "linked_existing") {
-      if (!v.n3CustomerId || !v.n3CustomerName) {
+      if (!v.n3CustomerId) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           path: ["n3CustomerId"],
@@ -126,17 +125,13 @@ const customerSchema = z
 const projectCodeSchema = z
   .object({
     linkStatus: z.enum(PHASE_LINK_STATUSES),
+    // Ids only: the server re-reads code and name from live N3.
     n3ProjectId: optionalText(120),
-    n3ProjectCode: optionalText(60),
-    n3ProjectName: optionalText(200),
     requestedN3ProjectCode: optionalText(60),
     requestedN3ProjectName: optionalText(200),
   })
   .superRefine((v, ctx) => {
-    if (
-      v.linkStatus === "linked_existing" &&
-      (!v.n3ProjectId || !v.n3ProjectCode || !v.n3ProjectName)
-    ) {
+    if (v.linkStatus === "linked_existing" && !v.n3ProjectId) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["n3ProjectId"],
@@ -221,17 +216,15 @@ export const updatePhaseSchema = z.object({
   /** Only allowed while the phase has no immutable N3 project id yet. */
   linkStatus: z.enum(PHASE_LINK_STATUSES).optional(),
   n3ProjectId: optionalText(120),
-  n3ProjectCode: optionalText(60),
-  n3ProjectName: optionalText(200),
   requestedN3ProjectCode: optionalText(60),
   requestedN3ProjectName: optionalText(200),
 });
 
-export const assignTeamSchema = z.object({
-  n3UserId: text(120),
-  displayName: optionalText(200),
-  displayEmail: optionalText(200),
-});
+/**
+ * The browser may only name the target. Display name, email and role snapshot
+ * are read server-side from the tenant-scoped ProjectHub role row.
+ */
+export const assignTeamSchema = z.object({ n3UserId: text(120) });
 
 export const deactivateTeamSchema = z.object({ n3UserId: text(120) });
 
@@ -272,16 +265,10 @@ const boqItemBase = {
   description: text(500),
   quantity: decimal,
   n3UomId: optionalText(120),
-  uomCode: optionalText(40),
-  uomName: optionalText(120),
   costRate: decimal,
   sellingRate: decimal,
   n3TaxCodeId: optionalText(120),
-  taxCode: optionalText(40),
-  taxRate: optionalDecimal,
   n3StockId: optionalText(120),
-  stockCode: optionalText(60),
-  stockName: optionalText(200),
   stockDeductionMethod: z.enum(STOCK_DEDUCTION_METHODS).optional().nullable(),
   notes: optionalText(1000),
 };

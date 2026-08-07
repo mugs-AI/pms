@@ -1,3 +1,4 @@
+import { malaysiaToday } from "@/lib/projecthub-date";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { AppShell } from "@/components/AppShell";
@@ -54,7 +55,7 @@ function NewEnquiryPage() {
   const [title, setTitle] = useState("");
   const [projectType, setProjectType] = useState("construction");
   const [budgetMode, setBudgetMode] = useState("detailed_boq");
-  const [enquiryDate, setEnquiryDate] = useState(new Date().toISOString().slice(0, 10));
+  const [enquiryDate, setEnquiryDate] = useState(malaysiaToday());
   const [expectedStartDate, setExpectedStartDate] = useState("");
   const [expectedEndDate, setExpectedEndDate] = useState("");
   const [description, setDescription] = useState("");
@@ -136,8 +137,6 @@ function NewEnquiryPage() {
             customer: {
               customerLinkStatus: customerMode,
               n3CustomerId: customerMode === "linked_existing" ? customer?.id : null,
-              n3CustomerCode: customerMode === "linked_existing" ? customer?.code : null,
-              n3CustomerName: customerMode === "linked_existing" ? customer?.name : null,
               requestedCustomerName: customerMode === "linked_existing" ? null : requested.name,
               requestedCustomerContact:
                 customerMode === "linked_existing" ? null : requested.contact || null,
@@ -149,8 +148,6 @@ function NewEnquiryPage() {
             primaryProjectCode: {
               linkStatus: codeMode,
               n3ProjectId: codeMode === "linked_existing" ? projectCode?.id : null,
-              n3ProjectCode: codeMode === "linked_existing" ? projectCode?.code : null,
-              n3ProjectName: codeMode === "linked_existing" ? projectCode?.name : null,
               requestedN3ProjectCode:
                 codeMode === "pending_n3_create_contract" ? requestedCode.code : null,
               requestedN3ProjectName:
