@@ -83,13 +83,7 @@ function CodeChooser({
   );
 }
 
-export function PhasesPanel({
-  projectId,
-  workspace,
-}: {
-  projectId: string;
-  workspace: Workspace;
-}) {
+export function PhasesPanel({ projectId, workspace }: { projectId: string; workspace: Workspace }) {
   const cancelled = workspace.project.status === "cancelled_lost";
   const canEdit = workspace.capabilities.canEdit && !cancelled;
   const [adding, setAdding] = useState(false);

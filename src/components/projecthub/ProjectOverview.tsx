@@ -106,7 +106,14 @@ export function ProjectOverview({
         <Detail
           label="Site"
           value={
-            [p.site_address_line1, p.site_address_line2, p.site_city, p.site_state, p.site_postcode, p.site_country]
+            [
+              p.site_address_line1,
+              p.site_address_line2,
+              p.site_city,
+              p.site_state,
+              p.site_postcode,
+              p.site_country,
+            ]
               .filter(Boolean)
               .join(", ") || "—"
           }

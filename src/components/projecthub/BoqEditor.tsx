@@ -422,7 +422,9 @@ function SectionsPanel({
       ) : null}
 
       {sections.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No sections yet — items may stay unsectioned.</p>
+        <p className="text-sm text-muted-foreground">
+          No sections yet — items may stay unsectioned.
+        </p>
       ) : (
         <ul className="divide-y divide-border">
           {sections.map((section) => (
@@ -723,7 +725,8 @@ function ItemForm({
               setForm((prev) => ({
                 ...prev,
                 itemType: next,
-                stockDeductionMethod: next === "material" ? prev.stockDeductionMethod || "stock_out" : "",
+                stockDeductionMethod:
+                  next === "material" ? prev.stockDeductionMethod || "stock_out" : "",
               }));
               if (next !== "material") setStock(null);
             }}
