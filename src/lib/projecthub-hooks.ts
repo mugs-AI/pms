@@ -9,6 +9,8 @@ import type { ProjectHubRole } from "./projecthub-rbac";
 export const qk = {
   session: ["projecthub", "session"] as const,
   roles: (search: string) => ["projecthub", "roles", search] as const,
+  dashboard: ["projecthub", "dashboard"] as const,
+  teamCandidates: ["projecthub", "team-candidates"] as const,
   projects: (params: Record<string, unknown>) => ["projecthub", "projects", params] as const,
   project: (id: string) => ["projecthub", "project", id] as const,
   boq: (id: string, versionId?: string) =>
@@ -183,6 +185,48 @@ export function useRoleDirectory(search: string, enabled: boolean) {
       projectHubRequest<{ entries: RoleDirectoryEntry[]; n3DirectoryAvailable: boolean }>("roles", {
         query: { search },
       }),
+  });
+}
+
+export type DashboardRecentRow = {
+  id: string;
+  enquiry_reference: string;
+  title: string;
+  status: string;
+  project_type: string;
+  updated_at: string;
+};
+
+export type DashboardDto = {
+  total: number;
+  enquiries: number;
+  active: number;
+  cancelled: number;
+  recent: DashboardRecentRow[];
+};
+
+/** Tenant-scoped, permission-aware dashboard aggregate. */
+export function useDashboard(enabled: boolean) {
+  return useQuery({
+    queryKey: qk.dashboard,
+    enabled,
+    queryFn: () => projectHubRequest<{ dashboard: DashboardDto }>("projects/dashboard"),
+  });
+}
+
+export type TeamCandidate = {
+  n3UserId: string;
+  displayName: string | null;
+  displayEmail: string | null;
+  role: string;
+};
+
+/** Server-owned candidate list: active tenant users with a ProjectHub role. */
+export function useTeamCandidates(enabled: boolean) {
+  return useQuery({
+    queryKey: qk.teamCandidates,
+    enabled,
+    queryFn: () => projectHubRequest<{ candidates: TeamCandidate[] }>("projects/team-candidates"),
   });
 }
 
