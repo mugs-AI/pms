@@ -30,7 +30,7 @@ function CodeChooser({
   setPicked: (option: PickerOption | null) => void;
   requested: { code: string; name: string };
   setRequested: (value: { code: string; name: string }) => void;
-  disabled?: boolean;
+  disabled?: boolean | undefined;
 }) {
   return (
     <>
@@ -54,7 +54,7 @@ function CodeChooser({
           label="Existing N3 project code"
           value={picked}
           onChange={setPicked}
-          disabled={disabled}
+          disabled={disabled ?? false}
         />
       ) : null}
       {mode === "pending_n3_create_contract" ? (
