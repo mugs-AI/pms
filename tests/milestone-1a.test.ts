@@ -110,7 +110,11 @@ describe("dashboard", () => {
     ];
     setDb({
       projecthub_projects: {
-        rows: statuses.map((status, i) => ({ id: `p${i}`, status, updated_at: `2026-01-0${i + 1}` })),
+        rows: statuses.map((status, i) => ({
+          id: `p${i}`,
+          status,
+          updated_at: `2026-01-0${i + 1}`,
+        })),
       },
     });
     const result = await projects.getDashboard(actor());
@@ -132,7 +136,9 @@ describe("project update and cancellation", () => {
   it("denies project editing to a role without the edit permission", async () => {
     setDb({
       projecthub_tenants: { returning: { id: "tenant-row-1" } },
-      projecthub_user_roles: { rows: [{ role: "viewer", is_active: true, role_source: "assigned" }] },
+      projecthub_user_roles: {
+        rows: [{ role: "viewer", is_active: true, role_source: "assigned" }],
+      },
     });
     mockUpstream(() => jsonResponse(basicInfo({ isOwner: false })));
     const res = await handleProjectHubRequest(
@@ -185,7 +191,9 @@ describe("project update and cancellation", () => {
   });
 
   it("makes a cancelled project read-only for project, phase, team and BOQ writes", async () => {
-    const cancelled = { projecthub_projects: { rows: [{ ...liveProject, status: "cancelled_lost" }] } };
+    const cancelled = {
+      projecthub_projects: { rows: [{ ...liveProject, status: "cancelled_lost" }] },
+    };
 
     setDb(cancelled);
     expect(await projects.updateProject(actor(), PROJECT_ID, { title: "x" })).toMatchObject({
@@ -365,8 +373,20 @@ describe("team", () => {
     setDb({
       projecthub_user_roles: {
         rows: [
-          { n3_user_id: "u1", role: "estimator", is_active: true, display_name: "A", display_email: null },
-          { n3_user_id: "u2", role: "unassigned", is_active: true, display_name: "B", display_email: null },
+          {
+            n3_user_id: "u1",
+            role: "estimator",
+            is_active: true,
+            display_name: "A",
+            display_email: null,
+          },
+          {
+            n3_user_id: "u2",
+            role: "unassigned",
+            is_active: true,
+            display_name: "B",
+            display_email: null,
+          },
         ],
       },
     });
@@ -384,7 +404,7 @@ describe("simple budget", () => {
       totalCost: "125000.50",
       totalSelling: "160000.75",
       grossProfit: "35000.25",
-      grossMarginPercent: "21.8750",
+      grossMarginPercent: "21.88",
     });
   });
 
@@ -437,9 +457,10 @@ describe("BOQ versions and sections", () => {
     };
 
     setDb(superseded);
-    expect(
-      await boq.updateVersion(actor(), PROJECT_ID, VERSION_ID, { notes: "x" }),
-    ).toMatchObject({ ok: false, status: 422 });
+    expect(await boq.updateVersion(actor(), PROJECT_ID, VERSION_ID, { notes: "x" })).toMatchObject({
+      ok: false,
+      status: 422,
+    });
 
     setDb(superseded);
     expect(
@@ -507,9 +528,9 @@ describe("BOQ items", () => {
   };
 
   it("requires exactly one stock deduction method on a material line", () => {
-    expect(
-      S.createBoqItemSchema.safeParse({ ...baseItem, itemType: "material" }).success,
-    ).toBe(false);
+    expect(S.createBoqItemSchema.safeParse({ ...baseItem, itemType: "material" }).success).toBe(
+      false,
+    );
     for (const method of S.STOCK_DEDUCTION_METHODS) {
       expect(
         S.createBoqItemSchema.safeParse({
