@@ -6,6 +6,7 @@
 import type { Json } from "@/integrations/supabase/types";
 import { BASIC_INFO_PATH } from "./n3-allowlist";
 import { n3Get } from "./n3-api.server";
+import { decodeN3TokenClaims } from "./n3-token.server";
 import { isProjectHubRole, type ProjectHubRole } from "./projecthub-rbac";
 
 export type N3Session = {
@@ -82,6 +83,37 @@ export async function resolveN3Session(bearerToken: string): Promise<SessionReso
   if (!session) {
     return { ok: false, status: 502, message: "N3 session response was not understood" };
   }
+
+  // The live BasicInfo contract carries company attributes only. Identity
+  // (immutable tenant id, user id, owner role) is published by N3 exclusively
+  // in the access token it minted for this caller. The token is only consulted
+  // AFTER N3 itself accepted it for the read above, and its tenantCode claim
+  // must match the tenantCode of that live response.
+  const claims = decodeN3TokenClaims(bearerToken);
+  if (claims) {
+    if (
+      claims.tenantCode &&
+      session.tenantCode &&
+      claims.tenantCode.toLowerCase() !== session.tenantCode.toLowerCase()
+    ) {
+      return { ok: false, status: 403, message: "N3 session identity could not be verified" };
+    }
+    return {
+      ok: true,
+      session: {
+        ...session,
+        n3TenantId: session.n3TenantId ?? claims.tenantId,
+        tenantCode: session.tenantCode ?? claims.tenantCode,
+        n3UserId: session.n3UserId ?? claims.userId,
+        displayEmail: session.displayEmail ?? claims.email,
+        displayName: session.displayName ?? claims.displayName,
+        // `isOwner` is never taken from an `isOwner` claim. It is the verified
+        // N3 system-administrator role, or the live BasicInfo flag when present.
+        isOwner: session.isOwner || claims.isSystemAdmin,
+      },
+    };
+  }
+
   return { ok: true, session };
 }
 
@@ -328,7 +360,52 @@ export async function bootstrapProjectHub(
 
 export type TenantContext =
   | { ok: true; tenantRowId: string }
-  | { ok: false; reason: "missing_tenant_identity" | "database_error" };
+  | {
+      ok: false;
+      reason: "missing_tenant_identity" | "database_error";
+      classification: TenantBootstrapFailure;
+    };
+
+/**
+ * Internal-only failure classes for tenant bootstrap. These never reach the
+ * browser: the public response stays generic and carries only a correlation id.
+ */
+export type TenantBootstrapFailure =
+  | "missing_n3_tenant_identity"
+  | "database_configuration_missing"
+  | "invalid_server_key_class"
+  | "tenant_table_missing"
+  | "tenant_permission_denied"
+  | "tenant_upsert_failed"
+  | "unexpected_database_failure";
+
+/** Presence/validity CLASS only. Never returns or logs a value. */
+export function serverDatabaseConfigStatus(): {
+  urlPresent: boolean;
+  keyPresent: boolean;
+  keyClassValid: boolean;
+} {
+  const url = process.env["SUPABASE_URL"];
+  const key = process.env["SUPABASE_SERVICE_ROLE_KEY"];
+  const keyPresent = Boolean(key);
+  // A server credential is either a legacy service-role JWT (3 segments) or a
+  // new-format `sb_secret_` key. Anon/publishable keys are not accepted.
+  const keyClassValid = Boolean(
+    key &&
+    !key.startsWith("sb_publishable_") &&
+    (key.startsWith("sb_secret_") || key.split(".").length === 3),
+  );
+  return { urlPresent: Boolean(url), keyPresent, keyClassValid };
+}
+
+/** Maps a database error to a safe internal class. Raw text is never kept. */
+export function classifyTenantDbError(error: unknown): TenantBootstrapFailure {
+  const code = (error as { code?: string } | null)?.code ?? "";
+  if (code === "42P01") return "tenant_table_missing";
+  if (code === "42501" || code === "PGRST301") return "tenant_permission_denied";
+  if (code) return "tenant_upsert_failed";
+  return "unexpected_database_failure";
+}
 
 /**
  * Resolves the internal projecthub_tenants.id for a protected read. Identity
@@ -337,7 +414,24 @@ export type TenantContext =
  * browser-supplied value.
  */
 export async function resolveTenantRowId(session: N3Session): Promise<TenantContext> {
-  if (!session.n3TenantId) return { ok: false, reason: "missing_tenant_identity" };
+  if (!session.n3TenantId) {
+    return {
+      ok: false,
+      reason: "missing_tenant_identity",
+      classification: "missing_n3_tenant_identity",
+    };
+  }
+  const config = serverDatabaseConfigStatus();
+  if (!config.urlPresent || !config.keyPresent) {
+    return {
+      ok: false,
+      reason: "database_error",
+      classification: "database_configuration_missing",
+    };
+  }
+  if (!config.keyClassValid) {
+    return { ok: false, reason: "database_error", classification: "invalid_server_key_class" };
+  }
   try {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data, error } = await supabaseAdmin
@@ -352,10 +446,16 @@ export async function resolveTenantRowId(session: N3Session): Promise<TenantCont
       )
       .select("id")
       .single();
-    if (error || !data) return { ok: false, reason: "database_error" };
+    if (error || !data) {
+      return {
+        ok: false,
+        reason: "database_error",
+        classification: error ? classifyTenantDbError(error) : "tenant_upsert_failed",
+      };
+    }
     return { ok: true, tenantRowId: data.id };
   } catch {
-    return { ok: false, reason: "database_error" };
+    return { ok: false, reason: "database_error", classification: "unexpected_database_failure" };
   }
 }
 

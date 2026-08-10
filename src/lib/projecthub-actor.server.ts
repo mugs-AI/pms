@@ -12,6 +12,7 @@ import {
   resolveEffectiveRole,
   resolveN3Session,
   resolveTenantRowId,
+  serverDatabaseConfigStatus,
   writeAudit,
   type EffectiveRoleStatus,
   type N3Session,
@@ -120,6 +121,14 @@ export async function resolveActor(
   const session = resolved.session;
 
   if (!session.n3TenantId) {
+    await writeAudit(correlationId, {
+      tenantRowId: null,
+      actor: null,
+      eventType: "bootstrap",
+      action: "tenant_context",
+      outcome: "failed",
+      metadata: { classification: "missing_n3_tenant_identity" },
+    });
     return {
       ok: false,
       correlationId,
@@ -129,6 +138,20 @@ export async function resolveActor(
 
   const tenant = await resolveTenantRowId(session);
   if (!tenant.ok) {
+    const config = serverDatabaseConfigStatus();
+    await writeAudit(correlationId, {
+      tenantRowId: null,
+      actor: null,
+      eventType: "bootstrap",
+      action: "tenant_context",
+      outcome: "failed",
+      metadata: {
+        classification: tenant.classification,
+        supabaseUrlPresent: config.urlPresent,
+        serviceKeyPresent: config.keyPresent,
+        serviceKeyClassValid: config.keyClassValid,
+      },
+    });
     return {
       ok: false,
       correlationId,
