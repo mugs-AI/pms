@@ -6,6 +6,7 @@
 import type { Json } from "@/integrations/supabase/types";
 import { BASIC_INFO_PATH } from "./n3-allowlist";
 import { n3Get } from "./n3-api.server";
+import { decodeN3TokenClaims } from "./n3-token.server";
 import { isProjectHubRole, type ProjectHubRole } from "./projecthub-rbac";
 
 export type N3Session = {
@@ -82,6 +83,37 @@ export async function resolveN3Session(bearerToken: string): Promise<SessionReso
   if (!session) {
     return { ok: false, status: 502, message: "N3 session response was not understood" };
   }
+
+  // The live BasicInfo contract carries company attributes only. Identity
+  // (immutable tenant id, user id, owner role) is published by N3 exclusively
+  // in the access token it minted for this caller. The token is only consulted
+  // AFTER N3 itself accepted it for the read above, and its tenantCode claim
+  // must match the tenantCode of that live response.
+  const claims = decodeN3TokenClaims(bearerToken);
+  if (claims) {
+    if (
+      claims.tenantCode &&
+      session.tenantCode &&
+      claims.tenantCode.toLowerCase() !== session.tenantCode.toLowerCase()
+    ) {
+      return { ok: false, status: 403, message: "N3 session identity could not be verified" };
+    }
+    return {
+      ok: true,
+      session: {
+        ...session,
+        n3TenantId: session.n3TenantId ?? claims.tenantId,
+        tenantCode: session.tenantCode ?? claims.tenantCode,
+        n3UserId: session.n3UserId ?? claims.userId,
+        displayEmail: session.displayEmail ?? claims.email,
+        displayName: session.displayName ?? claims.displayName,
+        // `isOwner` is never taken from an `isOwner` claim. It is the verified
+        // N3 system-administrator role, or the live BasicInfo flag when present.
+        isOwner: session.isOwner || claims.isSystemAdmin,
+      },
+    };
+  }
+
   return { ok: true, session };
 }
 
