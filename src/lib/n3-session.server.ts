@@ -360,7 +360,11 @@ export async function bootstrapProjectHub(
 
 export type TenantContext =
   | { ok: true; tenantRowId: string }
-  | { ok: false; reason: "missing_tenant_identity" | "database_error"; classification: TenantBootstrapFailure };
+  | {
+      ok: false;
+      reason: "missing_tenant_identity" | "database_error";
+      classification: TenantBootstrapFailure;
+    };
 
 /**
  * Internal-only failure classes for tenant bootstrap. These never reach the
@@ -388,8 +392,8 @@ export function serverDatabaseConfigStatus(): {
   // new-format `sb_secret_` key. Anon/publishable keys are not accepted.
   const keyClassValid = Boolean(
     key &&
-      !key.startsWith("sb_publishable_") &&
-      (key.startsWith("sb_secret_") || key.split(".").length === 3),
+    !key.startsWith("sb_publishable_") &&
+    (key.startsWith("sb_secret_") || key.split(".").length === 3),
   );
   return { urlPresent: Boolean(url), keyPresent, keyClassValid };
 }
