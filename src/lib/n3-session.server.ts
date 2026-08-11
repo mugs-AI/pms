@@ -7,6 +7,7 @@ import type { Json } from "@/integrations/supabase/types";
 import { BASIC_INFO_PATH } from "./n3-allowlist";
 import { n3Get } from "./n3-api.server";
 import { decodeN3TokenClaims } from "./n3-token.server";
+import { isValidServerKeyClass } from "./server-key-class.server";
 import { isProjectHubRole, type ProjectHubRole } from "./projecthub-rbac";
 
 export type N3Session = {
@@ -54,9 +55,15 @@ export function normaliseBasicInfo(raw: unknown): N3Session | null {
     n3UserId: str(d["userId"]) ?? str(d["currentUserId"]) ?? str(d["userGuid"]),
     displayEmail: normaliseDisplayEmail(d["email"] ?? d["userEmail"]),
     displayName: str(d["displayName"]) ?? str(d["userName"]),
-    // Live BasicInfo is the ONLY Owner/Admin signal.
+    // A live BasicInfo `isOwner` flag, when the contract supplies it.
     isOwner: d["isOwner"] === true,
   };
+}
+
+/** Tenant codes bind case-insensitively, ignoring surrounding whitespace only. */
+function normaliseTenantCode(value: string | null): string | null {
+  const s = str(value);
+  return s ? s.toLowerCase() : null;
 }
 
 /** Resolves the caller's live N3 session from CompanyProfile/BasicInfo. Fails closed. */
@@ -86,35 +93,41 @@ export async function resolveN3Session(bearerToken: string): Promise<SessionReso
 
   // The live BasicInfo contract carries company attributes only. Identity
   // (immutable tenant id, user id, owner role) is published by N3 exclusively
-  // in the access token it minted for this caller. The token is only consulted
-  // AFTER N3 itself accepted it for the read above, and its tenantCode claim
-  // must match the tenantCode of that live response.
+  // in the access token it minted for this caller.
+  //
+  // Mandatory binding — token claims may be consumed ONLY when all four hold:
+  //  1. live N3 accepted this exact bearer token for the read above;
+  //  2. live BasicInfo carries a safe non-empty tenantCode;
+  //  3. the accepted token carries a safe non-empty tenantCode;
+  //  4. the two codes match after whitespace/case normalization.
+  // A mismatch is a hard rejection. Any other unmet condition means no claim is
+  // consumed at all: the session keeps only what live BasicInfo supplied, and
+  // downstream tenant bootstrap fails closed before any database access.
   const claims = decodeN3TokenClaims(bearerToken);
-  if (claims) {
-    if (
-      claims.tenantCode &&
-      session.tenantCode &&
-      claims.tenantCode.toLowerCase() !== session.tenantCode.toLowerCase()
-    ) {
-      return { ok: false, status: 403, message: "N3 session identity could not be verified" };
-    }
-    return {
-      ok: true,
-      session: {
-        ...session,
-        n3TenantId: session.n3TenantId ?? claims.tenantId,
-        tenantCode: session.tenantCode ?? claims.tenantCode,
-        n3UserId: session.n3UserId ?? claims.userId,
-        displayEmail: session.displayEmail ?? claims.email,
-        displayName: session.displayName ?? claims.displayName,
-        // `isOwner` is never taken from an `isOwner` claim. It is the verified
-        // N3 system-administrator role, or the live BasicInfo flag when present.
-        isOwner: session.isOwner || claims.isSystemAdmin,
-      },
-    };
+  const liveCode = normaliseTenantCode(session.tenantCode);
+  const tokenCode = normaliseTenantCode(claims?.tenantCode ?? null);
+
+  if (claims && liveCode && tokenCode && liveCode !== tokenCode) {
+    return { ok: false, status: 403, message: "N3 session identity could not be verified" };
+  }
+  if (!claims || !liveCode || !tokenCode) {
+    return { ok: true, session };
   }
 
-  return { ok: true, session };
+  return {
+    ok: true,
+    session: {
+      ...session,
+      n3TenantId: session.n3TenantId ?? claims.tenantId,
+      tenantCode: session.tenantCode,
+      n3UserId: session.n3UserId ?? claims.userId,
+      displayEmail: session.displayEmail ?? claims.email,
+      displayName: session.displayName ?? claims.displayName,
+      // Never an `isOwner` token claim: only the exact verified `sys-admin`
+      // role in the N3-accepted, tenant-bound token, or a live BasicInfo flag.
+      isOwner: session.isOwner || claims.isSystemAdmin,
+    },
+  };
 }
 
 export type EffectiveRoleStatus =
@@ -136,7 +149,7 @@ export type BootstrapResult =
  * Resolves the effective ProjectHub role for a live N3 session.
  *
  * Rules (see Milestone 1A):
- * - live BasicInfo.isOwner === true is the ONLY Owner authority;
+ * - Owner authority comes only from the live-N3-bound session (`isOwner`);
  * - an Owner-assigned role for a non-Owner survives every session refresh;
  * - a stored `owner` row never elevates when live isOwner is false — it is
  *   repaired down to `unassigned`;
@@ -387,15 +400,14 @@ export function serverDatabaseConfigStatus(): {
 } {
   const url = process.env["SUPABASE_URL"];
   const key = process.env["SUPABASE_SERVICE_ROLE_KEY"];
-  const keyPresent = Boolean(key);
-  // A server credential is either a legacy service-role JWT (3 segments) or a
-  // new-format `sb_secret_` key. Anon/publishable keys are not accepted.
-  const keyClassValid = Boolean(
-    key &&
-    !key.startsWith("sb_publishable_") &&
-    (key.startsWith("sb_secret_") || key.split(".").length === 3),
-  );
-  return { urlPresent: Boolean(url), keyPresent, keyClassValid };
+  // A server credential is either a modern `sb_secret_` key or a legacy JWT
+  // whose payload carries the exact `role: "service_role"` claim. Publishable
+  // and anon/authenticated credentials are rejected.
+  return {
+    urlPresent: Boolean(url),
+    keyPresent: Boolean(key),
+    keyClassValid: isValidServerKeyClass(key),
+  };
 }
 
 /** Maps a database error to a safe internal class. Raw text is never kept. */
