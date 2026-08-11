@@ -25,23 +25,23 @@ function token(payload: Record<string, unknown>) {
   return `${b64({ alg: "HS256", typ: "JWT" })}.${b64(payload)}.signaturesignature`;
 }
 
-const PROD_CLAIMS = {
-  sub: "9beb96b7-f93b-4b53-8945-a34b02c0ab75",
-  uid: "9beb96b7-f93b-4b53-8945-a34b02c0ab75",
+const TEST_CLAIMS = {
+  sub: "11111111-1111-4111-8111-111111111111",
+  uid: "11111111-1111-4111-8111-111111111111",
   email: "user@example.test",
-  dname: "JONAS",
-  tenantId: "699b8343-3d32-4049-94f0-bde67b809a6a",
-  tenantCode: "D32-049-4F0",
+  dname: "TEST USER",
+  tenantId: "22222222-2222-4222-8222-222222222222",
+  tenantCode: "TST-001",
   roles: "sys-admin",
 };
 
 /** The REAL production BasicInfo contract: company attributes only. */
-function productionBasicInfo() {
+function syntheticBasicInfo() {
   return {
     code: "0000",
     success: true,
     data: {
-      tenantCode: "D32-049-4F0",
+      tenantCode: "TST-001",
       companyName: "Example Sdn Bhd",
       registrationNumber: "X",
       lhdnConnected: false,
@@ -63,16 +63,16 @@ afterEach(() => {
 
 describe("root cause: production BasicInfo carries no immutable tenant id", () => {
   it("1. reproduces the incident — BasicInfo alone yields no tenant identity", () => {
-    const normalised = normaliseBasicInfo(productionBasicInfo().data);
+    const normalised = normaliseBasicInfo(syntheticBasicInfo().data);
     expect(normalised?.n3TenantId).toBeNull();
     expect(normalised?.isOwner).toBe(false);
   });
 
   it("2. the verified N3 token supplies the immutable identity shape", () => {
-    const claims = decodeN3TokenClaims(token(PROD_CLAIMS));
-    expect(claims?.tenantId).toBe(PROD_CLAIMS.tenantId);
-    expect(claims?.userId).toBe(PROD_CLAIMS.uid);
-    expect(claims?.tenantCode).toBe(PROD_CLAIMS.tenantCode);
+    const claims = decodeN3TokenClaims(token(TEST_CLAIMS));
+    expect(claims?.tenantId).toBe(TEST_CLAIMS.tenantId);
+    expect(claims?.userId).toBe(TEST_CLAIMS.uid);
+    expect(claims?.tenantCode).toBe(TEST_CLAIMS.tenantCode);
     expect(claims?.isSystemAdmin).toBe(true);
   });
 
@@ -83,11 +83,11 @@ describe("root cause: production BasicInfo carries no immutable tenant id", () =
   });
 
   it("4. the corrected session resolves tenant identity for the production shape", async () => {
-    mockUpstream(() => jsonResponse(productionBasicInfo()));
-    const resolved = await resolveN3Session(token(PROD_CLAIMS));
+    mockUpstream(() => jsonResponse(syntheticBasicInfo()));
+    const resolved = await resolveN3Session(token(TEST_CLAIMS));
     expect(resolved.ok).toBe(true);
     if (!resolved.ok) return;
-    expect(resolved.session.n3TenantId).toBe(PROD_CLAIMS.tenantId);
+    expect(resolved.session.n3TenantId).toBe(TEST_CLAIMS.tenantId);
     expect(resolved.session.companyName).toBe("Example Sdn Bhd");
     expect(resolved.session.isOwner).toBe(true);
   });
@@ -97,23 +97,23 @@ describe("root cause: production BasicInfo carries no immutable tenant id", () =
       jsonResponse({
         code: "0000",
         success: true,
-        data: { tenantId: "legacy-tenant", tenantCode: "D32-049-4F0", isOwner: false },
+        data: { tenantId: "legacy-tenant", tenantCode: "TST-001", isOwner: false },
       }),
     );
-    const resolved = await resolveN3Session(token(PROD_CLAIMS));
+    const resolved = await resolveN3Session(token(TEST_CLAIMS));
     expect(resolved.ok && resolved.session.n3TenantId).toBe("legacy-tenant");
   });
 
   it("6. a token bound to a different tenantCode is rejected, never merged", async () => {
-    mockUpstream(() => jsonResponse(productionBasicInfo()));
-    const resolved = await resolveN3Session(token({ ...PROD_CLAIMS, tenantCode: "EVIL" }));
+    mockUpstream(() => jsonResponse(syntheticBasicInfo()));
+    const resolved = await resolveN3Session(token({ ...TEST_CLAIMS, tenantCode: "EVIL" }));
     expect(resolved.ok).toBe(false);
     if (resolved.ok) return;
     expect(resolved.status).toBe(403);
   });
 
   it("7. with no tenant identity anywhere the session fails closed before any database work", async () => {
-    mockUpstream(() => jsonResponse(productionBasicInfo()));
+    mockUpstream(() => jsonResponse(syntheticBasicInfo()));
     const mock = createMockSupabase();
     vi.doMock("@/integrations/supabase/client.server", () => ({ supabaseAdmin: mock.client }));
     const res = await resolveActor(sessionRequest("aaaaaaaaaaaa.bbbbbbbb.cccccccc"));
@@ -126,14 +126,14 @@ describe("root cause: production BasicInfo carries no immutable tenant id", () =
 
 describe("tenant bootstrap classification and safe responses", () => {
   it("8. a resolved tenant row becomes the actor tenant context", async () => {
-    mockUpstream(() => jsonResponse(productionBasicInfo()));
+    mockUpstream(() => jsonResponse(syntheticBasicInfo()));
     const mock = createMockSupabase({
       projecthub_tenants: { returning: { id: "tenant-row-1" } },
       projecthub_user_roles: { rows: [], returning: null },
     });
     vi.doMock("@/integrations/supabase/client.server", () => ({ supabaseAdmin: mock.client }));
     const { resolveActor: resolve2 } = await import("@/lib/projecthub-actor.server");
-    const res = await resolve2(sessionRequest(token(PROD_CLAIMS)));
+    const res = await resolve2(sessionRequest(token(TEST_CLAIMS)));
     expect(res.ok).toBe(true);
     if (!res.ok) return;
     expect(res.actor.tenantRowId).toBe("tenant-row-1");
@@ -151,10 +151,10 @@ describe("tenant bootstrap classification and safe responses", () => {
     const url = process.env["SUPABASE_URL"];
     delete process.env["SUPABASE_URL"];
     const result = await resolveTenantRowId({
-      n3TenantId: PROD_CLAIMS.tenantId,
-      tenantCode: "D32-049-4F0",
+      n3TenantId: TEST_CLAIMS.tenantId,
+      tenantCode: "TST-001",
       companyName: "Example Sdn Bhd",
-      n3UserId: PROD_CLAIMS.uid,
+      n3UserId: TEST_CLAIMS.uid,
       displayEmail: null,
       displayName: null,
       isOwner: true,
@@ -171,13 +171,13 @@ describe("tenant bootstrap classification and safe responses", () => {
   });
 
   it("12. a bootstrap failure returns a generic 503 with a correlation id only", async () => {
-    mockUpstream(() => jsonResponse(productionBasicInfo()));
+    mockUpstream(() => jsonResponse(syntheticBasicInfo()));
     const mock = createMockSupabase({
       projecthub_tenants: { error: { message: "relation does not exist" } },
     });
     vi.doMock("@/integrations/supabase/client.server", () => ({ supabaseAdmin: mock.client }));
     const { resolveActor: resolve2 } = await import("@/lib/projecthub-actor.server");
-    const res = await resolve2(sessionRequest(token(PROD_CLAIMS)));
+    const res = await resolve2(sessionRequest(token(TEST_CLAIMS)));
     expect(res.ok).toBe(false);
     if (res.ok) return;
     expect(res.response.status).toBe(503);
@@ -186,9 +186,9 @@ describe("tenant bootstrap classification and safe responses", () => {
     expect(typeof body["correlationId"]).toBe("string");
     const text = JSON.stringify(body);
     for (const secret of [
-      PROD_CLAIMS.tenantId,
-      PROD_CLAIMS.uid,
-      PROD_CLAIMS.email,
+      TEST_CLAIMS.tenantId,
+      TEST_CLAIMS.uid,
+      TEST_CLAIMS.email,
       "Example Sdn Bhd",
       "relation does not exist",
       "sb_secret",
@@ -199,19 +199,19 @@ describe("tenant bootstrap classification and safe responses", () => {
   });
 
   it("13. audit diagnostics stay free of secrets, payloads and raw database text", async () => {
-    mockUpstream(() => jsonResponse(productionBasicInfo()));
+    mockUpstream(() => jsonResponse(syntheticBasicInfo()));
     const mock = createMockSupabase({
       projecthub_tenants: { error: { message: "permission denied for table" } },
     });
     vi.doMock("@/integrations/supabase/client.server", () => ({ supabaseAdmin: mock.client }));
     const { resolveActor: resolve2 } = await import("@/lib/projecthub-actor.server");
-    await resolve2(sessionRequest(token(PROD_CLAIMS)));
+    await resolve2(sessionRequest(token(TEST_CLAIMS)));
     const audits = mock.calls.filter((c) => c.table === "projecthub_integration_audit_events");
     expect(audits.length).toBeGreaterThan(0);
     const text = JSON.stringify(audits);
     for (const secret of [
-      PROD_CLAIMS.tenantId,
-      PROD_CLAIMS.email,
+      TEST_CLAIMS.tenantId,
+      TEST_CLAIMS.email,
       "Example Sdn Bhd",
       "permission denied for table",
       "Bearer",
@@ -222,9 +222,9 @@ describe("tenant bootstrap classification and safe responses", () => {
   });
 
   it("14. a browser-supplied tenant header is rejected outright", async () => {
-    mockUpstream(() => jsonResponse(productionBasicInfo()));
+    mockUpstream(() => jsonResponse(syntheticBasicInfo()));
     const res = await resolveActor(
-      sessionRequest(token(PROD_CLAIMS), { "x-tenant-id": "99999999-9999-9999-9999-999999999999" }),
+      sessionRequest(token(TEST_CLAIMS), { "x-tenant-id": "99999999-9999-9999-9999-999999999999" }),
     );
     expect(res.ok).toBe(false);
     if (res.ok) return;

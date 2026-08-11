@@ -6,15 +6,16 @@
  * immutable tenant id, no user id and no owner flag. The only place N3 publishes
  * those identities is the access token it mints for the caller.
  *
- * Trust model — the claims here are NEVER trusted on their own:
- *  - the same token must first be accepted by live N3 for the BasicInfo read
- *    (a forged token cannot pass that step);
- *  - the token `tenantCode` claim must match the tenantCode returned by that
- *    live read, otherwise the session is rejected (see resolveN3Session);
- *  - the browser can never supply these values — they are read server-side from
- *    the Authorization header only;
- *  - `isOwner` is never read from the token. Owner authority comes from the
- *    N3 role claim (`sys-admin`) bound to the verified tenantCode.
+ * Trust model — this payload is decoded, NOT signature-verified here. Its
+ * authority comes entirely from two external facts:
+ *  - live BasicInfo acceptance validates this exact N3 token and supplies the
+ *    live tenant-code binding;
+ *  - the verified `sys-admin` role inside that same N3-accepted token supplies
+ *    Owner authority.
+ * Claims may only be consumed after the mandatory tenant-code binding in
+ * resolveN3Session passes. The browser can never supply these values — they are
+ * read server-side from the Authorization header only. An `isOwner` claim is
+ * ignored completely, in every shape.
  */
 
 export type N3TokenClaims = {
@@ -23,7 +24,7 @@ export type N3TokenClaims = {
   userId: string | null;
   email: string | null;
   displayName: string | null;
-  /** true only for an N3 system administrator (account owner) role claim. */
+  /** true only for the exact, proven N3 role claim `sys-admin`. */
   isSystemAdmin: boolean;
 };
 
@@ -46,7 +47,8 @@ function base64UrlDecode(segment: string): string | null {
   }
 }
 
-const OWNER_ROLES = new Set(["sys-admin", "sysadmin", "system-admin", "owner"]);
+/** The ONLY role proven by the live N3 contract to convey Owner authority. */
+const OWNER_ROLE = "sys-admin";
 
 /** Decodes the payload of an N3 access token. Signature is NOT verified here. */
 export function decodeN3TokenClaims(token: string): N3TokenClaims | null {
@@ -77,6 +79,6 @@ export function decodeN3TokenClaims(token: string): N3TokenClaims | null {
     userId: safeString(c["uid"]) ?? safeString(c["sub"]),
     email: email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : null,
     displayName: safeString(c["dname"]) ?? safeString(c["name"]),
-    isSystemAdmin: roleList.some((r) => OWNER_ROLES.has(r)),
+    isSystemAdmin: roleList.some((r) => r === OWNER_ROLE),
   };
 }
