@@ -26,11 +26,11 @@ function token(payload: Record<string, unknown>) {
 }
 
 const TEST_CLAIMS = {
-  sub: "00000000-0000-4000-8000-00000000user",
-  uid: "00000000-0000-4000-8000-00000000user",
+  sub: "11111111-1111-4111-8111-111111111111",
+  uid: "11111111-1111-4111-8111-111111111111",
   email: "user@example.test",
   dname: "TEST USER",
-  tenantId: "00000000-0000-4000-8000-0000000tenant",
+  tenantId: "22222222-2222-4222-8222-222222222222",
   tenantCode: "TST-001",
   roles: "sys-admin",
 };
