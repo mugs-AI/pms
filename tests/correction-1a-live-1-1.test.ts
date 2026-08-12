@@ -17,21 +17,25 @@ const b64 = (o: unknown) => Buffer.from(JSON.stringify(o)).toString("base64url")
 const token = (payload: Record<string, unknown>) =>
   `${b64({ alg: "HS256", typ: "JWT" })}.${b64(payload)}.signaturesignature`;
 
+/** Documented synthetic identity constants. No production value is derived. */
 const TENANT_ID = "22222222-2222-4222-8222-222222222222";
 const USER_ID = "11111111-1111-4111-8111-111111111111";
+const TENANT_CODE = "TST-001";
+const DISPLAY_NAME = "TEST USER";
+const EMAIL = "user@example.test";
 const CLAIMS = {
   uid: USER_ID,
-  email: "user@example.test",
-  dname: "TEST USER",
+  email: EMAIL,
+  dname: DISPLAY_NAME,
   tenantId: TENANT_ID,
-  tenantCode: "TST-001",
+  tenantCode: TENANT_CODE,
   roles: "sys-admin",
 };
 
 function basic(data: Record<string, unknown>) {
   return { code: "0000", success: true, data };
 }
-const COMPANY = { tenantCode: "TST-001", companyName: "Example Sdn Bhd" };
+const COMPANY = { tenantCode: TENANT_CODE, companyName: "Example Sdn Bhd" };
 
 function sessionRequest(bearer: string) {
   return new Request("http://localhost:8080/api/projecthub/session", {
