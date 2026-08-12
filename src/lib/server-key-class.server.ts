@@ -35,7 +35,11 @@ export function classifyServerKey(key: string | undefined | null): ServerKeyClas
   // eslint-disable-next-line no-control-regex
   if (/[\u0000-\u001f\u007f\s]/.test(key)) return "rejected_malformed";
   if (key.startsWith("sb_publishable_")) return "rejected_publishable";
-  if (key.startsWith("sb_secret_")) return "modern_secret";
+  if (key.startsWith("sb_secret_")) {
+    // A bare prefix, or a prefix with an unsafe suffix, is never a credential.
+    const suffix = key.slice("sb_secret_".length);
+    return /^[A-Za-z0-9_-]{8,}$/.test(suffix) ? "modern_secret" : "rejected_malformed";
+  }
 
   const parts = key.split(".");
   if (parts.length !== 3 || !parts[1]) return "rejected_malformed";

@@ -7,7 +7,14 @@
 import { readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { basicInfo, createMockSupabase, jsonResponse, mockUpstream, OWNER_TOKEN } from "./helpers";
+import {
+  basicInfo,
+  createMockSupabase,
+  jsonResponse,
+  mockUpstream,
+  OWNER_TOKEN,
+  USER_TOKEN,
+} from "./helpers";
 
 let db = createMockSupabase();
 
@@ -144,7 +151,7 @@ describe("project update and cancellation", () => {
     const res = await handleProjectHubRequest(
       new Request(`http://localhost:8080/api/projecthub/projects/${PROJECT_ID}`, {
         method: "PATCH",
-        headers: { authorization: `Bearer ${OWNER_TOKEN}`, "content-type": "application/json" },
+        headers: { authorization: `Bearer ${USER_TOKEN}`, "content-type": "application/json" },
         body: JSON.stringify({ title: "Renamed" }),
       }),
       `projects/${PROJECT_ID}`,

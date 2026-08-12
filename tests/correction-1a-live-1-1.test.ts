@@ -5,7 +5,11 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { readFileSync, existsSync, globSync } from "node:fs";
 import { resolve } from "node:path";
-import { resolveN3Session, serverDatabaseConfigStatus } from "@/lib/n3-session.server";
+import {
+  normaliseBasicInfo,
+  resolveN3Session,
+  serverDatabaseConfigStatus,
+} from "@/lib/n3-session.server";
 import { decodeN3TokenClaims } from "@/lib/n3-token.server";
 import { classifyServerKey, isValidServerKeyClass } from "@/lib/server-key-class.server";
 import { resolveActor } from "@/lib/projecthub-actor.server";
@@ -17,21 +21,25 @@ const b64 = (o: unknown) => Buffer.from(JSON.stringify(o)).toString("base64url")
 const token = (payload: Record<string, unknown>) =>
   `${b64({ alg: "HS256", typ: "JWT" })}.${b64(payload)}.signaturesignature`;
 
+/** Documented synthetic identity constants. No production value is derived. */
 const TENANT_ID = "22222222-2222-4222-8222-222222222222";
 const USER_ID = "11111111-1111-4111-8111-111111111111";
+const TENANT_CODE = "TST-001";
+const DISPLAY_NAME = "TEST USER";
+const EMAIL = "user@example.test";
 const CLAIMS = {
   uid: USER_ID,
-  email: "user@example.test",
-  dname: "TEST USER",
+  email: EMAIL,
+  dname: DISPLAY_NAME,
   tenantId: TENANT_ID,
-  tenantCode: "TST-001",
+  tenantCode: TENANT_CODE,
   roles: "sys-admin",
 };
 
 function basic(data: Record<string, unknown>) {
   return { code: "0000", success: true, data };
 }
-const COMPANY = { tenantCode: "TST-001", companyName: "Example Sdn Bhd" };
+const COMPANY = { tenantCode: TENANT_CODE, companyName: "Example Sdn Bhd" };
 
 function sessionRequest(bearer: string) {
   return new Request("http://localhost:8080/api/projecthub/session", {
@@ -126,27 +134,72 @@ describe("mandatory token-to-live-N3 tenant binding", () => {
     expect(decodeN3TokenClaims(token({ roles: ["user"] }))?.isSystemAdmin).toBe(false);
   });
 
-  it("9. a missing uid stays non-elevated and reports identity_missing", async () => {
+  it("9. a missing uid with a populated sub stays identity_missing and writes no user row", async () => {
     mockUpstream(() => jsonResponse(basic(COMPANY)));
-    const { uid: _u, sub: _s, ...noUser } = { sub: USER_ID, ...CLAIMS };
+    const { uid: _u, ...noUid } = CLAIMS;
     const mock = createMockSupabase({
       projecthub_tenants: { returning: { id: "tenant-row-1" } },
     });
     vi.doMock("@/integrations/supabase/client.server", () => ({ supabaseAdmin: mock.client }));
     const { resolveActor: resolve2 } = await import("@/lib/projecthub-actor.server");
-    const res = await resolve2(sessionRequest(token({ ...noUser, roles: "user" })));
+    const res = await resolve2(sessionRequest(token({ ...noUid, sub: USER_ID, roles: "user" })));
     expect(res.ok).toBe(true);
     if (!res.ok) return;
     expect(res.actor.n3UserId).toBeNull();
     expect(res.actor.roleStatus).toBe("identity_missing");
     expect(res.actor.role).toBe("unassigned");
+    expect(res.actor.session.isOwner).toBe(false);
+    expect(mock.calls.some((c) => c.table === "projecthub_user_roles")).toBe(false);
+  });
+
+  it("9a. only the exact verified claim names are consumed", async () => {
+    mockUpstream(() => jsonResponse(basic(COMPANY)));
+    const aliasOnly = await resolveN3Session(
+      token({ tenant_id: TENANT_ID, tenant_code: TENANT_CODE, sub: USER_ID, name: DISPLAY_NAME }),
+    );
+    expect(aliasOnly.ok).toBe(true);
+    if (!aliasOnly.ok) return;
+    expect(aliasOnly.session.n3TenantId).toBeNull();
+    expect(aliasOnly.session.n3UserId).toBeNull();
+    expect(aliasOnly.session.displayName).toBeNull();
+
+    const claims = decodeN3TokenClaims(
+      token({ tenant_id: TENANT_ID, tenant_code: TENANT_CODE, sub: USER_ID, name: DISPLAY_NAME }),
+    );
+    expect(claims?.tenantId).toBeNull();
+    expect(claims?.tenantCode).toBeNull();
+    expect(claims?.userId).toBeNull();
+    expect(claims?.displayName).toBeNull();
+  });
+
+  it("9b. BasicInfo isOwner never grants Owner, bound or unbound", async () => {
+    mockUpstream(() => jsonResponse(basic({ ...COMPANY, isOwner: true })));
+    const bound = await resolveN3Session(token({ ...CLAIMS, roles: "user" }));
+    expect(bound.ok && bound.session.isOwner).toBe(false);
+
+    mockUpstream(() => jsonResponse(basic({ ...COMPANY, isOwner: true })));
+    const unbound = await resolveN3Session("aaaaaaaaaaaa.bbbbbbbb.cccccccc");
+    expect(unbound.ok && unbound.session.isOwner).toBe(false);
+
+    expect(normaliseBasicInfo({ ...COMPANY, isOwner: true })?.isOwner).toBe(false);
   });
 });
 
 describe("server-key classification", () => {
-  it("10. a modern sb_secret_ key is accepted", () => {
+  it("10. a safe synthetic modern sb_secret_ key is accepted", () => {
     expect(classifyServerKey("sb_secret_abcdefghijklmnop")).toBe("modern_secret");
     expect(isValidServerKeyClass("sb_secret_abcdefghijklmnop")).toBe(true);
+  });
+
+  it("10a. a bare or unsafe sb_secret_ suffix is rejected", () => {
+    expect(classifyServerKey("sb_secret_")).toBe("rejected_malformed");
+    expect(classifyServerKey("sb_secret_short")).toBe("rejected_malformed");
+    expect(classifyServerKey("sb_secret_abcdefgh ijkl")).toBe("rejected_malformed");
+    expect(classifyServerKey("sb_secret_abcdefgh\u0001ijkl")).toBe("rejected_malformed");
+    expect(classifyServerKey("sb_secret_" + "a".repeat(9000))).toBe("rejected_malformed");
+    for (const key of ["sb_secret_", "sb_secret_short"]) {
+      expect(isValidServerKeyClass(key)).toBe(false);
+    }
   });
 
   it("11. an sb_publishable_ key is rejected", () => {
@@ -176,18 +229,22 @@ describe("server-key classification", () => {
 });
 
 describe("privacy and architecture guards", () => {
-  it("15. no live tenant/user/display identifiers remain in the test tree", () => {
-    const banned = [
-      Buffer.from("RDMyLTA0OS00RjA=", "base64").toString(),
-      Buffer.from("Njk5YjgzNDM=", "base64").toString(),
-      Buffer.from("OWJlYjk2Yjc=", "base64").toString(),
-      Buffer.from("Sk9OQVM=", "base64").toString(),
-    ];
-    const files = globSync("{src,tests}/**/*.{ts,tsx}", { cwd: root });
+  it("15. every committed fixture identity is an explicit synthetic constant", () => {
+    // Policy test only: no production-derived value — plain, encoded, hashed or
+    // partial — is committed anywhere in this repository.
+    expect(TENANT_CODE).toBe("TST-001");
+    expect(DISPLAY_NAME).toBe("TEST USER");
+    expect(EMAIL.endsWith("@example.test")).toBe(true);
+    expect(TENANT_ID).toBe("22222222-2222-4222-8222-222222222222");
+    expect(USER_ID).toBe("11111111-1111-4111-8111-111111111111");
+    expect(TENANT_ID).not.toBe(USER_ID);
+
+    // No committed test may reintroduce an encoded identifier list.
+    const files = globSync("tests/**/*.ts", { cwd: root });
     for (const file of files) {
       if (file.endsWith("correction-1a-live-1-1.test.ts")) continue;
       const source = readFileSync(resolve(root, file), "utf8");
-      for (const value of banned) expect(source).not.toContain(value);
+      expect(source).not.toContain('"base64"');
     }
   });
 

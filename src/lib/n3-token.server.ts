@@ -73,12 +73,15 @@ export function decodeN3TokenClaims(token: string): N3TokenClaims | null {
     .map((r) => r.trim());
 
   const email = safeString(c["email"]);
+  // Only the exact claim names proven by the live N3 contract are consumed:
+  // tenantId, tenantCode, uid, email, dname, roles. No snake_case aliases, no
+  // `sub` user-identity fallback and no `name` display fallback.
   return {
-    tenantId: safeString(c["tenantId"]) ?? safeString(c["tenant_id"]),
-    tenantCode: safeString(c["tenantCode"]) ?? safeString(c["tenant_code"]),
-    userId: safeString(c["uid"]) ?? safeString(c["sub"]),
+    tenantId: safeString(c["tenantId"]),
+    tenantCode: safeString(c["tenantCode"]),
+    userId: safeString(c["uid"]),
     email: email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : null,
-    displayName: safeString(c["dname"]) ?? safeString(c["name"]),
+    displayName: safeString(c["dname"]),
     isSystemAdmin: roleList.some((r) => r === OWNER_ROLE),
   };
 }
