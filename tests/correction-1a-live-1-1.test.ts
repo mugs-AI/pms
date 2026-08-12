@@ -130,20 +130,54 @@ describe("mandatory token-to-live-N3 tenant binding", () => {
     expect(decodeN3TokenClaims(token({ roles: ["user"] }))?.isSystemAdmin).toBe(false);
   });
 
-  it("9. a missing uid stays non-elevated and reports identity_missing", async () => {
+  it("9. a missing uid with a populated sub stays identity_missing and writes no user row", async () => {
     mockUpstream(() => jsonResponse(basic(COMPANY)));
-    const { uid: _u, sub: _s, ...noUser } = { sub: USER_ID, ...CLAIMS };
+    const { uid: _u, ...noUid } = CLAIMS;
     const mock = createMockSupabase({
       projecthub_tenants: { returning: { id: "tenant-row-1" } },
     });
     vi.doMock("@/integrations/supabase/client.server", () => ({ supabaseAdmin: mock.client }));
     const { resolveActor: resolve2 } = await import("@/lib/projecthub-actor.server");
-    const res = await resolve2(sessionRequest(token({ ...noUser, roles: "user" })));
+    const res = await resolve2(sessionRequest(token({ ...noUid, sub: USER_ID, roles: "user" })));
     expect(res.ok).toBe(true);
     if (!res.ok) return;
     expect(res.actor.n3UserId).toBeNull();
     expect(res.actor.roleStatus).toBe("identity_missing");
     expect(res.actor.role).toBe("unassigned");
+    expect(res.actor.session.isOwner).toBe(false);
+    expect(mock.calls.some((c) => c.table === "projecthub_user_roles")).toBe(false);
+  });
+
+  it("9a. only the exact verified claim names are consumed", async () => {
+    mockUpstream(() => jsonResponse(basic(COMPANY)));
+    const aliasOnly = await resolveN3Session(
+      token({ tenant_id: TENANT_ID, tenant_code: TENANT_CODE, sub: USER_ID, name: DISPLAY_NAME }),
+    );
+    expect(aliasOnly.ok).toBe(true);
+    if (!aliasOnly.ok) return;
+    expect(aliasOnly.session.n3TenantId).toBeNull();
+    expect(aliasOnly.session.n3UserId).toBeNull();
+    expect(aliasOnly.session.displayName).toBeNull();
+
+    const claims = decodeN3TokenClaims(
+      token({ tenant_id: TENANT_ID, tenant_code: TENANT_CODE, sub: USER_ID, name: DISPLAY_NAME }),
+    );
+    expect(claims?.tenantId).toBeNull();
+    expect(claims?.tenantCode).toBeNull();
+    expect(claims?.userId).toBeNull();
+    expect(claims?.displayName).toBeNull();
+  });
+
+  it("9b. BasicInfo isOwner never grants Owner, bound or unbound", async () => {
+    mockUpstream(() => jsonResponse(basic({ ...COMPANY, isOwner: true })));
+    const bound = await resolveN3Session(token({ ...CLAIMS, roles: "user" }));
+    expect(bound.ok && bound.session.isOwner).toBe(false);
+
+    mockUpstream(() => jsonResponse(basic({ ...COMPANY, isOwner: true })));
+    const unbound = await resolveN3Session("aaaaaaaaaaaa.bbbbbbbb.cccccccc");
+    expect(unbound.ok && unbound.session.isOwner).toBe(false);
+
+    expect(normaliseBasicInfo({ ...COMPANY, isOwner: true })?.isOwner).toBe(false);
   });
 });
 
