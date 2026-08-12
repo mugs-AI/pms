@@ -5,7 +5,11 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { readFileSync, existsSync, globSync } from "node:fs";
 import { resolve } from "node:path";
-import { resolveN3Session, serverDatabaseConfigStatus } from "@/lib/n3-session.server";
+import {
+  normaliseBasicInfo,
+  resolveN3Session,
+  serverDatabaseConfigStatus,
+} from "@/lib/n3-session.server";
 import { decodeN3TokenClaims } from "@/lib/n3-token.server";
 import { classifyServerKey, isValidServerKeyClass } from "@/lib/server-key-class.server";
 import { resolveActor } from "@/lib/projecthub-actor.server";
@@ -182,9 +186,20 @@ describe("mandatory token-to-live-N3 tenant binding", () => {
 });
 
 describe("server-key classification", () => {
-  it("10. a modern sb_secret_ key is accepted", () => {
+  it("10. a safe synthetic modern sb_secret_ key is accepted", () => {
     expect(classifyServerKey("sb_secret_abcdefghijklmnop")).toBe("modern_secret");
     expect(isValidServerKeyClass("sb_secret_abcdefghijklmnop")).toBe(true);
+  });
+
+  it("10a. a bare or unsafe sb_secret_ suffix is rejected", () => {
+    expect(classifyServerKey("sb_secret_")).toBe("rejected_malformed");
+    expect(classifyServerKey("sb_secret_short")).toBe("rejected_malformed");
+    expect(classifyServerKey("sb_secret_abcdefgh ijkl")).toBe("rejected_malformed");
+    expect(classifyServerKey("sb_secret_abcdefgh\u0001ijkl")).toBe("rejected_malformed");
+    expect(classifyServerKey("sb_secret_" + "a".repeat(9000))).toBe("rejected_malformed");
+    for (const key of ["sb_secret_", "sb_secret_short"]) {
+      expect(isValidServerKeyClass(key)).toBe(false);
+    }
   });
 
   it("11. an sb_publishable_ key is rejected", () => {
@@ -214,18 +229,21 @@ describe("server-key classification", () => {
 });
 
 describe("privacy and architecture guards", () => {
-  it("15. no live tenant/user/display identifiers remain in the test tree", () => {
-    const banned = [
-      Buffer.from("RDMyLTA0OS00RjA=", "base64").toString(),
-      Buffer.from("Njk5YjgzNDM=", "base64").toString(),
-      Buffer.from("OWJlYjk2Yjc=", "base64").toString(),
-      Buffer.from("Sk9OQVM=", "base64").toString(),
-    ];
-    const files = globSync("{src,tests}/**/*.{ts,tsx}", { cwd: root });
+  it("15. every committed fixture identity is an explicit synthetic constant", () => {
+    // Policy test only: no production-derived value — plain, encoded, hashed or
+    // partial — is committed anywhere in this repository.
+    expect(TENANT_CODE).toBe("TST-001");
+    expect(DISPLAY_NAME).toBe("TEST USER");
+    expect(EMAIL.endsWith("@example.test")).toBe(true);
+    expect(TENANT_ID).toBe("22222222-2222-4222-8222-222222222222");
+    expect(USER_ID).toBe("11111111-1111-4111-8111-111111111111");
+    expect(TENANT_ID).not.toBe(USER_ID);
+
+    // No committed test may reintroduce an encoded identifier list.
+    const files = globSync("tests/**/*.ts", { cwd: root });
     for (const file of files) {
-      if (file.endsWith("correction-1a-live-1-1.test.ts")) continue;
       const source = readFileSync(resolve(root, file), "utf8");
-      for (const value of banned) expect(source).not.toContain(value);
+      expect(source).not.toContain('"base64"');
     }
   });
 
