@@ -1,7 +1,15 @@
 import { vi } from "vitest";
 
-export const OWNER_TOKEN = "aaaaaaaaaaaaaaaaaaaaaaaa.bbbbbbbbbbbb.cccccccccccc";
-export const USER_TOKEN = "dddddddddddddddddddddddd.eeeeeeeeeeee.ffffffffffff";
+/** Mints a synthetic, unsigned N3-shaped token. Never a real credential. */
+export function syntheticToken(payload: Record<string, unknown>) {
+  const b64 = (o: unknown) =>
+    Buffer.from(JSON.stringify(o)).toString("base64url").replace(/=+$/, "");
+  return `${b64({ alg: "HS256", typ: "JWT" })}.${b64(payload)}.signaturesignature`;
+}
+
+/** Bound to the synthetic tenant code used by `basicInfo`, with exact sys-admin. */
+export const OWNER_TOKEN = syntheticToken({ tenantCode: "ACME", roles: "sys-admin" });
+export const USER_TOKEN = syntheticToken({ tenantCode: "ACME", roles: "user" });
 
 export function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
