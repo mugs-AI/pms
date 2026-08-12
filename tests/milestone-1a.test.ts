@@ -151,7 +151,7 @@ describe("project update and cancellation", () => {
     const res = await handleProjectHubRequest(
       new Request(`http://localhost:8080/api/projecthub/projects/${PROJECT_ID}`, {
         method: "PATCH",
-        headers: { authorization: `Bearer ${OWNER_TOKEN}`, "content-type": "application/json" },
+        headers: { authorization: `Bearer ${USER_TOKEN}`, "content-type": "application/json" },
         body: JSON.stringify({ title: "Renamed" }),
       }),
       `projects/${PROJECT_ID}`,
