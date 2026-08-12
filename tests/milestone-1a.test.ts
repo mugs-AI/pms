@@ -7,7 +7,14 @@
 import { readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { basicInfo, createMockSupabase, jsonResponse, mockUpstream, OWNER_TOKEN } from "./helpers";
+import {
+  basicInfo,
+  createMockSupabase,
+  jsonResponse,
+  mockUpstream,
+  OWNER_TOKEN,
+  USER_TOKEN,
+} from "./helpers";
 
 let db = createMockSupabase();
 
