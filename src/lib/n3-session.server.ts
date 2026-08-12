@@ -55,8 +55,11 @@ export function normaliseBasicInfo(raw: unknown): N3Session | null {
     n3UserId: str(d["userId"]) ?? str(d["currentUserId"]) ?? str(d["userGuid"]),
     displayEmail: normaliseDisplayEmail(d["email"] ?? d["userEmail"]),
     displayName: str(d["displayName"]) ?? str(d["userName"]),
-    // A live BasicInfo `isOwner` flag, when the contract supplies it.
-    isOwner: d["isOwner"] === true,
+    // BasicInfo never conveys Owner authority. The verified production contract
+    // carries company attributes only; an `isOwner` field in the payload is
+    // ignored completely. Owner comes solely from the exact `sys-admin` role in
+    // the N3-accepted, tenant-code-bound access token.
+    isOwner: false,
   };
 }
 
@@ -123,9 +126,9 @@ export async function resolveN3Session(bearerToken: string): Promise<SessionReso
       n3UserId: session.n3UserId ?? claims.userId,
       displayEmail: session.displayEmail ?? claims.email,
       displayName: session.displayName ?? claims.displayName,
-      // Never an `isOwner` token claim: only the exact verified `sys-admin`
-      // role in the N3-accepted, tenant-bound token, or a live BasicInfo flag.
-      isOwner: session.isOwner || claims.isSystemAdmin,
+      // Owner authority: the exact verified `sys-admin` role in this bound
+      // token, and nothing else. Every `isOwner` shape is ignored.
+      isOwner: claims.isSystemAdmin,
     },
   };
 }
