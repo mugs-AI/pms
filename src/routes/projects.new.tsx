@@ -391,13 +391,21 @@ function NewEnquiryPage() {
       ) : null}
       {error ? <ErrorState error={error} /> : null}
 
-      <button
-        type="submit"
-        disabled={submitting}
-        className="rounded-md bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
-      >
-        {submitting ? "Creating enquiry…" : "Create enquiry"}
-      </button>
+      <div className="flex flex-col gap-2 pb-2 sm:flex-row sm:items-center">
+        <button
+          type="submit"
+          disabled={submitting}
+          className="min-h-11 rounded-md bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+        >
+          {submitting ? "Creating enquiry…" : "Create enquiry"}
+        </button>
+        <Link
+          to="/projects"
+          className="inline-flex min-h-11 items-center justify-center rounded-md border border-input px-5 py-2.5 text-sm font-medium hover:bg-secondary"
+        >
+          Cancel
+        </Link>
+      </div>
     </form>
   );
 }
