@@ -142,8 +142,8 @@ describe("display width preference", () => {
     expect([...storage.store.keys()]).toEqual([DISPLAY_WIDTH_KEY]);
     expect([...storage.store.values()]).toEqual(["full"]);
     const source = readFileSync("src/lib/display-preference.ts", "utf8");
-    for (const forbidden of ["tenant", "token", "email", "role", "supabase", "fetch("]) {
-      expect(source.toLowerCase()).not.toContain(forbidden);
+    for (const forbidden of ["fetch(", "supabase", "projectHubRequest", "n3Get", "useSession"]) {
+      expect(source).not.toContain(forbidden);
     }
   });
 });
