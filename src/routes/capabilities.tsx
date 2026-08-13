@@ -133,7 +133,7 @@ function Capabilities() {
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="font-display text-3xl font-bold tracking-wide text-foreground">
+        <h1 className="font-display text-2xl font-bold tracking-wide text-foreground sm:text-3xl">
           Capability inventory
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
@@ -143,7 +143,8 @@ function Capabilities() {
       </header>
 
       <div className="overflow-x-auto rounded-lg border border-border bg-card shadow-card">
-        <table className="w-full border-collapse text-sm">
+        <table className="w-full min-w-[52rem] border-collapse text-sm">
+          <caption className="sr-only">N3 document families required by future milestones</caption>
           <thead>
             <tr className="bg-secondary text-left">
               <th scope="col" className="px-4 py-2 text-xs font-semibold uppercase">

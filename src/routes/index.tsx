@@ -56,7 +56,7 @@ function DashboardBody() {
         </p>
       </section>
 
-      <section className="grid gap-4 sm:grid-cols-3">
+      <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <Card title="N3 company" value={companyName ?? "…"} note="From CompanyProfile/BasicInfo" />
         <Card
           title="Tenant code"
@@ -87,7 +87,7 @@ function DashboardBody() {
         <EmptyState title="No portfolio data" body="Nothing is visible to you yet." />
       ) : (
         <>
-          <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <section className="grid grid-cols-1 gap-4 min-[380px]:grid-cols-2 lg:grid-cols-4">
             <Kpi label="Total projects" value={dashboard.total} />
             <Kpi label="Enquiries" value={dashboard.enquiries} />
             <Kpi label="Active projects" value={dashboard.active} />
@@ -95,13 +95,13 @@ function DashboardBody() {
           </section>
 
           <section className="space-y-3">
-            <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
               <h2 className="font-display text-xl font-bold tracking-wide text-foreground">
                 Recently updated
               </h2>
               <Link
                 to="/projects"
-                className="rounded-md border border-input px-3 py-1.5 text-sm font-medium hover:bg-secondary"
+                className="inline-flex min-h-11 items-center justify-center rounded-md border border-input px-3 py-1.5 text-sm font-medium hover:bg-secondary"
               >
                 Open project register
               </Link>
@@ -160,7 +160,7 @@ function DashboardBody() {
             Read N3 master data through the same-origin proxy to prove the tenant, user and paging
             behaviour before any write milestone begins.
           </p>
-          <div className="mt-4 flex flex-wrap gap-3">
+          <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
             <Link
               to="/verification"
               className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"

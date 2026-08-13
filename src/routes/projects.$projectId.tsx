@@ -77,14 +77,17 @@ function Workspace() {
         <Badge>{p.budget_mode === "simple_budget" ? "Simple budget" : "Detailed BOQ"}</Badge>
       </div>
 
-      <nav className="flex flex-wrap gap-1 border-b border-border" aria-label="Project sections">
+      <nav
+        className="-mx-4 flex gap-1 overflow-x-auto border-b border-border px-4 sm:mx-0 sm:flex-wrap sm:px-0"
+        aria-label="Project sections"
+      >
         {TABS.map((name) => (
           <button
             key={name}
             type="button"
             onClick={() => setTab(name)}
             aria-current={tab === name}
-            className={`border-b-2 px-3 py-2 text-sm font-medium ${tab === name ? "border-accent text-foreground" : "border-transparent text-muted-foreground"}`}
+            className={`min-h-11 shrink-0 border-b-2 px-3 py-2 text-sm font-medium whitespace-nowrap focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none ${tab === name ? "border-accent text-foreground" : "border-transparent text-muted-foreground"}`}
           >
             {name}
           </button>

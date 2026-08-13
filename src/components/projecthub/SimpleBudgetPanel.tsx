@@ -37,7 +37,7 @@ export function SimpleBudgetPanel({
 
   return (
     <div className="space-y-4">
-      <Card className="grid gap-4 sm:grid-cols-4">
+      <Card className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <Detail label="Budget cost" value={formatMoney(totals.totalCost)} />
         <Detail label="Budget selling" value={formatMoney(totals.totalSelling)} />
         <Detail label="Profit" value={formatMoney(totals.grossProfit)} />
@@ -48,7 +48,7 @@ export function SimpleBudgetPanel({
         <button
           type="button"
           onClick={() => setEditing((v) => !v)}
-          className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+          className="min-h-11 w-full rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 sm:w-auto"
         >
           {editing ? "Close" : "Edit simple budget"}
         </button>

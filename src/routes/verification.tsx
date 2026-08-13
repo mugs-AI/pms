@@ -58,7 +58,7 @@ function VerificationPage() {
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="font-display text-3xl font-bold tracking-wide text-foreground">
+        <h1 className="font-display text-2xl font-bold tracking-wide text-foreground sm:text-3xl">
           N3 Data Verification
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
@@ -70,22 +70,28 @@ function VerificationPage() {
         </p>
       </header>
 
-      <div role="tablist" aria-label="N3 master data" className="flex flex-wrap gap-2">
-        {DATASETS.map((d) => (
-          <button
-            key={d.id}
-            role="tab"
-            aria-selected={d.id === activeId}
-            onClick={() => setActiveId(d.id)}
-            className={`rounded-md border px-3 py-1.5 text-sm font-medium transition-colors ${
-              d.id === activeId
-                ? "border-accent bg-accent/15 text-foreground"
-                : "border-border bg-card text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            {d.label}
-          </button>
-        ))}
+      <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+        <div
+          role="tablist"
+          aria-label="N3 master data"
+          className="flex w-max min-w-full gap-2 sm:w-auto sm:flex-wrap"
+        >
+          {DATASETS.map((d) => (
+            <button
+              key={d.id}
+              role="tab"
+              aria-selected={d.id === activeId}
+              onClick={() => setActiveId(d.id)}
+              className={`min-h-11 shrink-0 rounded-md border px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none ${
+                d.id === activeId
+                  ? "border-accent bg-accent/15 text-foreground"
+                  : "border-border bg-card text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {d.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       <DatasetPanel key={dataset.id} dataset={dataset} />
@@ -154,15 +160,15 @@ function DatasetPanel({ dataset }: { dataset: Dataset }) {
 
   return (
     <section className="rounded-lg border border-border bg-card shadow-card">
-      <div className="flex flex-wrap items-end gap-3 border-b border-border p-4">
-        <div className="min-w-56 flex-1">
+      <div className="flex flex-col gap-3 border-b border-border p-4 sm:flex-row sm:flex-wrap sm:items-end">
+        <div className="min-w-0 sm:min-w-56 sm:flex-1">
           <label
             htmlFor={`search-${dataset.id}`}
             className="block text-xs font-semibold tracking-widest text-muted-foreground uppercase"
           >
             Search code or name
           </label>
-          <div className="mt-1 flex gap-2">
+          <div className="mt-1 flex flex-col gap-2 sm:flex-row">
             <input
               id={`search-${dataset.id}`}
               value={search}
@@ -173,7 +179,7 @@ function DatasetPanel({ dataset }: { dataset: Dataset }) {
                   setTerm(search);
                 }
               }}
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+              className="w-full min-w-0 rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
               placeholder={dataset.searchFields.join(", ")}
             />
             <button
@@ -182,13 +188,13 @@ function DatasetPanel({ dataset }: { dataset: Dataset }) {
                 setPage(0);
                 setTerm(search);
               }}
-              className="rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+              className="min-h-11 shrink-0 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
             >
               Search
             </button>
           </div>
         </div>
-        <p className="text-xs text-muted-foreground">
+        <p className="text-xs break-words text-muted-foreground">
           <span className="font-medium text-foreground">{dataset.scope}</span> ·{" "}
           <code>GET /{dataset.path}</code> ·{" "}
           {dataset.mode === "page" ? "OData $top/$skip/$filter" : "full list"}
@@ -207,7 +213,8 @@ function DatasetPanel({ dataset }: { dataset: Dataset }) {
             No records returned by N3 for this query.
           </p>
         ) : (
-          <table className="w-full border-collapse text-sm">
+          <table className="w-full min-w-[48rem] border-collapse text-sm">
+            <caption className="sr-only">{dataset.label} records returned by N3</caption>
             <thead>
               <tr className="bg-secondary text-left">
                 {dataset.columns.map((c) => (
@@ -239,7 +246,7 @@ function DatasetPanel({ dataset }: { dataset: Dataset }) {
         )}
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border p-4 text-sm">
+      <div className="flex flex-col gap-3 border-t border-border p-4 text-sm sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
         <p className="text-muted-foreground">
           {total} record{total === 1 ? "" : "s"} · page {page + 1} of {maxPage + 1}
         </p>
