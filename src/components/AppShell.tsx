@@ -3,6 +3,7 @@ import { useState, type ReactNode } from "react";
 import { useSession } from "@/lib/n3-session";
 import { DevApiKeyLogin } from "@/components/DevApiKeyLogin";
 import type { Permission } from "@/lib/projecthub-rbac";
+import { useDisplayWidth, widthContainerClass, type DisplayWidth } from "@/lib/display-preference";
 
 const NAV: { to: string; label: string; permission?: Permission; ownerOnly?: boolean }[] = [
   { to: "/", label: "Dashboard" },
@@ -12,13 +13,56 @@ const NAV: { to: string; label: string; permission?: Permission; ownerOnly?: boo
   { to: "/capabilities", label: "Capability Inventory", ownerOnly: true },
 ];
 
-function SessionField({ label, value }: { label: string; value: string | null }) {
+function SessionField({ label, value, loading }: { label: string; value: string | null; loading: boolean }) {
   return (
     <div className="min-w-0">
       <dt className="text-[0.65rem] font-semibold tracking-widest text-primary-foreground/60 uppercase">
         {label}
       </dt>
-      <dd className="truncate text-sm text-primary-foreground">{value ?? "—"}</dd>
+      {loading ? (
+        <dd className="mt-1 h-4 w-24 max-w-full animate-pulse rounded bg-primary-foreground/15" />
+      ) : (
+        <dd className="truncate text-sm text-primary-foreground" title={value ?? undefined}>
+          {value ?? "—"}
+        </dd>
+      )}
+    </div>
+  );
+}
+
+const WIDTH_OPTIONS: { value: DisplayWidth; label: string; title: string }[] = [
+  { value: "standard", label: "Standard", title: "Centered layout, capped for readability" },
+  { value: "full", label: "Full width", title: "Use the full browser workspace" },
+];
+
+export function DisplayWidthToggle({ className = "" }: { className?: string }) {
+  const [width, setWidth] = useDisplayWidth();
+  return (
+    <div
+      role="radiogroup"
+      aria-label="Desktop display width"
+      className={`inline-flex shrink-0 rounded-md border border-primary-foreground/25 p-0.5 ${className}`}
+    >
+      {WIDTH_OPTIONS.map((option) => {
+        const checked = width === option.value;
+        return (
+          <button
+            key={option.value}
+            type="button"
+            role="radio"
+            aria-checked={checked}
+            title={option.title}
+            onClick={() => setWidth(option.value)}
+            className={`min-h-10 rounded px-3 text-xs font-medium whitespace-nowrap transition-colors focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none ${
+              checked
+                ? "bg-accent text-accent-foreground"
+                : "text-primary-foreground/75 hover:text-primary-foreground"
+            }`}
+          >
+            {option.label}
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -26,6 +70,8 @@ function SessionField({ label, value }: { label: string; value: string | null })
 export function AppShell({ children }: { children: ReactNode }) {
   const session = useSession();
   const [open, setOpen] = useState(false);
+  const [width] = useDisplayWidth();
+  const container = widthContainerClass(width);
   const loading = session.status === "loading";
 
   if (session.status === "anonymous" || session.status === "error") {
@@ -40,32 +86,56 @@ export function AppShell({ children }: { children: ReactNode }) {
   });
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-dvh w-full max-w-full overflow-x-clip bg-background">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:rounded-md focus:bg-accent focus:px-3 focus:py-2 focus:text-sm focus:font-medium focus:text-accent-foreground"
+      >
+        Skip to main content
+      </a>
+
       <header className="bg-primary shadow-header">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-4 px-4 py-3">
-          <div className="flex items-center gap-3">
-            <span className="flex h-9 w-9 items-center justify-center rounded-md bg-accent font-display text-lg font-bold text-accent-foreground">
-              PH
-            </span>
-            <div>
-              <p className="font-display text-xl leading-none font-bold tracking-wide text-primary-foreground">
-                N3 ProjectHub
-              </p>
-              <p className="text-xs text-primary-foreground/60">
-                Construction &amp; renovation PMS for N3
-              </p>
+        <div className={`${container} flex flex-col gap-3 py-3 md:flex-row md:flex-wrap md:items-center md:gap-4`}>
+          <div className="flex min-w-0 items-center justify-between gap-3">
+            <div className="flex min-w-0 items-center gap-3">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-accent font-display text-lg font-bold text-accent-foreground">
+                PH
+              </span>
+              <div className="min-w-0">
+                <p className="truncate font-display text-xl leading-none font-bold tracking-wide text-primary-foreground">
+                  N3 ProjectHub
+                </p>
+                <p className="truncate text-xs text-primary-foreground/60">
+                  Construction &amp; renovation PMS for N3
+                </p>
+              </div>
+            </div>
+            <div className="flex shrink-0 items-center gap-2 md:hidden">
+              <span
+                aria-hidden="true"
+                className={`h-2 w-2 rounded-full ${loading ? "bg-accent" : "bg-success"}`}
+              />
+              <span className="sr-only">{loading ? "Connecting to N3" : "N3 session active"}</span>
+              <button
+                type="button"
+                onClick={session.signOut}
+                className="min-h-10 rounded-md border border-primary-foreground/25 px-3 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary-foreground/10"
+              >
+                Sign out
+              </button>
             </div>
           </div>
 
-          <dl className="ml-auto grid grid-cols-2 gap-x-6 gap-y-1 sm:grid-cols-3">
-            <SessionField label="Company" value={loading ? "…" : session.companyName} />
-            <SessionField label="Tenant code" value={loading ? "…" : session.tenantCode} />
-            <SessionField label="User email" value={loading ? "…" : session.email} />
-            <SessionField label="ProjectHub role" value={loading ? "…" : session.roleLabel} />
+          <dl className="grid min-w-0 grid-cols-1 gap-x-6 gap-y-2 xs:grid-cols-2 sm:grid-cols-2 md:ml-auto md:grid-cols-3 md:gap-y-1">
+            <SessionField label="Company" value={session.companyName} loading={loading} />
+            <SessionField label="Tenant code" value={session.tenantCode} loading={loading} />
+            <SessionField label="User email" value={session.email} loading={loading} />
+            <SessionField label="ProjectHub role" value={session.roleLabel} loading={loading} />
           </dl>
 
-          <div className="flex items-center gap-3">
-            <span className="inline-flex items-center gap-2 rounded-full bg-primary-foreground/10 px-3 py-1 text-xs text-primary-foreground">
+          <div className="flex flex-wrap items-center gap-3">
+            <DisplayWidthToggle />
+            <span className="hidden items-center gap-2 rounded-full bg-primary-foreground/10 px-3 py-1 text-xs text-primary-foreground md:inline-flex">
               <span
                 aria-hidden="true"
                 className={`h-2 w-2 rounded-full ${loading ? "bg-accent" : "bg-success"}`}
@@ -75,7 +145,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             <button
               type="button"
               onClick={session.signOut}
-              className="rounded-md border border-primary-foreground/25 px-3 py-1.5 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary-foreground/10"
+              className="hidden min-h-10 rounded-md border border-primary-foreground/25 px-3 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary-foreground/10 md:block"
             >
               Sign out
             </button>
@@ -83,20 +153,22 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
 
         <nav aria-label="Main" className="border-t border-primary-foreground/10">
-          <div className="mx-auto max-w-6xl px-4">
+          <div className={container}>
             <button
               type="button"
               aria-expanded={open}
+              aria-controls="primary-navigation"
               onClick={() => setOpen((v) => !v)}
-              className="my-2 rounded-md border border-primary-foreground/25 px-3 py-1.5 text-xs text-primary-foreground sm:hidden"
+              className="my-2 min-h-10 w-full rounded-md border border-primary-foreground/25 px-3 text-xs font-medium text-primary-foreground sm:hidden"
             >
               {open ? "Hide menu" : "Menu"}
             </button>
             <ul
+              id="primary-navigation"
               className={`${open ? "flex" : "hidden"} flex-col gap-1 pb-2 sm:flex sm:flex-row sm:gap-1 sm:pb-0`}
             >
               {nav.map((item) => (
-                <li key={item.to}>
+                <li key={item.to} className="min-w-0">
                   <Link
                     to={item.to}
                     onClick={() => setOpen(false)}
@@ -107,7 +179,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                     inactiveProps={{
                       className: "border-transparent text-primary-foreground/70",
                     }}
-                    className="block border-b-2 px-3 py-2 text-sm font-medium transition-colors hover:text-primary-foreground"
+                    className="block w-full border-b-2 px-3 py-3 text-sm font-medium transition-colors hover:text-primary-foreground sm:py-2"
                   >
                     {item.label}
                   </Link>
@@ -118,7 +190,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </nav>
       </header>
 
-      <main className="mx-auto max-w-6xl px-4 py-8">
+      <main id="main-content" className={`${container} py-6 sm:py-8`}>
         {!loading && session.roleStatus === "unassigned" ? <RoleUnassignedBanner /> : null}
         {!loading && session.roleStatus === "disabled" ? (
           <AccessBanner
@@ -159,7 +231,7 @@ function RoleUnassignedBanner() {
 function UnauthenticatedScreen() {
   const { error } = useSession();
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4 py-12">
+    <div className="flex min-h-dvh items-center justify-center bg-background px-4 py-12">
       <div className="w-full max-w-md space-y-6">
         <div className="text-center">
           <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-lg bg-primary font-display text-xl font-bold text-primary-foreground">
