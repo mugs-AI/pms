@@ -57,7 +57,7 @@ function RolesPage() {
       />
 
       <Card>
-        <label className="block max-w-md">
+        <label className="block w-full max-w-md">
           <span className="text-xs font-semibold tracking-widest text-muted-foreground uppercase">
             Search N3 users
           </span>
@@ -108,12 +108,12 @@ function RoleRow({ entry }: { entry: RoleDirectoryEntry }) {
 
   return (
     <Card>
-      <div className="flex flex-wrap items-start justify-between gap-4">
+      <div className="flex flex-col gap-4 lg:flex-row lg:flex-wrap lg:items-start lg:justify-between">
         <div className="min-w-0">
           <p className="truncate font-semibold text-foreground">
             {entry.displayName ?? "Unnamed N3 user"}
           </p>
-          <p className="truncate text-sm text-muted-foreground">{entry.displayEmail ?? "—"}</p>
+          <p className="text-sm break-words text-muted-foreground">{entry.displayEmail ?? "—"}</p>
           <p className="mt-1 text-xs text-muted-foreground">
             N3 user {maskId(entry.n3UserId)} · {entry.roleLabel}
             {entry.roleSource ? ` · source ${entry.roleSource}` : ""}
@@ -136,7 +136,7 @@ function RoleRow({ entry }: { entry: RoleDirectoryEntry }) {
             Owner authority comes from N3 and cannot be edited.
           </p>
         ) : (
-          <div className="flex flex-wrap items-end gap-2">
+          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-end">
             <label className="block">
               <span className="text-xs font-semibold tracking-widest text-muted-foreground uppercase">
                 ProjectHub role
@@ -172,7 +172,7 @@ function RoleRow({ entry }: { entry: RoleDirectoryEntry }) {
                   { onSuccess: () => setSaved(true) },
                 );
               }}
-              className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+              className="min-h-11 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
             >
               {assign.isPending ? "Saving…" : "Save role"}
             </button>
