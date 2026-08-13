@@ -119,7 +119,7 @@ export function BoqEditor({ projectId, workspace }: { projectId: string; workspa
         onCloned={(id) => setVersionId(id)}
       />
 
-      <Card className="grid gap-4 sm:grid-cols-3 lg:grid-cols-6">
+      <Card className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
         <Detail label="Cost" value={formatMoney(summary.totals.totalCost)} />
         <Detail label="Selling" value={formatMoney(summary.totals.totalSelling)} />
         <Detail label="Tax" value={formatMoney(summary.totals.totalTax)} />
@@ -477,7 +477,7 @@ function EditSection({
     }),
   );
   return (
-    <div className="mt-2 grid gap-3 sm:grid-cols-3">
+    <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-3">
       <Field label="Code">
         <input
           className={inputClass}
@@ -805,7 +805,7 @@ function ItemForm({
         </div>
       </div>
 
-      <div className="grid gap-4 rounded-md bg-secondary/50 p-3 sm:grid-cols-3 lg:grid-cols-6">
+      <div className="grid grid-cols-2 gap-4 rounded-md bg-secondary/50 p-3 sm:grid-cols-3 lg:grid-cols-6">
         <Detail label="Cost" value={formatMoney(preview.costAmount)} />
         <Detail label="Selling" value={formatMoney(preview.sellingAmount)} />
         <Detail label="Tax" value={formatMoney(preview.taxAmount)} />
