@@ -17,12 +17,16 @@ export function PageHeading({
   actions?: ReactNode;
 }) {
   return (
-    <div className="flex flex-wrap items-start justify-between gap-4">
-      <div>
-        <h1 className="font-display text-3xl font-bold tracking-wide text-foreground">{title}</h1>
+    <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between sm:gap-4">
+      <div className="min-w-0">
+        <h1 className="font-display text-2xl font-bold tracking-wide break-words text-foreground sm:text-3xl">
+          {title}
+        </h1>
         {subtitle ? <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p> : null}
       </div>
-      {actions ? <div className="flex flex-wrap gap-2">{actions}</div> : null}
+      {actions ? (
+        <div className="flex flex-wrap gap-2 [&>*]:min-h-11 [&>*]:inline-flex [&>*]:items-center">{actions}</div>
+      ) : null}
     </div>
   );
 }
@@ -246,7 +250,7 @@ export function N3Picker({
           {open ? (
             <ul
               id={listId}
-              className="max-h-56 overflow-auto rounded-md border border-border bg-card text-sm"
+              className="max-h-56 w-full overflow-y-auto overscroll-contain rounded-md border border-border bg-card text-sm"
             >
               {query.isLoading ? (
                 <li className="px-3 py-2 text-muted-foreground">Searching N3…</li>

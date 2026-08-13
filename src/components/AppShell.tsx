@@ -126,7 +126,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             </div>
           </div>
 
-          <dl className="grid min-w-0 grid-cols-1 gap-x-6 gap-y-2 xs:grid-cols-2 sm:grid-cols-2 md:ml-auto md:grid-cols-3 md:gap-y-1">
+          <dl className="grid min-w-0 grid-cols-1 gap-x-6 gap-y-2 sm:grid-cols-2 md:ml-auto md:grid-cols-3 md:gap-y-1">
             <SessionField label="Company" value={session.companyName} loading={loading} />
             <SessionField label="Tenant code" value={session.tenantCode} loading={loading} />
             <SessionField label="User email" value={session.email} loading={loading} />
