@@ -76,21 +76,21 @@ function VerificationPage() {
           aria-label="N3 master data"
           className="flex w-max min-w-full gap-2 sm:w-auto sm:flex-wrap"
         >
-        {DATASETS.map((d) => (
-          <button
-            key={d.id}
-            role="tab"
-            aria-selected={d.id === activeId}
-            onClick={() => setActiveId(d.id)}
-            className={`min-h-11 shrink-0 rounded-md border px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none ${
-              d.id === activeId
-                ? "border-accent bg-accent/15 text-foreground"
-                : "border-border bg-card text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            {d.label}
-          </button>
-        ))}
+          {DATASETS.map((d) => (
+            <button
+              key={d.id}
+              role="tab"
+              aria-selected={d.id === activeId}
+              onClick={() => setActiveId(d.id)}
+              className={`min-h-11 shrink-0 rounded-md border px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none ${
+                d.id === activeId
+                  ? "border-accent bg-accent/15 text-foreground"
+                  : "border-border bg-card text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {d.label}
+            </button>
+          ))}
         </div>
       </div>
 

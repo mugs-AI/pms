@@ -94,7 +94,5 @@ export function useDisplayWidth(): [DisplayWidth, (value: DisplayWidth) => void]
  */
 export function widthContainerClass(width: DisplayWidth): string {
   const padding = "px-4 sm:px-6 lg:px-8";
-  return width === "full"
-    ? `w-full max-w-none ${padding}`
-    : `mx-auto w-full max-w-6xl ${padding}`;
+  return width === "full" ? `w-full max-w-none ${padding}` : `mx-auto w-full max-w-6xl ${padding}`;
 }

@@ -13,7 +13,15 @@ const NAV: { to: string; label: string; permission?: Permission; ownerOnly?: boo
   { to: "/capabilities", label: "Capability Inventory", ownerOnly: true },
 ];
 
-function SessionField({ label, value, loading }: { label: string; value: string | null; loading: boolean }) {
+function SessionField({
+  label,
+  value,
+  loading,
+}: {
+  label: string;
+  value: string | null;
+  loading: boolean;
+}) {
   return (
     <div className="min-w-0">
       <dt className="text-[0.65rem] font-semibold tracking-widest text-primary-foreground/60 uppercase">
@@ -95,7 +103,9 @@ export function AppShell({ children }: { children: ReactNode }) {
       </a>
 
       <header className="bg-primary shadow-header">
-        <div className={`${container} flex flex-col gap-3 py-3 md:flex-row md:flex-wrap md:items-center md:gap-4`}>
+        <div
+          className={`${container} flex flex-col gap-3 py-3 md:flex-row md:flex-wrap md:items-center md:gap-4`}
+        >
           <div className="flex min-w-0 items-center justify-between gap-3">
             <div className="flex min-w-0 items-center gap-3">
               <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-accent font-display text-lg font-bold text-accent-foreground">

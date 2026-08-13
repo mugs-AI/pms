@@ -25,7 +25,9 @@ export function PageHeading({
         {subtitle ? <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p> : null}
       </div>
       {actions ? (
-        <div className="flex flex-wrap gap-2 [&>*]:min-h-11 [&>*]:inline-flex [&>*]:items-center">{actions}</div>
+        <div className="flex flex-wrap gap-2 [&>*]:min-h-11 [&>*]:inline-flex [&>*]:items-center">
+          {actions}
+        </div>
       ) : null}
     </div>
   );
