@@ -15,6 +15,7 @@ export const qk = {
   project: (id: string) => ["projecthub", "project", id] as const,
   boq: (id: string, versionId?: string) =>
     ["projecthub", "boq", id, versionId ?? "latest"] as const,
+  quotation: (id: string) => ["projecthub", "quotation", id] as const,
   picker: (kind: string, search: string) => ["projecthub", "n3", kind, search] as const,
 };
 
