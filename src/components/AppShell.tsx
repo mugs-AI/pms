@@ -3,77 +3,17 @@ import { useState, type ReactNode } from "react";
 import { useSession } from "@/lib/n3-session";
 import { DevApiKeyLogin } from "@/components/DevApiKeyLogin";
 import type { Permission } from "@/lib/projecthub-rbac";
-import { useDisplayWidth, widthContainerClass, type DisplayWidth } from "@/lib/display-preference";
+import { useDisplayWidth, widthContainerClass } from "@/lib/display-preference";
 
+// Compact top-level shell: Dashboard | Projects | Settings.
+// Team & Roles, N3 Data Verification and Capability Inventory now live inside
+// Settings. Settings itself is always reachable; each module inside it is
+// permission-filtered, and every route keeps its own server-side authorization.
 const NAV: { to: string; label: string; permission?: Permission; ownerOnly?: boolean }[] = [
   { to: "/", label: "Dashboard" },
   { to: "/projects", label: "Projects", permission: "projecthub:projects:list" },
-  { to: "/roles", label: "Team & Roles", permission: "projecthub:roles:manage" },
-  { to: "/verification", label: "N3 Data Verification", ownerOnly: true },
-  { to: "/capabilities", label: "Capability Inventory", ownerOnly: true },
+  { to: "/settings", label: "Settings" },
 ];
-
-function SessionField({
-  label,
-  value,
-  loading,
-}: {
-  label: string;
-  value: string | null;
-  loading: boolean;
-}) {
-  return (
-    <div className="min-w-0">
-      <dt className="text-[0.65rem] font-semibold tracking-widest text-primary-foreground/60 uppercase">
-        {label}
-      </dt>
-      {loading ? (
-        <dd className="mt-1 h-4 w-24 max-w-full animate-pulse rounded bg-primary-foreground/15" />
-      ) : (
-        <dd className="truncate text-sm text-primary-foreground" title={value ?? undefined}>
-          {value ?? "—"}
-        </dd>
-      )}
-    </div>
-  );
-}
-
-const WIDTH_OPTIONS: { value: DisplayWidth; label: string; title: string }[] = [
-  { value: "standard", label: "Standard", title: "Centered layout, capped for readability" },
-  { value: "full", label: "Full width", title: "Use the full browser workspace" },
-];
-
-export function DisplayWidthToggle({ className = "" }: { className?: string }) {
-  const [width, setWidth] = useDisplayWidth();
-  return (
-    <div
-      role="radiogroup"
-      aria-label="Desktop display width"
-      className={`inline-flex shrink-0 rounded-md border border-primary-foreground/25 p-0.5 ${className}`}
-    >
-      {WIDTH_OPTIONS.map((option) => {
-        const checked = width === option.value;
-        return (
-          <button
-            key={option.value}
-            type="button"
-            role="radio"
-            aria-checked={checked}
-            title={option.title}
-            onClick={() => setWidth(option.value)}
-            className={`min-h-10 rounded px-3 text-xs font-medium whitespace-nowrap transition-colors focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none ${
-              checked
-                ? "bg-accent text-accent-foreground"
-                : "text-primary-foreground/75 hover:text-primary-foreground"
-            }`}
-          >
-            {option.label}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
 
 export function AppShell({ children }: { children: ReactNode }) {
   const session = useSession();
