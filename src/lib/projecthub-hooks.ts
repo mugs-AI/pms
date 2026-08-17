@@ -15,6 +15,7 @@ export const qk = {
   project: (id: string) => ["projecthub", "project", id] as const,
   boq: (id: string, versionId?: string) =>
     ["projecthub", "boq", id, versionId ?? "latest"] as const,
+  quotation: (id: string) => ["projecthub", "quotation", id] as const,
   picker: (kind: string, search: string) => ["projecthub", "n3", kind, search] as const,
 };
 
@@ -302,5 +303,59 @@ export function useProjectMutation<TInput>(
       void queryClient.invalidateQueries({ queryKey: ["projecthub", "boq", projectId] });
       void queryClient.invalidateQueries({ queryKey: ["projecthub", "projects"] });
     },
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Read-only customer quotation preview
+// ---------------------------------------------------------------------------
+
+export type QuotationLine = {
+  lineNumber: number;
+  description: string;
+  quantity: string;
+  uom: string | null;
+  sellingRate: string;
+  sellingAmount: string;
+  taxCode: string | null;
+  taxRate: string | null;
+  taxAmount: string;
+  amountWithTax: string;
+};
+
+export type QuotationSection = {
+  code: string | null;
+  name: string;
+  lines: QuotationLine[];
+  subtotal: { selling: string; tax: string; total: string };
+};
+
+export type QuotationDto = {
+  previewGeneratedAt: string;
+  postingState: "not_posted";
+  notPostedToN3Label: string;
+  previewReady: boolean;
+  futurePostingReady: boolean;
+  blockers: { code: string; scope: "preview" | "future_posting"; message: string }[];
+  document: {
+    enquiryReference: string;
+    projectTitle: string;
+    customerDisplayName: string;
+    siteDescription: string | null;
+    revisionLabel: string;
+    primaryPhaseName: string;
+    currency: string;
+    sections: QuotationSection[];
+    totals: { selling: string; tax: string; total: string };
+  } | null;
+};
+
+/** Server-derived, privacy-minimized quotation readiness and preview. */
+export function useQuotationPreview(projectId: string, enabled: boolean) {
+  return useQuery({
+    queryKey: qk.quotation(projectId),
+    enabled,
+    queryFn: () =>
+      projectHubRequest<{ quotation: QuotationDto }>(`projects/${projectId}/quotation-preview`),
   });
 }

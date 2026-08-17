@@ -57,18 +57,28 @@ function RolesPage() {
       />
 
       <Card>
-        <label className="block w-full max-w-md">
-          <span className="text-xs font-semibold tracking-widest text-muted-foreground uppercase">
-            Search N3 users
-          </span>
-          <input
-            type="search"
-            className={`${inputClass} mt-1`}
-            placeholder="Name, code or email"
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-          />
-        </label>
+        <div className="flex w-full max-w-md flex-col gap-2 sm:flex-row sm:items-end">
+          <label className="block min-w-0 flex-1">
+            <span className="text-xs font-semibold tracking-widest text-muted-foreground uppercase">
+              Search N3 users
+            </span>
+            <input
+              type="search"
+              className={`${inputClass} mt-1`}
+              placeholder="Name, code or email"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+            />
+          </label>
+          <button
+            type="button"
+            onClick={() => setSearch("")}
+            disabled={search === ""}
+            className="min-h-11 shrink-0 rounded-md border border-input px-4 py-2 text-sm font-medium hover:bg-secondary disabled:opacity-40"
+          >
+            Clear search
+          </button>
+        </div>
       </Card>
 
       {directory.isLoading ? <Skeleton rows={5} /> : null}

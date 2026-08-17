@@ -17,6 +17,7 @@ import {
 import * as boq from "./projecthub-boq.server";
 import { isPickerKind, pickerPermission, readPicker } from "./projecthub-n3.server";
 import * as projects from "./projecthub-projects.server";
+import { getQuotationPreview } from "./projecthub-quotation.server";
 import { assignRole, listRoleDirectory } from "./projecthub-roles.server";
 import * as S from "./projecthub-schemas";
 
@@ -178,6 +179,14 @@ export async function handleProjectHubRequest(request: Request, splat: string): 
     }
 
     const child = segments[2] as string;
+
+    // Read-only customer quotation readiness/preview. No write of any kind.
+    if (child === "quotation-preview" && segments.length === 3) {
+      if (method !== "GET") return methodNotAllowed(correlationId, "GET");
+      const denied = requirePermission(actor, "projecthub:boq:view");
+      if (denied) return denied;
+      return respond(actor, await getQuotationPreview(actor, projectId));
+    }
 
     if (child === "cancel" && segments.length === 3) {
       if (method !== "POST") return methodNotAllowed(correlationId, "POST");

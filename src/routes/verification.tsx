@@ -192,6 +192,18 @@ function DatasetPanel({ dataset }: { dataset: Dataset }) {
             >
               Search
             </button>
+            <button
+              type="button"
+              disabled={search === "" && term === "" && page === 0}
+              onClick={() => {
+                setSearch("");
+                setTerm("");
+                setPage(0);
+              }}
+              className="min-h-11 shrink-0 rounded-md border border-input px-3 py-2 text-sm font-medium hover:bg-secondary disabled:opacity-40"
+            >
+              Clear
+            </button>
           </div>
         </div>
         <p className="text-xs break-words text-muted-foreground">

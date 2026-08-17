@@ -19,6 +19,19 @@ export function isDisplayWidth(value: unknown): value is DisplayWidth {
   return value === "standard" || value === "full";
 }
 
+/**
+ * Current-tab fallback. When localStorage is missing, blocked or over quota
+ * the selection must still apply immediately, so the chosen width is kept in
+ * memory. It holds only the safe UI preference — never tenant, token, user,
+ * email, role or identity data.
+ */
+let memoryWidth: DisplayWidth | null = null;
+
+/** Test-only reset of the in-memory fallback. */
+export function resetDisplayWidthMemory(): void {
+  memoryWidth = null;
+}
+
 function storage(): Storage | null {
   try {
     const candidate = (globalThis as { localStorage?: Storage }).localStorage;
@@ -30,6 +43,7 @@ function storage(): Storage | null {
 }
 
 export function readDisplayWidth(): DisplayWidth {
+  if (memoryWidth) return memoryWidth;
   const store = storage();
   if (!store) return DEFAULT_DISPLAY_WIDTH;
   try {
@@ -42,6 +56,8 @@ export function readDisplayWidth(): DisplayWidth {
 
 export function writeDisplayWidth(value: DisplayWidth): void {
   if (!isDisplayWidth(value)) return;
+  // Applies in the current tab even when persistence is impossible.
+  memoryWidth = value;
   const store = storage();
   if (store) {
     try {
@@ -68,7 +84,11 @@ export function subscribeDisplayWidth(onChange: () => void): () => void {
   if (typeof target.addEventListener !== "function") return () => {};
   const handleStorage = (event: Event) => {
     const key = (event as StorageEvent).key;
-    if (key === null || key === undefined || key === DISPLAY_WIDTH_KEY) onChange();
+    if (key === null || key === undefined || key === DISPLAY_WIDTH_KEY) {
+      // Another tab is now the source of truth: drop the local override.
+      memoryWidth = null;
+      onChange();
+    }
   };
   target.addEventListener("storage", handleStorage);
   target.addEventListener(DISPLAY_WIDTH_EVENT, onChange);

@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as CapabilitiesRouteImport } from './routes/capabilities'
 import { Route as RolesRouteImport } from './routes/roles'
+import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as VerificationRouteImport } from './routes/verification'
 import { Route as ProjectsIndexRouteImport } from './routes/projects.index'
 import { Route as ProjectsProjectIdRouteImport } from './routes/projects.$projectId'
@@ -33,6 +34,11 @@ const CapabilitiesRoute = CapabilitiesRouteImport.update({
 const RolesRoute = RolesRouteImport.update({
   id: '/roles',
   path: '/roles',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
   getParentRoute: () => rootRouteImport,
 } as any)
 const VerificationRoute = VerificationRouteImport.update({
@@ -75,6 +81,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/capabilities': typeof CapabilitiesRoute
   '/roles': typeof RolesRoute
+  '/settings': typeof SettingsRoute
   '/verification': typeof VerificationRoute
   '/projects/$projectId': typeof ProjectsProjectIdRoute
   '/projects/new': typeof ProjectsNewRoute
@@ -87,6 +94,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/capabilities': typeof CapabilitiesRoute
   '/roles': typeof RolesRoute
+  '/settings': typeof SettingsRoute
   '/verification': typeof VerificationRoute
   '/projects/$projectId': typeof ProjectsProjectIdRoute
   '/projects/new': typeof ProjectsNewRoute
@@ -100,6 +108,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/capabilities': typeof CapabilitiesRoute
   '/roles': typeof RolesRoute
+  '/settings': typeof SettingsRoute
   '/verification': typeof VerificationRoute
   '/projects/$projectId': typeof ProjectsProjectIdRoute
   '/projects/new': typeof ProjectsNewRoute
@@ -114,6 +123,7 @@ export interface FileRouteTypes {
     | '/'
     | '/capabilities'
     | '/roles'
+    | '/settings'
     | '/verification'
     | '/projects/$projectId'
     | '/projects/new'
@@ -126,6 +136,7 @@ export interface FileRouteTypes {
     | '/'
     | '/capabilities'
     | '/roles'
+    | '/settings'
     | '/verification'
     | '/projects/$projectId'
     | '/projects/new'
@@ -138,6 +149,7 @@ export interface FileRouteTypes {
     | '/'
     | '/capabilities'
     | '/roles'
+    | '/settings'
     | '/verification'
     | '/projects/$projectId'
     | '/projects/new'
@@ -151,6 +163,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   CapabilitiesRoute: typeof CapabilitiesRoute
   RolesRoute: typeof RolesRoute
+  SettingsRoute: typeof SettingsRoute
   VerificationRoute: typeof VerificationRoute
   ProjectsProjectIdRoute: typeof ProjectsProjectIdRoute
   ProjectsNewRoute: typeof ProjectsNewRoute
@@ -181,6 +194,13 @@ declare module '@tanstack/react-router' {
       path: '/roles'
       fullPath: '/roles'
       preLoaderRoute: typeof RolesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/verification': {
@@ -239,6 +259,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CapabilitiesRoute: CapabilitiesRoute,
   RolesRoute: RolesRoute,
+  SettingsRoute: SettingsRoute,
   VerificationRoute: VerificationRoute,
   ProjectsProjectIdRoute: ProjectsProjectIdRoute,
   ProjectsNewRoute: ProjectsNewRoute,

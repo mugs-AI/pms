@@ -1,6 +1,6 @@
 import { malaysiaToday } from "@/lib/projecthub-date";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import {
   AccessState,
@@ -82,6 +82,21 @@ function NewEnquiryPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<unknown>(null);
   const [fieldError, setFieldError] = useState<string | null>(null);
+  const [invalidField, setInvalidField] = useState<string | null>(null);
+  const fields = useRef<Record<string, HTMLElement | null>>({});
+  const errorId = "new-enquiry-error";
+
+  /** Reports one validation failure and moves focus to the offending field. */
+  function reject(field: string, message: string) {
+    setFieldError(message);
+    setInvalidField(field);
+    fields.current[field]?.focus();
+  }
+
+  const invalidProps = (field: string) =>
+    invalidField === field
+      ? ({ "aria-invalid": true, "aria-describedby": errorId } as const)
+      : ({ "aria-invalid": undefined } as const);
 
   if (!hasPermission("projecthub:projects:create")) return <AccessState />;
 
@@ -90,25 +105,29 @@ function NewEnquiryPage() {
     if (submitting) return;
     setError(null);
     setFieldError(null);
+    setInvalidField(null);
 
-    if (!title.trim()) return setFieldError("A project title is required.");
+    if (!title.trim()) return reject("title", "A project title is required.");
     if (expectedStartDate && expectedEndDate && expectedStartDate > expectedEndDate) {
-      return setFieldError("The expected end date must not precede the start date.");
+      return reject("expectedEndDate", "The expected end date must not precede the start date.");
     }
     if (customerMode === "linked_existing" && !customer) {
-      return setFieldError("Select an existing N3 customer, or choose another customer mode.");
+      return reject(
+        "customer",
+        "Select an existing N3 customer, or choose another customer mode.",
+      );
     }
     if (customerMode !== "linked_existing" && !requested.name.trim()) {
-      return setFieldError("A prospect or requested customer name is required.");
+      return reject("requestedName", "A prospect or requested customer name is required.");
     }
     if (codeMode === "linked_existing" && !projectCode) {
-      return setFieldError("Select an existing N3 project code, or choose another mode.");
+      return reject("projectCode", "Select an existing N3 project code, or choose another mode.");
     }
-    if (
-      codeMode === "pending_n3_create_contract" &&
-      (!requestedCode.code.trim() || !requestedCode.name.trim())
-    ) {
-      return setFieldError("A requested N3 project code and name are required.");
+    if (!requestedCode.code.trim() && codeMode === "pending_n3_create_contract") {
+      return reject("requestedProjectCode", "A requested N3 project code and name are required.");
+    }
+    if (!requestedCode.name.trim() && codeMode === "pending_n3_create_contract") {
+      return reject("requestedProjectName", "A requested N3 project code and name are required.");
     }
 
     setSubmitting(true);
@@ -169,24 +188,20 @@ function NewEnquiryPage() {
       <PageHeading
         title="New Enquiry"
         subtitle="ProjectHub generates the ENQ-YYYY-##### reference. Nothing here writes to N3."
-        actions={
-          <Link
-            to="/projects"
-            className="rounded-md border border-input px-4 py-2 text-sm font-medium hover:bg-secondary"
-          >
-            Cancel
-          </Link>
-        }
       />
 
       <Card className="grid gap-4 sm:grid-cols-2">
-        <Field label="Project title">
+        <Field label="Project title" error={invalidField === "title" ? fieldError : null}>
           <input
+            ref={(node) => {
+              fields.current["title"] = node;
+            }}
             className={inputClass}
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             required
             maxLength={200}
+            {...invalidProps("title")}
           />
         </Field>
         <Field label="Project type">
@@ -225,12 +240,19 @@ function NewEnquiryPage() {
             onChange={(e) => setExpectedStartDate(e.target.value)}
           />
         </Field>
-        <Field label="Expected end date">
+        <Field
+          label="Expected end date"
+          error={invalidField === "expectedEndDate" ? fieldError : null}
+        >
           <input
+            ref={(node) => {
+              fields.current["expectedEndDate"] = node;
+            }}
             type="date"
             className={inputClass}
             value={expectedEndDate}
             onChange={(e) => setExpectedEndDate(e.target.value)}
+            {...invalidProps("expectedEndDate")}
           />
         </Field>
         {budgetMode === "simple_budget" ? (
@@ -287,14 +309,25 @@ function NewEnquiryPage() {
             label="Existing N3 customer"
             value={customer}
             onChange={setCustomer}
+            error={invalidField === "customer" ? fieldError : null}
+            inputRef={(node) => {
+              fields.current["customer"] = node;
+            }}
           />
         ) : (
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Customer / prospect name">
+            <Field
+              label="Customer / prospect name"
+              error={invalidField === "requestedName" ? fieldError : null}
+            >
               <input
+                ref={(node) => {
+                  fields.current["requestedName"] = node;
+                }}
                 className={inputClass}
                 value={requested.name}
                 onChange={(e) => setRequested({ ...requested, name: e.target.value })}
+                {...invalidProps("requestedName")}
               />
             </Field>
             <Field label="Contact person">
@@ -359,22 +392,40 @@ function NewEnquiryPage() {
             label="Existing N3 project code"
             value={projectCode}
             onChange={setProjectCode}
+            error={invalidField === "projectCode" ? fieldError : null}
+            inputRef={(node) => {
+              fields.current["projectCode"] = node;
+            }}
           />
         ) : null}
         {codeMode === "pending_n3_create_contract" ? (
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Requested N3 project code">
+            <Field
+              label="Requested N3 project code"
+              error={invalidField === "requestedProjectCode" ? fieldError : null}
+            >
               <input
+                ref={(node) => {
+                  fields.current["requestedProjectCode"] = node;
+                }}
                 className={inputClass}
                 value={requestedCode.code}
                 onChange={(e) => setRequestedCode({ ...requestedCode, code: e.target.value })}
+                {...invalidProps("requestedProjectCode")}
               />
             </Field>
-            <Field label="Requested N3 project name">
+            <Field
+              label="Requested N3 project name"
+              error={invalidField === "requestedProjectName" ? fieldError : null}
+            >
               <input
+                ref={(node) => {
+                  fields.current["requestedProjectName"] = node;
+                }}
                 className={inputClass}
                 value={requestedCode.name}
                 onChange={(e) => setRequestedCode({ ...requestedCode, name: e.target.value })}
+                {...invalidProps("requestedProjectName")}
               />
             </Field>
           </div>
@@ -385,7 +436,7 @@ function NewEnquiryPage() {
       </Card>
 
       {fieldError ? (
-        <p role="alert" className="text-sm text-destructive">
+        <p id={errorId} role="alert" className="text-sm text-destructive">
           {fieldError}
         </p>
       ) : null}
