@@ -46,7 +46,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <div
           className={`${container} flex flex-col gap-3 py-3 md:flex-row md:flex-wrap md:items-center md:gap-4`}
         >
-          <div className="flex min-w-0 items-center justify-between gap-3">
+          <div className="flex min-w-0 flex-1 items-center justify-between gap-3">
             <div className="flex min-w-0 items-center gap-3">
               <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-accent font-display text-lg font-bold text-accent-foreground">
                 PH
@@ -55,47 +55,21 @@ export function AppShell({ children }: { children: ReactNode }) {
                 <p className="truncate font-display text-xl leading-none font-bold tracking-wide text-primary-foreground">
                   N3 ProjectHub
                 </p>
-                <p className="truncate text-xs text-primary-foreground/60">
-                  Construction &amp; renovation PMS for N3
-                </p>
+                {/* Company context only. Tenant code, email, immutable ids and
+                    session diagnostics are deliberately not shown here. */}
+                {loading ? (
+                  <span className="mt-1 block h-3 w-32 max-w-full rounded bg-primary-foreground/15 motion-safe:animate-pulse" />
+                ) : (
+                  <p className="truncate text-xs text-primary-foreground/70">
+                    {session.companyName ?? "Construction & renovation PMS for N3"}
+                  </p>
+                )}
               </div>
             </div>
-            <div className="flex shrink-0 items-center gap-2 md:hidden">
-              <span
-                aria-hidden="true"
-                className={`h-2 w-2 rounded-full ${loading ? "bg-accent" : "bg-success"}`}
-              />
-              <span className="sr-only">{loading ? "Connecting to N3" : "N3 session active"}</span>
-              <button
-                type="button"
-                onClick={session.signOut}
-                className="min-h-10 rounded-md border border-primary-foreground/25 px-3 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary-foreground/10"
-              >
-                Sign out
-              </button>
-            </div>
-          </div>
-
-          <dl className="grid min-w-0 grid-cols-1 gap-x-6 gap-y-2 sm:grid-cols-2 md:ml-auto md:grid-cols-3 md:gap-y-1">
-            <SessionField label="Company" value={session.companyName} loading={loading} />
-            <SessionField label="Tenant code" value={session.tenantCode} loading={loading} />
-            <SessionField label="User email" value={session.email} loading={loading} />
-            <SessionField label="ProjectHub role" value={session.roleLabel} loading={loading} />
-          </dl>
-
-          <div className="flex flex-wrap items-center gap-3">
-            <DisplayWidthToggle />
-            <span className="hidden items-center gap-2 rounded-full bg-primary-foreground/10 px-3 py-1 text-xs text-primary-foreground md:inline-flex">
-              <span
-                aria-hidden="true"
-                className={`h-2 w-2 rounded-full ${loading ? "bg-accent" : "bg-success"}`}
-              />
-              {loading ? "Connecting to N3" : "N3 session active"}
-            </span>
             <button
               type="button"
               onClick={session.signOut}
-              className="hidden min-h-10 rounded-md border border-primary-foreground/25 px-3 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary-foreground/10 md:block"
+              className="min-h-10 shrink-0 rounded-md border border-primary-foreground/25 px-3 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary-foreground/10"
             >
               Sign out
             </button>
