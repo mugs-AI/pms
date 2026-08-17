@@ -51,6 +51,7 @@ function ProjectsPage() {
   const canList = hasPermission("projecthub:projects:list");
   const canCreate = hasPermission("projecthub:projects:create");
   const query = useProjects({ search, status, projectType, page, pageSize }, canList);
+  const filtersActive = search !== "" || status !== "" || projectType !== "";
 
   if (!canList) return <AccessState />;
 
@@ -128,6 +129,21 @@ function ProjectsPage() {
             <option value="renovation">Renovation</option>
           </select>
         </label>
+        <div className="flex items-end sm:col-span-2 lg:col-span-3">
+          <button
+            type="button"
+            onClick={() => {
+              setSearch("");
+              setStatus("");
+              setProjectType("");
+              setPage(0);
+            }}
+            disabled={!filtersActive}
+            className="min-h-11 rounded-md border border-input px-4 py-2 text-sm font-medium hover:bg-secondary disabled:opacity-40"
+          >
+            Clear filters
+          </button>
+        </div>
       </Card>
 
       {query.isLoading ? <Skeleton rows={6} /> : null}
