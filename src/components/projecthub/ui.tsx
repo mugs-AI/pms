@@ -2,7 +2,7 @@
  * Shared ProjectHub presentation primitives: access states, async states and
  * the N3-backed searchable picker. No business authority lives here.
  */
-import { useEffect, useId, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
 import { describeError } from "@/lib/projecthub-client";
 import { useN3Picker, type PickerOption } from "@/lib/projecthub-hooks";
 import { useSession } from "@/lib/n3-session";
@@ -45,7 +45,7 @@ export function Skeleton({ rows = 4 }: { rows?: number }) {
   return (
     <div className="space-y-3" role="status" aria-label="Loading">
       {Array.from({ length: rows }).map((_, index) => (
-        <div key={index} className="h-12 animate-pulse rounded-md bg-muted" />
+        <div key={index} className="h-12 rounded-md bg-muted motion-safe:animate-pulse" />
       ))}
     </div>
   );
@@ -187,9 +187,16 @@ export type N3PickerProps = {
   disabled?: boolean;
   error?: string | null;
   placeholder?: string;
+  inputRef?: (node: HTMLInputElement | null) => void;
 };
 
-/** Searchable picker fed exclusively by sanitized same-origin N3 reads. */
+/**
+ * Keyboard-complete combobox fed exclusively by sanitized same-origin N3 reads.
+ *
+ * The browser sends the selected immutable id only; the server re-resolves the
+ * record and owns every stored snapshot, so a tampered selection cannot
+ * introduce a fabricated display identity.
+ */
 export function N3Picker({
   kind,
   label,
@@ -198,11 +205,18 @@ export function N3Picker({
   disabled,
   error,
   placeholder,
+  inputRef,
 }: N3PickerProps) {
   const [search, setSearch] = useState("");
   const [debounced, setDebounced] = useState("");
   const [open, setOpen] = useState(false);
-  const listId = useId();
+  const [activeIndex, setActiveIndex] = useState(0);
+  const baseId = useId();
+  const listId = `${baseId}-listbox`;
+  const labelId = `${baseId}-label`;
+  const errorId = `${baseId}-error`;
+  const optionId = (index: number) => `${baseId}-option-${index}`;
+  const listRef = useRef<HTMLUListElement | null>(null);
 
   useEffect(() => {
     const timer = setTimeout(() => setDebounced(search), 250);
@@ -212,22 +226,99 @@ export function N3Picker({
   const query = useN3Picker(kind, debounced, open && !disabled);
   const options = useMemo(() => query.data?.options ?? [], [query.data]);
 
+  useEffect(() => {
+    setActiveIndex(0);
+  }, [options]);
+
+  useEffect(() => {
+    if (!open) return;
+    const node = listRef.current?.querySelector<HTMLElement>('[data-active="true"]');
+    node?.scrollIntoView({ block: "nearest" });
+  }, [activeIndex, open]);
+
+  const select = (option: PickerOption) => {
+    onChange(option);
+    setOpen(false);
+    setSearch("");
+  };
+
+  const move = (delta: number) => {
+    if (options.length === 0) return;
+    setActiveIndex((current) => {
+      const next = current + delta;
+      if (next < 0) return options.length - 1;
+      if (next >= options.length) return 0;
+      return next;
+    });
+  };
+
+  const onKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    switch (event.key) {
+      case "ArrowDown":
+        event.preventDefault();
+        if (!open) setOpen(true);
+        else move(1);
+        break;
+      case "ArrowUp":
+        event.preventDefault();
+        if (!open) setOpen(true);
+        else move(-1);
+        break;
+      case "Home":
+        if (open && options.length > 0) {
+          event.preventDefault();
+          setActiveIndex(0);
+        }
+        break;
+      case "End":
+        if (open && options.length > 0) {
+          event.preventDefault();
+          setActiveIndex(options.length - 1);
+        }
+        break;
+      case "Enter": {
+        if (!open) break;
+        event.preventDefault();
+        const option = options[activeIndex];
+        if (option) select(option);
+        break;
+      }
+      case "Escape":
+        event.preventDefault();
+        setOpen(false);
+        break;
+      default:
+        break;
+    }
+  };
+
+  const status = query.isLoading
+    ? "Searching N3\u2026"
+    : query.isError
+      ? describeError(query.error).message
+      : options.length === 0
+        ? "No matching N3 records"
+        : null;
+
   return (
     <div className="space-y-1">
-      <span className="text-xs font-semibold tracking-widest text-muted-foreground uppercase">
+      <span
+        id={labelId}
+        className="text-xs font-semibold tracking-widest text-muted-foreground uppercase"
+      >
         {label}
       </span>
       {value ? (
         <div className="flex items-center justify-between gap-2 rounded-md border border-input bg-background px-3 py-2 text-sm">
           <span className="truncate">
-            {value.code ? `${value.code} — ` : ""}
+            {value.code ? `${value.code} \u2014 ` : ""}
             {value.name ?? value.id}
           </span>
           <button
             type="button"
             disabled={disabled}
             onClick={() => onChange(null)}
-            className="text-xs font-medium text-muted-foreground hover:text-foreground"
+            className="min-h-11 text-xs font-medium text-muted-foreground hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
           >
             Change
           </button>
@@ -235,61 +326,76 @@ export function N3Picker({
       ) : (
         <>
           <input
-            type="search"
+            ref={inputRef}
+            type="text"
             role="combobox"
+            aria-label={label}
             aria-expanded={open}
             aria-controls={listId}
-            className={inputClass}
+            aria-autocomplete="list"
+            aria-haspopup="listbox"
+            aria-invalid={error ? true : undefined}
+            aria-describedby={error ? errorId : undefined}
+            aria-activedescendant={
+              open && options.length > 0 ? optionId(activeIndex) : undefined
+            }
+            className={`${inputClass} focus-visible:ring-2 focus-visible:ring-ring`}
             placeholder={placeholder ?? "Search live N3 records"}
             value={search}
             disabled={disabled}
             onFocus={() => setOpen(true)}
+            onKeyDown={onKeyDown}
             onChange={(event) => {
               setSearch(event.target.value);
               setOpen(true);
             }}
           />
-          {open ? (
-            <ul
-              id={listId}
-              className="max-h-56 w-full overflow-y-auto overscroll-contain rounded-md border border-border bg-card text-sm"
-            >
-              {query.isLoading ? (
-                <li className="px-3 py-2 text-muted-foreground">Searching N3…</li>
-              ) : null}
-              {query.isError ? (
-                <li className="px-3 py-2 text-destructive">{describeError(query.error).message}</li>
-              ) : null}
-              {!query.isLoading && !query.isError && options.length === 0 ? (
-                <li className="px-3 py-2 text-muted-foreground">No matching N3 records</li>
-              ) : null}
-              {options.map((option) => (
-                <li key={option.id}>
-                  <button
-                    type="button"
-                    className="block w-full px-3 py-2 text-left hover:bg-secondary"
-                    onClick={() => {
-                      onChange(option);
-                      setOpen(false);
-                      setSearch("");
-                    }}
-                  >
-                    <span className="font-medium">
-                      {option.code ? `${option.code} — ` : ""}
-                      {option.name ?? option.id}
-                    </span>
-                    {option.detail ? (
-                      <span className="block text-xs text-muted-foreground">{option.detail}</span>
-                    ) : null}
-                  </button>
+          <ul
+            ref={listRef}
+            id={listId}
+            role="listbox"
+            aria-label={label}
+            hidden={!open}
+            className="max-h-56 w-full overflow-y-auto overscroll-contain rounded-md border border-border bg-card text-sm"
+          >
+            {status ? (
+              <li
+                role="presentation"
+                aria-live="polite"
+                className={`px-3 py-2 ${query.isError ? "text-destructive" : "text-muted-foreground"}`}
+              >
+                {status}
+              </li>
+            ) : null}
+            {options.map((option, index) => {
+              const active = index === activeIndex;
+              return (
+                <li
+                  key={option.id}
+                  id={optionId(index)}
+                  role="option"
+                  aria-selected={active}
+                  data-active={active ? "true" : "false"}
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={() => select(option)}
+                  onMouseEnter={() => setActiveIndex(index)}
+                  className={`cursor-pointer px-3 py-2 ${active ? "bg-secondary" : ""}`}
+                >
+                  <span className="font-medium">
+                    {option.code ? `${option.code} \u2014 ` : ""}
+                    {option.name ?? option.id}
+                  </span>
+                  {option.detail ? (
+                    <span className="block text-xs text-muted-foreground">{option.detail}</span>
+                  ) : null}
                 </li>
-              ))}
-            </ul>
-          ) : null}
+              );
+            })}
+          </ul>
         </>
       )}
       {error ? (
-        <span role="alert" className="block text-xs text-destructive">
+        <span id={errorId} role="alert" className="block text-xs text-destructive">
           {error}
         </span>
       ) : null}
