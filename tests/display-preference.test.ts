@@ -85,10 +85,12 @@ describe("display width preference", () => {
     expect(readDisplayWidth()).toBe("full");
   });
 
-  it("survives a quota failure without throwing", () => {
+  it("survives a quota failure and still applies the choice in this tab", () => {
     storage.throwOnSet = true;
     expect(() => writeDisplayWidth("full")).not.toThrow();
-    expect(readDisplayWidth()).toBe("standard");
+    // Persistence failed, but the in-memory fallback keeps the tab usable.
+    expect(readDisplayWidth()).toBe("full");
+    expect([...storage.store.keys()]).toEqual([]);
   });
 
   it("notifies same-tab consumers immediately", () => {
@@ -150,13 +152,27 @@ describe("display width preference", () => {
 
 describe("shell and route responsive contracts", () => {
   const shell = readFileSync("src/components/AppShell.tsx", "utf8");
+  const control = readFileSync("src/components/projecthub/DisplayWidthControl.tsx", "utf8");
+  const settings = readFileSync("src/routes/settings.tsx", "utf8");
 
-  it("renders the toggle with radiogroup semantics and tooltips", () => {
-    expect(shell).toContain('role="radiogroup"');
-    expect(shell).toContain('role="radio"');
-    expect(shell).toContain("aria-checked={checked}");
-    expect(shell).toContain("Centered layout, capped for readability");
-    expect(shell).toContain("Use the full browser workspace");
+  it("renders the width control with full radiogroup semantics and tooltips", () => {
+    expect(control).toContain('role="radiogroup"');
+    expect(control).toContain('role="radio"');
+    expect(control).toContain("aria-checked={checked}");
+    expect(control).toContain("tabIndex={index === activeIndex ? 0 : -1}");
+    expect(control).toContain("Centered layout, capped for readability");
+    expect(control).toContain("Use the full browser workspace");
+  });
+
+  it("moves the width control into Settings and out of the shell header", () => {
+    expect(settings).toContain("DisplayWidthControl");
+    expect(shell).not.toContain("DisplayWidthControl");
+  });
+
+  it("keeps tenant, email and role identifiers out of the shell header", () => {
+    for (const forbidden of ["tenantCode", "session.email", "roleLabel"]) {
+      expect(shell).not.toContain(forbidden);
+    }
   });
 
   it("applies one shared container to header, navigation and main", () => {
