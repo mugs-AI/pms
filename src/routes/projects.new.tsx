@@ -112,10 +112,7 @@ function NewEnquiryPage() {
       return reject("expectedEndDate", "The expected end date must not precede the start date.");
     }
     if (customerMode === "linked_existing" && !customer) {
-      return reject(
-        "customer",
-        "Select an existing N3 customer, or choose another customer mode.",
-      );
+      return reject("customer", "Select an existing N3 customer, or choose another customer mode.");
     }
     if (customerMode !== "linked_existing" && !requested.name.trim()) {
       return reject("requestedName", "A prospect or requested customer name is required.");

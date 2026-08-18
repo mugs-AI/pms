@@ -15,6 +15,7 @@ import { BoqEditor } from "@/components/projecthub/BoqEditor";
 import { PhasesPanel } from "@/components/projecthub/PhasesPanel";
 import { ProjectOverview } from "@/components/projecthub/ProjectOverview";
 import { SimpleBudgetPanel } from "@/components/projecthub/SimpleBudgetPanel";
+import { QuotationPanel } from "@/components/projecthub/QuotationPanel";
 import { TeamPanel } from "@/components/projecthub/TeamPanel";
 import { useSession } from "@/lib/n3-session";
 import { useProjectWorkspace } from "@/lib/projecthub-hooks";
@@ -41,7 +42,7 @@ export const Route = createFileRoute("/projects/$projectId")({
   ),
 });
 
-const TABS = ["Overview", "Phases", "Team", "Activity", "Budget"] as const;
+const TABS = ["Overview", "Phases", "Team", "Activity", "Budget", "Quotation"] as const;
 
 function Workspace() {
   const { projectId } = Route.useParams();
@@ -122,6 +123,10 @@ function Workspace() {
         ) : (
           <BoqEditor projectId={projectId} workspace={ws} />
         )
+      ) : null}
+
+      {tab === "Quotation" ? (
+        <QuotationPanel projectId={projectId} canView={hasPermission("projecthub:projects:list")} />
       ) : null}
     </div>
   );
