@@ -35,8 +35,10 @@ describe("quotation preview is strictly read-only", () => {
   });
 
   it("never renders internal cost, margin or supplier data", () => {
-    for (const forbidden of ["cost", "margin", "supplier", "n3CustomerId", "tenant"]) {
-      expect(quotationPanel.toLowerCase()).not.toContain(forbidden.toLowerCase());
+    // Ignore the file's own doc comment; only rendered code must be clean.
+    const code = quotationPanel.replace(/\/\*\*[\s\S]*?\*\//g, "").toLowerCase();
+    for (const forbidden of ["cost", "margin", "supplier", "n3customer", "tenant"]) {
+      expect(code).not.toContain(forbidden);
     }
   });
 });
