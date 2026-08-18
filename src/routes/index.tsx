@@ -136,7 +136,6 @@ function DashboardBody() {
           </section>
         </>
       )}
-
     </div>
   );
 }

@@ -72,9 +72,7 @@ function SettingsPage() {
 
   const term = search.trim().toLowerCase();
   const filtered = term
-    ? modules.filter((module) =>
-        `${module.title} ${module.body}`.toLowerCase().includes(term),
-      )
+    ? modules.filter((module) => `${module.title} ${module.body}`.toLowerCase().includes(term))
     : modules;
 
   return (

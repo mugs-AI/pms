@@ -71,9 +71,7 @@ function QuotationStatus({ quotation }: { quotation: QuotationDto }) {
         </Badge>
         <Badge tone="muted">{quotation.notPostedToN3Label}</Badge>
       </div>
-      {preview.length > 0 ? (
-        <BlockerList title="Blocking the preview" blockers={preview} />
-      ) : null}
+      {preview.length > 0 ? <BlockerList title="Blocking the preview" blockers={preview} /> : null}
       {future.length > 0 ? (
         <BlockerList title="Blocking a future N3 posting" blockers={future} />
       ) : null}
@@ -81,13 +79,7 @@ function QuotationStatus({ quotation }: { quotation: QuotationDto }) {
   );
 }
 
-function BlockerList({
-  title,
-  blockers,
-}: {
-  title: string;
-  blockers: QuotationDto["blockers"];
-}) {
+function BlockerList({ title, blockers }: { title: string; blockers: QuotationDto["blockers"] }) {
   return (
     <div className="mt-3">
       <p className="text-xs font-semibold tracking-widest text-muted-foreground uppercase">
@@ -136,14 +128,30 @@ function QuotationDocument({ quotation }: { quotation: QuotationDto }) {
             <table className="w-full min-w-[36rem] border-collapse text-sm">
               <thead>
                 <tr className="border-b border-border text-left text-xs tracking-widest text-muted-foreground uppercase">
-                  <th scope="col" className="py-1 pr-2">#</th>
-                  <th scope="col" className="py-1 pr-2">Description</th>
-                  <th scope="col" className="py-1 pr-2 text-right">Qty</th>
-                  <th scope="col" className="py-1 pr-2">UOM</th>
-                  <th scope="col" className="py-1 pr-2 text-right">Rate</th>
-                  <th scope="col" className="py-1 pr-2 text-right">Amount</th>
-                  <th scope="col" className="py-1 pr-2 text-right">Tax</th>
-                  <th scope="col" className="py-1 text-right">Total</th>
+                  <th scope="col" className="py-1 pr-2">
+                    #
+                  </th>
+                  <th scope="col" className="py-1 pr-2">
+                    Description
+                  </th>
+                  <th scope="col" className="py-1 pr-2 text-right">
+                    Qty
+                  </th>
+                  <th scope="col" className="py-1 pr-2">
+                    UOM
+                  </th>
+                  <th scope="col" className="py-1 pr-2 text-right">
+                    Rate
+                  </th>
+                  <th scope="col" className="py-1 pr-2 text-right">
+                    Amount
+                  </th>
+                  <th scope="col" className="py-1 pr-2 text-right">
+                    Tax
+                  </th>
+                  <th scope="col" className="py-1 text-right">
+                    Total
+                  </th>
                 </tr>
               </thead>
               <tbody>

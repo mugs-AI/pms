@@ -336,9 +336,7 @@ export function N3Picker({
             aria-haspopup="listbox"
             aria-invalid={error ? true : undefined}
             aria-describedby={error ? errorId : undefined}
-            aria-activedescendant={
-              open && options.length > 0 ? optionId(activeIndex) : undefined
-            }
+            aria-activedescendant={open && options.length > 0 ? optionId(activeIndex) : undefined}
             className={`${inputClass} focus-visible:ring-2 focus-visible:ring-ring`}
             placeholder={placeholder ?? "Search live N3 records"}
             value={search}

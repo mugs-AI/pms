@@ -85,7 +85,8 @@ export type QuotationPreviewDto = {
 const NOT_POSTED_LABEL = "Not posted to N3";
 
 const BLOCKER_TEXT: Record<QuotationBlockerCode, string> = {
-  project_cancelled: "This project is cancelled or lost, so no customer quotation can be previewed.",
+  project_cancelled:
+    "This project is cancelled or lost, so no customer quotation can be previewed.",
   simple_budget_mode:
     "Simple Budget mode does not contain quotation line detail for this first preview.",
   missing_boq_version: "This project has no current BOQ version to quote from.",
@@ -157,14 +158,14 @@ export async function getQuotationPreview(
     postingState: "not_posted",
     notPostedToN3Label: NOT_POSTED_LABEL,
     previewReady: document !== null,
-    futurePostingReady:
-      document !== null && blockers.every((b) => b.scope !== "future_posting"),
+    futurePostingReady: document !== null && blockers.every((b) => b.scope !== "future_posting"),
     blockers,
     document,
   });
 
   // Future-posting blockers never stop the preview itself.
-  if (!text(project["n3_customer_id"])) blockers.push(blocker("n3_customer_not_linked", "future_posting"));
+  if (!text(project["n3_customer_id"]))
+    blockers.push(blocker("n3_customer_not_linked", "future_posting"));
 
   if (project["status"] === "cancelled_lost") {
     blockers.push(blocker("project_cancelled", "preview"));
@@ -186,7 +187,8 @@ export async function getQuotationPreview(
     .select("id, phase_kind, phase_name, is_active, link_status, n3_project_id")
     .eq("tenant_id", actor.tenantRowId)
     .eq("project_id", projectId);
-  if (phaseError) return { ok: false, status: 503, message: "The quotation preview is unavailable" };
+  if (phaseError)
+    return { ok: false, status: 503, message: "The quotation preview is unavailable" };
 
   const primaryPhase = (phaseRows ?? []).find(
     (row) => row.phase_kind === "primary" && row.is_active === true,
