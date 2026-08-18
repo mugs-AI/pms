@@ -128,7 +128,7 @@ function Workspace() {
       {tab === "Quotation" ? (
         <QuotationPanel
           projectId={projectId}
-          canView={hasPermission("projecthub:projects:view")}
+          canView={hasPermission("projecthub:projects:list")}
         />
       ) : null}
     </div>

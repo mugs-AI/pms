@@ -151,3 +151,55 @@
     color: var(--color-foreground);
   }
 }
+
+/* --------------------------------------------------------------------------
+   Print: single clean A4 document (customer quotation preview).
+   App chrome, navigation and interactive controls never print.
+   -------------------------------------------------------------------------- */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 14mm;
+  }
+
+  header,
+  nav,
+  .print\:hidden {
+    display: none !important;
+  }
+
+  html,
+  body {
+    background: #fff !important;
+    color: #000 !important;
+  }
+
+  main {
+    max-width: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .quotation-sheet {
+    border: 0 !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    background: #fff !important;
+    color: #000 !important;
+  }
+
+  .quotation-sheet table {
+    width: 100% !important;
+    min-width: 0 !important;
+    font-size: 10pt;
+  }
+
+  .quotation-sheet thead {
+    display: table-header-group;
+  }
+
+  .quotation-sheet tr,
+  .break-inside-avoid {
+    break-inside: avoid;
+  }
+}
