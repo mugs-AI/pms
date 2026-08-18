@@ -63,13 +63,13 @@ function QuotationStatus({ quotation }: { quotation: QuotationDto }) {
         <h2 className="font-display text-lg font-bold tracking-wide text-foreground">
           Quotation readiness
         </h2>
-        <Badge tone={quotation.previewReady ? "success" : "warning"}>
+        <Badge tone={quotation.previewReady ? "success" : "destructive"}>
           {quotation.previewReady ? "Preview ready" : "Preview blocked"}
         </Badge>
-        <Badge tone={quotation.futurePostingReady ? "success" : "neutral"}>
+        <Badge tone={quotation.futurePostingReady ? "success" : "accent"}>
           {quotation.futurePostingReady ? "N3-linkable" : "Not N3-linkable yet"}
         </Badge>
-        <Badge tone="neutral">{quotation.notPostedToN3Label}</Badge>
+        <Badge tone="muted">{quotation.notPostedToN3Label}</Badge>
       </div>
       {preview.length > 0 ? (
         <BlockerList title="Blocking the preview" blockers={preview} />
