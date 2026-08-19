@@ -23,7 +23,7 @@ export const Route = createFileRoute("/roles")({
       {
         name: "description",
         content:
-          "Assign ProjectHub roles to live N3 users. Owner authority always comes from N3 CompanyProfile BasicInfo.",
+          "Assign ProjectHub roles to live N3 users. Owner authority comes only from the tenant-bound N3 token role sys-admin.",
       },
       { property: "og:title", content: "Team & Roles — N3 ProjectHub" },
       {
@@ -53,7 +53,7 @@ function RolesPage() {
     <div className="space-y-6">
       <PageHeading
         title="Team & Roles"
-        subtitle="Only a live N3 account owner can grant ProjectHub access. Owner itself is never assignable."
+        subtitle="Only an N3 sys-admin (proven from the tenant-bound token) can grant ProjectHub access. Owner itself is never assignable."
       />
 
       <Card>
@@ -143,7 +143,7 @@ function RoleRow({ entry }: { entry: RoleDirectoryEntry }) {
 
         {isOwnerRow ? (
           <p className="text-sm text-muted-foreground">
-            Owner authority comes from N3 and cannot be edited.
+            Owner authority comes from the tenant-bound N3 token role and cannot be edited.
           </p>
         ) : (
           <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-end">
