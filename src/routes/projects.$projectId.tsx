@@ -42,12 +42,18 @@ export const Route = createFileRoute("/projects/$projectId")({
   ),
 });
 
-const TABS = ["Overview", "Phases", "Team", "Activity", "Budget", "Quotation"] as const;
+const ALL_TABS = ["Overview", "Phases", "Team", "Activity", "Budget", "Quotation"] as const;
+type TabName = (typeof ALL_TABS)[number];
 
 function Workspace() {
   const { projectId } = Route.useParams();
   const { hasPermission } = useSession();
-  const [tab, setTab] = useState<(typeof TABS)[number]>("Overview");
+  const [tab, setTab] = useState<TabName>("Overview");
+  // The Quotation preview endpoint is authorised server-side with
+  // `projecthub:boq:view`; the tab must use the same permission so roles
+  // without BOQ visibility are never offered a tab that will be denied.
+  const canViewQuotation = hasPermission("projecthub:boq:view");
+  const TABS = ALL_TABS.filter((name) => name !== "Quotation" || canViewQuotation);
   const query = useProjectWorkspace(projectId, hasPermission("projecthub:projects:list"));
 
   if (!hasPermission("projecthub:projects:list")) return <AccessState />;
@@ -125,8 +131,8 @@ function Workspace() {
         )
       ) : null}
 
-      {tab === "Quotation" ? (
-        <QuotationPanel projectId={projectId} canView={hasPermission("projecthub:projects:list")} />
+      {tab === "Quotation" && canViewQuotation ? (
+        <QuotationPanel projectId={projectId} canView={canViewQuotation} />
       ) : null}
     </div>
   );
