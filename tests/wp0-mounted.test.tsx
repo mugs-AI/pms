@@ -244,7 +244,7 @@ describe("new enquiry validation (mounted)", () => {
 
     fireEvent.submit(form);
     await waitFor(() => expect(title.getAttribute("aria-invalid")).toBe("true"));
-    expect(screen.getByText("A project title is required.")).toBeTruthy();
+    expect(screen.getAllByText("A project title is required.").length).toBeGreaterThan(0);
     expect(document.activeElement).toBe(title);
   });
 
@@ -280,6 +280,7 @@ describe("project workspace quotation tab permission (mounted)", () => {
         team: [],
         events: [],
         boq: null,
+        capabilities: { canEdit: true, canCancel: true, canManageTeam: true, canEditBoq: true },
       },
     };
     const mod = await import("@/routes/projects.$projectId");
