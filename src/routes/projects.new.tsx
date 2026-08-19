@@ -181,7 +181,7 @@ function NewEnquiryPage() {
   }
 
   return (
-    <form onSubmit={submit} className="space-y-6">
+    <form onSubmit={submit} noValidate className="space-y-6">
       <PageHeading
         title="New Enquiry"
         subtitle="ProjectHub generates the ENQ-YYYY-##### reference. Nothing here writes to N3."
@@ -196,7 +196,7 @@ function NewEnquiryPage() {
             className={inputClass}
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            required
+            aria-required="true"
             maxLength={200}
             {...invalidProps("title")}
           />
