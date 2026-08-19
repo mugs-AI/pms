@@ -47,9 +47,11 @@ function VerificationPage() {
           Role unassigned
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Verification is limited to N3 account owners. Access is decided from the live{" "}
-          <code>CompanyProfile/BasicInfo</code> response for your N3 session, and every underlying
-          read is authorised again by N3 for your token — hiding the menu is not the only control.
+          Verification is limited to N3 account owners. Owner authority is decided only from the
+          exact tenant-bound N3 token role <code>sys-admin</code>; live{" "}
+          <code>CompanyProfile/BasicInfo</code> is used to validate the bearer and tenant code, not
+          to grant Owner. Every underlying read is authorised again by N3 for your token — hiding
+          the menu is not the only control.
         </p>
       </section>
     );
