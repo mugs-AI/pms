@@ -168,6 +168,16 @@
     display: none !important;
   }
 
+  /* The quotation document is itself a semantic article with a header:
+     restore it so the customer sees the reference, customer, phase, site
+     and the prominent "Not posted to N3" label on the printed A4 sheet. */
+  .quotation-sheet,
+  .quotation-sheet header,
+  .quotation-sheet footer,
+  .quotation-sheet section {
+    display: block !important;
+  }
+
   html,
   body {
     background: #fff !important;
