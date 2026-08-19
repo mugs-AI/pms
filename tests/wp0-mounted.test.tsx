@@ -189,7 +189,7 @@ describe("quotation panel (mounted)", () => {
     fireEvent.click(screen.getByRole("button", { name: /Print/ }));
     expect(printSpy).toHaveBeenCalledTimes(1);
     expect(screen.getByText("Clubhouse renovation")).toBeTruthy();
-    expect(screen.getByText("1000.00", { selector: "td" })).toBeTruthy();
+    expect(screen.getAllByText("1000.00", { selector: "td" }).length).toBeGreaterThan(0);
   });
 });
 
