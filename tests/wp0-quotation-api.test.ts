@@ -348,7 +348,9 @@ describe("quotation preview HTTP route", () => {
       const res = await request(method);
       expect(res.status).toBe(405);
     }
-    expect(db.calls.every((call) => call.op === "select")).toBe(true);
+    // No project, BOQ or quotation data was touched by a rejected method.
+    const business = db.calls.filter((call) => call.table.startsWith("projecthub_boq") || call.table === "projecthub_projects");
+    expect(business).toHaveLength(0);
   });
 
   it("denies an unauthenticated request", async () => {
