@@ -140,6 +140,15 @@ browser and the audit outcome are both `partial` — never full success. When N3
 stable user id, no shadow user is created and the status is `provisioned` with
 `userPersisted: false`.
 
+## Dependency and toolchain notes
+
+`@lovable.dev/vite-tanstack-config` is pinned and maintained by the hosting platform; its
+version moves when the platform regenerates the toolchain and is not an application change.
+The only dependencies added by this work package are test-only devDependencies
+(`@testing-library/react`, `@testing-library/jest-dom`, `@testing-library/user-event`,
+`happy-dom`) required for the mounted behavioural suite. No runtime dependency was added,
+removed or upgraded, and `@supabase/supabase-js` remains server-only.
+
 ## Scripts and tests
 
 ```sh
