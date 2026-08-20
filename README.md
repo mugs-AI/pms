@@ -68,16 +68,17 @@ Boundary rules:
   returned JWT is persisted. This UI is not rendered in production builds and the route
   404s in production. No key or secret is committed to this repository.
 - **Session resolver** (`src/lib/n3-session.server.ts`) is the single authority. It calls
-  `CompanyProfile/BasicInfo` with the caller's token and normalises the immutable N3 tenant
-  id, tenant code (display only), company name, N3 user id (when the contract supplies it),
-  display email (string or array) and `isOwner`.
-- `BasicInfo.isOwner === true` is the **only** Owner/Admin signal. A JWT claim, email,
-  name, tenant code or local flag can never grant Owner or tenant authority — the browser
-  no longer reads any claim except a non-authoritative display email fallback.
+  `CompanyProfile/BasicInfo` with the caller's token to validate the live bearer and the
+  tenant code binding, and normalises the immutable N3 tenant id, tenant code (display
+  only), company name, N3 user id (when the contract supplies it) and display email.
+- Owner authority comes **only** from the exact `sys-admin` role carried by the verified,
+  tenant-bound N3 token. Any `isOwner` field in `BasicInfo` is ignored completely, and a
+  JWT email, display name, tenant code, stored role row or local flag can never grant
+  Owner or tenant authority. `BasicInfo` proves the bearer and tenant, never Owner.
 - Every allowlisted master read except the BasicInfo bootstrap follows this sequence:
   validate method/path/bearer/query → resolve live BasicInfo → require an immutable N3
   tenant id → resolve or upsert the internal `projecthub_tenants.id` by `n3_tenant_id` →
-  enforce `isOwner === true` → call the allowlisted dataset. Authenticated non-owners get
+  enforce the token-proven Owner (`sys-admin`) → call the allowlisted dataset. Authenticated non-owners get
   `403`. A missing tenant identity or a tenant-database failure fails closed with a
   non-secret `503` and a correlation id **before** the requested dataset is called.
 - Every diagnostic emitted for a protected read (owner denial, upstream failure/timeout and
@@ -131,13 +132,22 @@ every write comes from the verified server session resolver — never from a bro
 Bootstrap after a valid session returns exactly one of `provisioned`, `partial` or
 `unprovisioned`: upsert the tenant by immutable N3 tenant id, upsert the
 current user by immutable N3 user id **only when N3 supplies one**, assign `owner` only when
-live BasicInfo says `isOwner === true` (otherwise `unassigned`), and emit a sanitised audit
+the tenant-bound token proves the `sys-admin` role (otherwise `unassigned`), and emit a sanitised audit
 event. Missing tenant identity or a tenant-upsert failure fails closed as `unprovisioned`
 (reason `missing_tenant_identity` or `database_error`) and is audited as `failed`. When the
 tenant row is written but an **expected** user-role upsert fails, the status returned to the
 browser and the audit outcome are both `partial` — never full success. When N3 supplies no
 stable user id, no shadow user is created and the status is `provisioned` with
 `userPersisted: false`.
+
+## Dependency and toolchain notes
+
+`@lovable.dev/vite-tanstack-config` is pinned and maintained by the hosting platform; its
+version moves when the platform regenerates the toolchain and is not an application change.
+The only dependencies added by this work package are test-only devDependencies
+(`@testing-library/react`, `@testing-library/jest-dom`, `@testing-library/user-event`,
+`happy-dom`) required for the mounted behavioural suite. No runtime dependency was added,
+removed or upgraded, and `@supabase/supabase-js` remains server-only.
 
 ## Scripts and tests
 
@@ -150,6 +160,14 @@ npm run build      # production build
 ```
 
 Tests mock N3 and the database; they never contact the live N3 tenant.
+`tests/wp0-mounted.test.tsx` renders real components (display-width radiogroup, quotation
+panel and printed document header, N3 combobox keyboard flow, New Enquiry validation and
+the permission-filtered project workspace tabs) and drives them with keyboard and pointer
+input. `tests/wp0-quotation-api.test.ts` exercises the read-only quotation service and its
+HTTP route: Owner access, `projecthub:boq:view` denial, unauthenticated denial, non-GET
+rejection, tenant/project scoping, assigned-scope 404, blocker matrix, current
+non-superseded version selection, exact BigInt totals and DTO redaction. Source-string
+scans are supplementary only.
 `tests/migrations.test.ts` and `tests/migration-security.test.ts` perform **static checks of
 the migration SQL text only** — they do not connect to a database. Connected-database
 catalog verification (tables, RLS, policy count, exact `has_table_privilege` matrix,
