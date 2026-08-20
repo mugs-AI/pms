@@ -45,9 +45,27 @@ vi.mock("@tanstack/react-router", () => ({
   useNavigate: () => vi.fn(),
 }));
 
-const quotationQuery = { isLoading: false, isError: false, error: null, data: null as unknown, refetch: vi.fn() };
-const workspaceQuery = { isLoading: false, isError: false, error: null, data: null as unknown, refetch: vi.fn() };
-const pickerQuery = { isLoading: false, isError: false, error: null, data: { options: [] as unknown[] }, refetch: vi.fn() };
+const quotationQuery = {
+  isLoading: false,
+  isError: false,
+  error: null,
+  data: null as unknown,
+  refetch: vi.fn(),
+};
+const workspaceQuery = {
+  isLoading: false,
+  isError: false,
+  error: null,
+  data: null as unknown,
+  refetch: vi.fn(),
+};
+const pickerQuery = {
+  isLoading: false,
+  isError: false,
+  error: null,
+  data: { options: [] as unknown[] },
+  refetch: vi.fn(),
+};
 
 vi.mock("@/lib/projecthub-hooks", () => ({
   useQuotationPreview: (_id: string, enabled: boolean) => ({ ...quotationQuery, enabled }),
@@ -84,16 +102,22 @@ describe("display width radiogroup (mounted)", () => {
     const radios = screen.getAllByRole("radio");
     radios[0]!.focus();
     fireEvent.keyDown(radios[0]!, { key: "ArrowRight" });
-    await waitFor(() => expect(screen.getAllByRole("radio")[1]!.getAttribute("aria-checked")).toBe("true"));
+    await waitFor(() =>
+      expect(screen.getAllByRole("radio")[1]!.getAttribute("aria-checked")).toBe("true"),
+    );
     expect(document.activeElement).toBe(screen.getAllByRole("radio")[1]);
   });
 
   it("wraps with Home/End and persists only the safe preference", async () => {
     render(<DisplayWidthControl />);
     fireEvent.keyDown(screen.getAllByRole("radio")[0]!, { key: "End" });
-    await waitFor(() => expect(screen.getAllByRole("radio")[1]!.getAttribute("aria-checked")).toBe("true"));
+    await waitFor(() =>
+      expect(screen.getAllByRole("radio")[1]!.getAttribute("aria-checked")).toBe("true"),
+    );
     fireEvent.keyDown(screen.getAllByRole("radio")[1]!, { key: "Home" });
-    await waitFor(() => expect(screen.getAllByRole("radio")[0]!.getAttribute("aria-checked")).toBe("true"));
+    await waitFor(() =>
+      expect(screen.getAllByRole("radio")[0]!.getAttribute("aria-checked")).toBe("true"),
+    );
     const stored = JSON.stringify(window.localStorage);
     expect(stored).not.toMatch(/token|bearer|email|tenant/i);
   });
@@ -115,7 +139,11 @@ describe("quotation panel (mounted)", () => {
         futurePostingReady: false,
         blockers: [
           { code: "boq_not_ready_for_review", scope: "preview", message: "Still a draft." },
-          { code: "n3_customer_not_linked", scope: "future_posting", message: "Customer not linked." },
+          {
+            code: "n3_customer_not_linked",
+            scope: "future_posting",
+            message: "Customer not linked.",
+          },
         ],
         document: null,
       },

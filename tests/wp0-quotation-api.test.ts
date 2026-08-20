@@ -119,7 +119,9 @@ function readyFixtures(overrides: Record<string, { rows?: unknown[] }> = {}) {
       ],
     },
     projecthub_boq_versions: { rows: [readyVersion] },
-    projecthub_boq_sections: { rows: [{ id: SECTION_ID, code: "A", name: "Preliminaries", sort_order: 1 }] },
+    projecthub_boq_sections: {
+      rows: [{ id: SECTION_ID, code: "A", name: "Preliminaries", sort_order: 1 }],
+    },
     projecthub_boq_items: { rows: items },
     ...overrides,
   };
@@ -220,14 +222,20 @@ describe("quotation preview service", () => {
       projecthub_projects: { rows: [{ ...project, id: OTHER_PROJECT_ID }] },
       projecthub_project_team_members: { rows: [{ project_id: PROJECT_ID }] },
     });
-    const result = await getQuotationPreview(actor({ role: "estimator" } as Partial<Actor>), OTHER_PROJECT_ID);
+    const result = await getQuotationPreview(
+      actor({ role: "estimator" } as Partial<Actor>),
+      OTHER_PROJECT_ID,
+    );
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(result.status).toBe(404);
   });
 
   it("blocks the preview for a cancelled project", async () => {
-    setDb({ ...readyFixtures(), projecthub_projects: { rows: [{ ...project, status: "cancelled_lost" }] } });
+    setDb({
+      ...readyFixtures(),
+      projecthub_projects: { rows: [{ ...project, status: "cancelled_lost" }] },
+    });
     const result = await getQuotationPreview(actor(), PROJECT_ID);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
@@ -236,7 +244,10 @@ describe("quotation preview service", () => {
   });
 
   it("blocks the preview in Simple Budget mode", async () => {
-    setDb({ ...readyFixtures(), projecthub_projects: { rows: [{ ...project, budget_mode: "simple_budget" }] } });
+    setDb({
+      ...readyFixtures(),
+      projecthub_projects: { rows: [{ ...project, budget_mode: "simple_budget" }] },
+    });
     const result = await getQuotationPreview(actor(), PROJECT_ID);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
@@ -319,7 +330,9 @@ describe("quotation preview HTTP route", () => {
     mockUpstream(() => jsonResponse(basicInfo()));
     const res = await request();
     expect(res.status).toBe(200);
-    const body = (await res.json()) as { data?: { quotation?: { postingState?: string; document?: unknown } } };
+    const body = (await res.json()) as {
+      data?: { quotation?: { postingState?: string; document?: unknown } };
+    };
     expect(body.data?.quotation?.postingState).toBe("not_posted");
     expect(body.data?.quotation?.document).toBeTruthy();
   });
@@ -349,17 +362,18 @@ describe("quotation preview HTTP route", () => {
       expect(res.status).toBe(405);
     }
     // No project, BOQ or quotation data was touched by a rejected method.
-    const business = db.calls.filter((call) => call.table.startsWith("projecthub_boq") || call.table === "projecthub_projects");
+    const business = db.calls.filter(
+      (call) => call.table.startsWith("projecthub_boq") || call.table === "projecthub_projects",
+    );
     expect(business).toHaveLength(0);
   });
 
   it("denies an unauthenticated request", async () => {
     setDb(readyFixtures() as never);
     const res = await handleProjectHubRequest(
-      new Request(
-        `http://localhost:8080/api/projecthub/projects/${PROJECT_ID}/quotation-preview`,
-        { method: "GET" },
-      ),
+      new Request(`http://localhost:8080/api/projecthub/projects/${PROJECT_ID}/quotation-preview`, {
+        method: "GET",
+      }),
       `projects/${PROJECT_ID}/quotation-preview`,
     );
     expect(res.status).toBe(401);
