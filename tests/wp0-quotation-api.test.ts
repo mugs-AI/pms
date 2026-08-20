@@ -319,8 +319,9 @@ describe("quotation preview HTTP route", () => {
     mockUpstream(() => jsonResponse(basicInfo()));
     const res = await request();
     expect(res.status).toBe(200);
-    const body = (await res.json()) as { quotation?: { postingState?: string } };
-    expect(body.quotation?.postingState).toBe("not_posted");
+    const body = (await res.json()) as { data?: { quotation?: { postingState?: string; document?: unknown } } };
+    expect(body.data?.quotation?.postingState).toBe("not_posted");
+    expect(body.data?.quotation?.document).toBeTruthy();
   });
 
   it("denies a role without projecthub:boq:view", async () => {
