@@ -313,7 +313,7 @@ describe("quotation preview HTTP route", () => {
   it("serves the preview to an Owner", async () => {
     setDb({
       ...readyFixtures(),
-      projecthub_tenants: { rows: [{ id: "tenant-row-1" }] },
+      projecthub_tenants: { returning: { id: "tenant-row-1" } },
       projecthub_user_roles: { rows: [{ role: "owner", is_active: true, role_source: "owner" }] },
     } as never);
     mockUpstream(() => jsonResponse(basicInfo()));
@@ -326,7 +326,7 @@ describe("quotation preview HTTP route", () => {
   it("denies a role without projecthub:boq:view", async () => {
     setDb({
       ...readyFixtures(),
-      projecthub_tenants: { rows: [{ id: "tenant-row-1" }] },
+      projecthub_tenants: { returning: { id: "tenant-row-1" } },
       projecthub_user_roles: {
         rows: [{ role: "site_supervisor", is_active: true, role_source: "assigned" }],
       },
@@ -339,7 +339,7 @@ describe("quotation preview HTTP route", () => {
   it("rejects any non-GET method on the quotation route", async () => {
     setDb({
       ...readyFixtures(),
-      projecthub_tenants: { rows: [{ id: "tenant-row-1" }] },
+      projecthub_tenants: { returning: { id: "tenant-row-1" } },
       projecthub_user_roles: { rows: [{ role: "owner", is_active: true, role_source: "owner" }] },
     } as never);
     mockUpstream(() => jsonResponse(basicInfo()));
