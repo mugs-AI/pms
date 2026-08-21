@@ -308,14 +308,102 @@ describe("quotation preview service", () => {
     if (!result.ok) return;
     expect(result.quotation.blockers.map((b) => b.code)).toContain("no_quotation_lines");
   });
+
+  it("blocks the preview when no current non-superseded BOQ version exists", async () => {
+    setDb({ ...readyFixtures(), projecthub_boq_versions: { rows: [] } });
+    const result = await getQuotationPreview(actor(), PROJECT_ID);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.quotation.document).toBeNull();
+    expect(result.quotation.blockers).toContainEqual(
+      expect.objectContaining({ code: "missing_boq_version", scope: "preview" }),
+    );
+  });
+
+  it("blocks the preview when neither linked nor requested customer name is available", async () => {
+    setDb({
+      ...readyFixtures(),
+      projecthub_projects: {
+        rows: [{ ...project, n3_customer_name: null, requested_customer_name: null }],
+      },
+    });
+    const result = await getQuotationPreview(actor(), PROJECT_ID);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.quotation.document).toBeNull();
+    expect(result.quotation.blockers).toContainEqual(
+      expect.objectContaining({ code: "missing_customer_name", scope: "preview" }),
+    );
+  });
+
+  it("blocks the preview when the project has no primary phase", async () => {
+    setDb({ ...readyFixtures(), projecthub_project_phases: { rows: [] } });
+    const result = await getQuotationPreview(actor(), PROJECT_ID);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.quotation.document).toBeNull();
+    expect(result.quotation.blockers).toContainEqual(
+      expect.objectContaining({ code: "missing_primary_phase", scope: "preview" }),
+    );
+  });
+
+  it("does not treat an inactive primary phase as quotation-ready", async () => {
+    setDb({
+      ...readyFixtures(),
+      projecthub_project_phases: {
+        rows: [
+          {
+            id: "phase-1",
+            phase_kind: "primary",
+            phase_name: "Main contract",
+            is_active: false,
+            link_status: "linked_existing",
+            n3_project_id: "N3-PROJ-1",
+          },
+        ],
+      },
+    });
+    const result = await getQuotationPreview(actor(), PROJECT_ID);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.quotation.blockers).toContainEqual(
+      expect.objectContaining({ code: "missing_primary_phase", scope: "preview" }),
+    );
+  });
+
+  it("reports an unlinked primary N3 Project Code as a future-posting blocker only", async () => {
+    setDb({
+      ...readyFixtures(),
+      projecthub_project_phases: {
+        rows: [
+          {
+            id: "phase-1",
+            phase_kind: "primary",
+            phase_name: "Main contract",
+            is_active: true,
+            link_status: "pending_n3_create_contract",
+            n3_project_id: null,
+          },
+        ],
+      },
+    });
+    const result = await getQuotationPreview(actor(), PROJECT_ID);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.quotation.previewReady).toBe(true);
+    expect(result.quotation.futurePostingReady).toBe(false);
+    expect(result.quotation.blockers).toContainEqual(
+      expect.objectContaining({ code: "n3_project_code_not_linked", scope: "future_posting" }),
+    );
+  });
 });
 
 describe("quotation preview HTTP route", () => {
-  function request(method = "GET", token = OWNER_TOKEN) {
+  function request(method = "GET", token = OWNER_TOKEN, extraHeaders: Record<string, string> = {}) {
     return handleProjectHubRequest(
       new Request(`http://localhost:8080/api/projecthub/projects/${PROJECT_ID}/quotation-preview`, {
         method,
-        headers: { authorization: `Bearer ${token}` },
+        headers: { authorization: `Bearer ${token}`, ...extraHeaders },
       }),
       `projects/${PROJECT_ID}/quotation-preview`,
     );
@@ -337,6 +425,25 @@ describe("quotation preview HTTP route", () => {
     expect(body.data?.quotation?.document).toBeTruthy();
   });
 
+  it("serves an assigned project to a permitted assigned-scope role", async () => {
+    setDb({
+      ...readyFixtures(),
+      projecthub_tenants: { returning: { id: "tenant-row-1" } },
+      projecthub_user_roles: {
+        rows: [{ role: "estimator", is_active: true, role_source: "assigned" }],
+      },
+      projecthub_project_team_members: { rows: [{ project_id: PROJECT_ID }] },
+    } as never);
+    mockUpstream(() => jsonResponse(basicInfo({ isOwner: false })));
+    const res = await request("GET", USER_TOKEN);
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as {
+      data?: { quotation?: { postingState?: string; document?: unknown } };
+    };
+    expect(body.data?.quotation?.postingState).toBe("not_posted");
+    expect(body.data?.quotation?.document).toBeTruthy();
+  });
+
   it("denies a role without projecthub:boq:view", async () => {
     setDb({
       ...readyFixtures(),
@@ -348,6 +455,50 @@ describe("quotation preview HTTP route", () => {
     mockUpstream(() => jsonResponse(basicInfo({ isOwner: false })));
     const res = await request("GET", USER_TOKEN);
     expect(res.status).toBe(403);
+  });
+
+  it.each([
+    {
+      label: "unassigned",
+      roleRows: [{ role: "unassigned", is_active: true, role_source: "assigned" }],
+      info: { isOwner: false },
+    },
+    {
+      label: "disabled",
+      roleRows: [{ role: "estimator", is_active: false, role_source: "assigned" }],
+      info: { isOwner: false },
+    },
+    {
+      label: "identity-missing",
+      roleRows: [],
+      info: { isOwner: false, userId: null },
+    },
+  ])("denies a $label actor before quotation data is read", async ({ roleRows, info }) => {
+    setDb({
+      ...readyFixtures(),
+      projecthub_tenants: { returning: { id: "tenant-row-1" } },
+      projecthub_user_roles: { rows: roleRows },
+    } as never);
+    mockUpstream(() => jsonResponse(basicInfo(info)));
+    const res = await request("GET", USER_TOKEN);
+    expect(res.status).toBe(403);
+    expect(
+      db.calls.filter(
+        (call) => call.table.startsWith("projecthub_boq") || call.table === "projecthub_projects",
+      ),
+    ).toHaveLength(0);
+  });
+
+  it("rejects browser-supplied tenant authority before N3 or business data access", async () => {
+    setDb({
+      ...readyFixtures(),
+      projecthub_tenants: { returning: { id: "tenant-row-1" } },
+    } as never);
+    const upstream = mockUpstream(() => jsonResponse(basicInfo()));
+    const res = await request("GET", OWNER_TOKEN, { "x-tenant-id": "attacker-tenant" });
+    expect(res.status).toBe(400);
+    expect(upstream.calls).toHaveLength(0);
+    expect(db.calls).toHaveLength(0);
   });
 
   it("rejects any non-GET method on the quotation route", async () => {
