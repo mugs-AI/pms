@@ -5,8 +5,9 @@
  * what the user cannot do; the SERVER enforcement in
  * src/lib/projecthub-actor.server.ts is the only authority.
  *
- * `owner` is never granted by this table — it comes exclusively from live N3
- * `CompanyProfile/BasicInfo.isOwner === true`.
+ * `owner` is never granted by this table — it comes exclusively from the exact
+ * `sys-admin` role in the live, tenant-bound N3 token. BasicInfo validates the
+ * bearer and tenant binding; its `isOwner` field is never authority.
  */
 
 export const PROJECTHUB_ROLES = [

@@ -160,14 +160,21 @@ npm run build      # production build
 ```
 
 Tests mock N3 and the database; they never contact the live N3 tenant.
+`tests/setup.ts` supplies non-secret synthetic Supabase configuration only so the
+server resolver reaches the mocked database consistently outside Lovable Cloud. The values
+cannot authenticate to a real host, no test network call uses them, and fail-closed tests
+still remove them explicitly when verifying missing configuration.
 `tests/wp0-mounted.test.tsx` renders real components (display-width radiogroup, quotation
 panel and printed document header, N3 combobox keyboard flow, New Enquiry validation and
 the permission-filtered project workspace tabs) and drives them with keyboard and pointer
-input. `tests/wp0-quotation-api.test.ts` exercises the read-only quotation service and its
-HTTP route: Owner access, `projecthub:boq:view` denial, unauthenticated denial, non-GET
-rejection, tenant/project scoping, assigned-scope 404, blocker matrix, current
-non-superseded version selection, exact BigInt totals and DTO redaction. Source-string
-scans are supplementary only.
+input. `tests/wp0-shell-settings.test.tsx` mounts the real compact shell, privacy-trimmed
+header, permission-filtered Settings modules and clear controls on the project, role and
+verification registers. `tests/wp0-quotation-api.test.ts` exercises the read-only quotation
+service and its HTTP route: Owner and permitted assigned-role access, denied/unassigned/
+disabled/identity-missing/unauthenticated actors, browser tenant-hint rejection, non-GET
+rejection, tenant/project/assignment scoping, the full blocker matrix, current
+non-superseded version selection, exact BigInt totals and DTO redaction. Source-string scans
+are supplementary only.
 `tests/migrations.test.ts` and `tests/migration-security.test.ts` perform **static checks of
 the migration SQL text only** — they do not connect to a database. Connected-database
 catalog verification (tables, RLS, policy count, exact `has_table_privilege` matrix,
