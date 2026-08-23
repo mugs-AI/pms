@@ -220,11 +220,13 @@ export async function readPicker(
   const operation = ALLOWED_OPERATIONS.find((op) => op.id === spec.operationId);
   if (!operation) return { ok: false, status: 404, message: "Unknown picker" };
 
+  const pageSize = Math.min(query.pageSize, MAX_TOP - 1);
   const params = new URLSearchParams();
   if (spec.supportsPaging) {
-    const top = Math.min(query.pageSize, MAX_TOP);
-    params.set("$top", String(top));
-    params.set("$skip", String(query.page * top));
+    // One extra row is the completeness probe: it reveals whether further
+    // results exist without trusting (or inventing) an upstream count.
+    params.set("$top", String(pageSize + 1));
+    params.set("$skip", String(query.page * pageSize));
     const filter = query.search ? buildFilter(spec.searchFields, query.search) : null;
     if (filter) params.set("$filter", filter);
   }
