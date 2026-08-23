@@ -116,7 +116,12 @@ export async function handleProjectHubRequest(request: Request, splat: string): 
     if (isParseError(query)) return fail(400, query.__error, correlationId);
     const result = await readPicker(actor, kind, query);
     if (!result.ok) return fail(result.status, result.message, correlationId);
-    return ok({ options: result.options, total: result.total }, correlationId);
+    // `total` is null when N3 did not report a reliable count; `hasMore`
+    // comes from the server's one-row completeness probe.
+    return ok(
+      { options: result.options, total: result.total, hasMore: result.hasMore },
+      correlationId,
+    );
   }
 
   // ---- projects ----------------------------------------------------------

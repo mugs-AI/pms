@@ -33,6 +33,12 @@ type PickerSpec = {
 };
 
 const SPECS: Record<PickerKind, PickerSpec> = {
+  // P1-N3-CUST-01: the customer search contract is defined exactly once,
+  // here. The New Enquiry business picker and the Verification customers tab
+  // both reach N3 through this single normalized expression — a
+  // case-insensitive `contains` match over the Customers/List contract
+  // fields `code` and `companyName` (see buildFilter). No other customer
+  // search spelling exists anywhere in the app.
   customers: {
     operationId: "customers.list",
     permission: "projecthub:n3:customers:read",
@@ -79,7 +85,13 @@ export function isPickerKind(value: string): value is PickerKind {
   return value in SPECS;
 }
 
-/** Server-owned OData filter. Only safe characters survive. */
+/**
+ * Server-owned OData filter. Only safe characters survive.
+ *
+ * Normalized semantics (the only spelling ever sent to N3): the trimmed
+ * term is lowercased server-side and matched with `contains(tolower(field),
+ * 'term')` across each contract field, joined with `or`.
+ */
 function buildFilter(fields: string[], search: string): string | null {
   const cleaned = search
     .replace(/[^A-Za-z0-9 ._\-/&()]/g, "")
@@ -132,18 +144,31 @@ function mapRow(kind: PickerKind, raw: unknown): PickerOption | null {
   return { id, code, name, detail, rate };
 }
 
-function extractRows(body: unknown): unknown[] | null {
+/**
+ * Unwraps the N3 page envelope WITHOUT inventing a total.
+ *
+ * `total` is the upstream-reported record count, returned only when N3
+ * actually supplied a finite, non-negative number. When the count is absent
+ * or non-numeric, `total` is `null` so callers can surface an explicit
+ * "total unknown / results may be incomplete" state instead of a fabricated
+ * figure. A bare array (non-paged endpoint) yields an exact total.
+ */
+function extractPage(body: unknown): { rows: unknown[]; total: number | null } | null {
   const envelope = body as { code?: string; success?: boolean; data?: unknown } | null;
   if (!envelope || (envelope.code !== "0000" && envelope.success !== true)) return null;
   const data = envelope.data;
-  if (Array.isArray(data)) return data;
-  const page = data as { value?: unknown } | null;
-  if (page && Array.isArray(page.value)) return page.value;
+  if (Array.isArray(data)) return { rows: data, total: data.length };
+  const page = data as { value?: unknown; count?: unknown } | null;
+  if (page && Array.isArray(page.value)) {
+    const raw = page.count;
+    const total = typeof raw === "number" && Number.isFinite(raw) && raw >= 0 ? raw : null;
+    return { rows: page.value, total };
+  }
   return null;
 }
 
 export type PickerResult =
-  | { ok: true; options: PickerOption[]; total: number }
+  | { ok: true; options: PickerOption[]; total: number | null; hasMore: boolean }
   | { ok: false; status: number; message: string };
 
 /** Bounded scan budget for server-side identity re-resolution. */
@@ -176,7 +201,7 @@ export async function resolveN3Identity(
     }
     const match = result.options.find((option) => option.id === wanted);
     if (match) return { ok: true, option: match };
-    if (result.options.length < RESOLVE_PAGE_SIZE) break;
+    if (!result.hasMore) break;
   }
   return {
     ok: false,
@@ -195,11 +220,13 @@ export async function readPicker(
   const operation = ALLOWED_OPERATIONS.find((op) => op.id === spec.operationId);
   if (!operation) return { ok: false, status: 404, message: "Unknown picker" };
 
+  const pageSize = Math.min(query.pageSize, MAX_TOP - 1);
   const params = new URLSearchParams();
   if (spec.supportsPaging) {
-    const top = Math.min(query.pageSize, MAX_TOP);
-    params.set("$top", String(top));
-    params.set("$skip", String(query.page * top));
+    // One extra row is the completeness probe: it reveals whether further
+    // results exist without trusting (or inventing) an upstream count.
+    params.set("$top", String(pageSize + 1));
+    params.set("$skip", String(query.page * pageSize));
     const filter = query.search ? buildFilter(spec.searchFields, query.search) : null;
     if (filter) params.set("$filter", filter);
   }
@@ -225,8 +252,8 @@ export async function readPicker(
     return { ok: false, status: upstream.status, message: "N3 master data could not be read" };
   }
 
-  const rows = extractRows(upstream.body);
-  if (rows === null) {
+  const page = extractPage(upstream.body);
+  if (page === null) {
     await writeDiagnostic({
       tenantRowId: actor.tenantRowId,
       actor: actor.n3UserId,
@@ -253,20 +280,30 @@ export async function readPicker(
     responseBytes: upstream.bytes,
   });
 
-  let options = rows.map((row) => mapRow(kind, row)).filter((o): o is PickerOption => o !== null);
+  const allOptions = page.rows
+    .map((row) => mapRow(kind, row))
+    .filter((o): o is PickerOption => o !== null);
 
-  // Endpoints without OData support are filtered/paged server-side instead.
+  // Endpoints without OData support are filtered/paged server-side instead;
+  // their total is exact because the whole list was read.
   if (!spec.supportsPaging) {
     const search = query.search?.trim().toLowerCase();
-    if (search) {
-      options = options.filter((o) =>
-        `${o.code ?? ""} ${o.name ?? ""} ${o.detail ?? ""}`.toLowerCase().includes(search),
-      );
-    }
-    const total = options.length;
+    const filtered = search
+      ? allOptions.filter((o) =>
+          `${o.code ?? ""} ${o.name ?? ""} ${o.detail ?? ""}`.toLowerCase().includes(search),
+        )
+      : allOptions;
+    const total = filtered.length;
     const start = query.page * query.pageSize;
-    return { ok: true, options: options.slice(start, start + query.pageSize), total };
+    const options = filtered.slice(start, start + query.pageSize);
+    return { ok: true, options, total, hasMore: start + options.length < total };
   }
 
-  return { ok: true, options, total: options.length };
+  // Paged endpoints: slice off the probe row and report a total ONLY when N3
+  // returned a count consistent with the page actually received.
+  const hasMore = page.rows.length > pageSize;
+  const options = allOptions.slice(0, pageSize);
+  const skip = query.page * pageSize;
+  const total = page.total !== null && page.total >= skip + page.rows.length ? page.total : null;
+  return { ok: true, options, total, hasMore };
 }

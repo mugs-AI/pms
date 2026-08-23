@@ -17,6 +17,8 @@ export const qk = {
     ["projecthub", "boq", id, versionId ?? "latest"] as const,
   quotation: (id: string) => ["projecthub", "quotation", id] as const,
   picker: (kind: string, search: string) => ["projecthub", "n3", kind, search] as const,
+  customerPage: (search: string, page: number, pageSize: number) =>
+    ["projecthub", "n3", "customers", search, page, pageSize] as const,
 };
 
 export type PickerOption = {
@@ -25,6 +27,18 @@ export type PickerOption = {
   name: string | null;
   detail: string | null;
   rate: string | null;
+};
+
+/**
+ * One page from the server-controlled N3 adapter. `total` is the
+ * upstream-reported count and is `null` when N3 did not return a reliable
+ * count — callers must show an explicit completeness state, never a
+ * fabricated number. `hasMore` comes from the server's one-row probe.
+ */
+export type PickerPage = {
+  options: PickerOption[];
+  total: number | null;
+  hasMore: boolean;
 };
 
 export type ProjectRow = {
@@ -172,8 +186,25 @@ export function useN3Picker(kind: string, search: string, enabled = true) {
     queryKey: qk.picker(kind, search),
     enabled,
     queryFn: () =>
-      projectHubRequest<{ options: PickerOption[]; total: number }>(`n3/${kind}`, {
+      projectHubRequest<PickerPage>(`n3/${kind}`, {
         query: { search, pageSize: 50 },
+      }),
+  });
+}
+
+/**
+ * Verification customers tab (P1-N3-CUST-01). Reads through the SAME
+ * server-controlled adapter as the New Enquiry business picker
+ * (`GET /api/projecthub/n3/customers`) with explicit paging, so both
+ * surfaces share one normalized search expression and one truthful total.
+ */
+export function useN3CustomerPage(search: string, page: number, pageSize: number, enabled = true) {
+  return useQuery({
+    queryKey: qk.customerPage(search, page, pageSize),
+    enabled,
+    queryFn: () =>
+      projectHubRequest<PickerPage>("n3/customers", {
+        query: { search, page, pageSize },
       }),
   });
 }
