@@ -201,7 +201,7 @@ export async function resolveN3Identity(
     }
     const match = result.options.find((option) => option.id === wanted);
     if (match) return { ok: true, option: match };
-    if (result.options.length < RESOLVE_PAGE_SIZE) break;
+    if (!result.hasMore) break;
   }
   return {
     ok: false,
