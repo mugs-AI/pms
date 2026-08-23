@@ -252,8 +252,8 @@ export async function readPicker(
     return { ok: false, status: upstream.status, message: "N3 master data could not be read" };
   }
 
-  const rows = extractRows(upstream.body);
-  if (rows === null) {
+  const page = extractPage(upstream.body);
+  if (page === null) {
     await writeDiagnostic({
       tenantRowId: actor.tenantRowId,
       actor: actor.n3UserId,
@@ -280,20 +280,30 @@ export async function readPicker(
     responseBytes: upstream.bytes,
   });
 
-  let options = rows.map((row) => mapRow(kind, row)).filter((o): o is PickerOption => o !== null);
+  const allOptions = page.rows
+    .map((row) => mapRow(kind, row))
+    .filter((o): o is PickerOption => o !== null);
 
-  // Endpoints without OData support are filtered/paged server-side instead.
+  // Endpoints without OData support are filtered/paged server-side instead;
+  // their total is exact because the whole list was read.
   if (!spec.supportsPaging) {
     const search = query.search?.trim().toLowerCase();
-    if (search) {
-      options = options.filter((o) =>
-        `${o.code ?? ""} ${o.name ?? ""} ${o.detail ?? ""}`.toLowerCase().includes(search),
-      );
-    }
-    const total = options.length;
+    const filtered = search
+      ? allOptions.filter((o) =>
+          `${o.code ?? ""} ${o.name ?? ""} ${o.detail ?? ""}`.toLowerCase().includes(search),
+        )
+      : allOptions;
+    const total = filtered.length;
     const start = query.page * query.pageSize;
-    return { ok: true, options: options.slice(start, start + query.pageSize), total };
+    const options = filtered.slice(start, start + query.pageSize);
+    return { ok: true, options, total, hasMore: start + options.length < total };
   }
 
-  return { ok: true, options, total: options.length };
+  // Paged endpoints: slice off the probe row and report a total ONLY when N3
+  // returned a count consistent with the page actually received.
+  const hasMore = page.rows.length > pageSize;
+  const options = allOptions.slice(0, pageSize);
+  const skip = query.page * pageSize;
+  const total = page.total !== null && page.total >= skip + page.rows.length ? page.total : null;
+  return { ok: true, options, total, hasMore };
 }
