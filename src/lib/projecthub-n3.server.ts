@@ -33,6 +33,12 @@ type PickerSpec = {
 };
 
 const SPECS: Record<PickerKind, PickerSpec> = {
+  // P1-N3-CUST-01: the customer search contract is defined exactly once,
+  // here. The New Enquiry business picker and the Verification customers tab
+  // both reach N3 through this single normalized expression — a
+  // case-insensitive `contains` match over the Customers/List contract
+  // fields `code` and `companyName` (see buildFilter). No other customer
+  // search spelling exists anywhere in the app.
   customers: {
     operationId: "customers.list",
     permission: "projecthub:n3:customers:read",
@@ -79,7 +85,13 @@ export function isPickerKind(value: string): value is PickerKind {
   return value in SPECS;
 }
 
-/** Server-owned OData filter. Only safe characters survive. */
+/**
+ * Server-owned OData filter. Only safe characters survive.
+ *
+ * Normalized semantics (the only spelling ever sent to N3): the trimmed
+ * term is lowercased server-side and matched with `contains(tolower(field),
+ * 'term')` across each contract field, joined with `or`.
+ */
 function buildFilter(fields: string[], search: string): string | null {
   const cleaned = search
     .replace(/[^A-Za-z0-9 ._\-/&()]/g, "")
