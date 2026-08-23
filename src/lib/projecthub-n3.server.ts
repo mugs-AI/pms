@@ -144,18 +144,31 @@ function mapRow(kind: PickerKind, raw: unknown): PickerOption | null {
   return { id, code, name, detail, rate };
 }
 
-function extractRows(body: unknown): unknown[] | null {
+/**
+ * Unwraps the N3 page envelope WITHOUT inventing a total.
+ *
+ * `total` is the upstream-reported record count, returned only when N3
+ * actually supplied a finite, non-negative number. When the count is absent
+ * or non-numeric, `total` is `null` so callers can surface an explicit
+ * "total unknown / results may be incomplete" state instead of a fabricated
+ * figure. A bare array (non-paged endpoint) yields an exact total.
+ */
+function extractPage(body: unknown): { rows: unknown[]; total: number | null } | null {
   const envelope = body as { code?: string; success?: boolean; data?: unknown } | null;
   if (!envelope || (envelope.code !== "0000" && envelope.success !== true)) return null;
   const data = envelope.data;
-  if (Array.isArray(data)) return data;
-  const page = data as { value?: unknown } | null;
-  if (page && Array.isArray(page.value)) return page.value;
+  if (Array.isArray(data)) return { rows: data, total: data.length };
+  const page = data as { value?: unknown; count?: unknown } | null;
+  if (page && Array.isArray(page.value)) {
+    const raw = page.count;
+    const total = typeof raw === "number" && Number.isFinite(raw) && raw >= 0 ? raw : null;
+    return { rows: page.value, total };
+  }
   return null;
 }
 
 export type PickerResult =
-  | { ok: true; options: PickerOption[]; total: number }
+  | { ok: true; options: PickerOption[]; total: number | null; hasMore: boolean }
   | { ok: false; status: number; message: string };
 
 /** Bounded scan budget for server-side identity re-resolution. */
