@@ -109,7 +109,7 @@ describe("P1-N3-CUST-01 server behavior", () => {
     const res = await handleProjectHubRequest(get("", USER_TOKEN), SPLAT);
     expect(res.status).toBe(403);
     const body = await res.json();
-    expect(String(body.error)).toMatch(/owner/i);
+    expect(String(body.error)).toMatch(/role does not allow/i);
     expect(customerCalls(up.calls)).toHaveLength(0);
   });
 
