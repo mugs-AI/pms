@@ -5,6 +5,7 @@ import { AppShell } from "@/components/AppShell";
 import { useSession } from "@/lib/n3-session";
 import { n3Get, unwrapPageList } from "@/lib/n3-client";
 import { buildODataFilter, DATASETS, type Dataset } from "@/lib/n3-datasets";
+import { useN3CustomerPage } from "@/lib/projecthub-hooks";
 
 export const Route = createFileRoute("/verification")({
   head: () => ({
@@ -96,7 +97,13 @@ function VerificationPage() {
         </div>
       </div>
 
-      <DatasetPanel key={dataset.id} dataset={dataset} />
+      {dataset.id === "customers" ? (
+        // P1-N3-CUST-01: customers verify through the same server-controlled
+        // adapter as the business picker — never a browser-built OData query.
+        <CustomersVerificationPanel key="customers" />
+      ) : (
+        <DatasetPanel key={dataset.id} dataset={dataset} />
+      )}
     </div>
   );
 }
@@ -292,4 +299,172 @@ function formatCell(value: unknown) {
   if (typeof value === "boolean") return value ? "Yes" : "No";
   if (typeof value === "object") return JSON.stringify(value);
   return String(value);
+}
+
+/**
+ * Customers verification (P1-N3-CUST-01).
+ *
+ * Reads through the SAME server-controlled adapter as the New Enquiry
+ * business picker (`GET /api/projecthub/n3/customers`): one normalized
+ * case-insensitive `contains` search over the Customers/List contract
+ * fields, explicit `$top`/`$skip` paging, and a total that is displayed only
+ * when N3 reported a reliable count. When the count is missing or
+ * inconsistent, an explicit completeness state is shown instead of a
+ * fabricated number.
+ */
+function CustomersVerificationPanel() {
+  const [search, setSearch] = useState("");
+  const [term, setTerm] = useState("");
+  const [page, setPage] = useState(0);
+
+  const query = useN3CustomerPage(term, page, PAGE_SIZE);
+  const options = query.data?.options ?? [];
+  const total = query.data?.total ?? null;
+  const hasMore = query.data?.hasMore === true;
+  const totalReliable = total !== null;
+  const maxPage = totalReliable ? Math.max(0, Math.ceil(total / PAGE_SIZE) - 1) : null;
+
+  return (
+    <section className="rounded-lg border border-border bg-card shadow-card">
+      <div className="flex flex-col gap-3 border-b border-border p-4 sm:flex-row sm:flex-wrap sm:items-end">
+        <div className="min-w-0 sm:min-w-56 sm:flex-1">
+          <label
+            htmlFor="search-customers"
+            className="block text-xs font-semibold tracking-widest text-muted-foreground uppercase"
+          >
+            Search code or name
+          </label>
+          <div className="mt-1 flex flex-col gap-2 sm:flex-row">
+            <input
+              id="search-customers"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  setPage(0);
+                  setTerm(search);
+                }
+              }}
+              className="w-full min-w-0 rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+              placeholder="code, companyName"
+            />
+            <button
+              type="button"
+              onClick={() => {
+                setPage(0);
+                setTerm(search);
+              }}
+              className="min-h-11 shrink-0 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+            >
+              Search
+            </button>
+            <button
+              type="button"
+              disabled={search === "" && term === "" && page === 0}
+              onClick={() => {
+                setSearch("");
+                setTerm("");
+                setPage(0);
+              }}
+              className="min-h-11 shrink-0 rounded-md border border-input px-3 py-2 text-sm font-medium hover:bg-secondary disabled:opacity-40"
+            >
+              Clear
+            </button>
+          </div>
+        </div>
+        <p className="text-xs break-words text-muted-foreground">
+          <span className="font-medium text-foreground">Master data (requires owner)</span> ·{" "}
+          <code>GET /api/projecthub/n3/customers</code> · shared server adapter · server-controlled
+          OData $top/$skip/$filter
+        </p>
+      </div>
+
+      <div className="overflow-x-auto">
+        {query.isPending ? (
+          <p className="p-6 text-sm text-muted-foreground">Loading from N3…</p>
+        ) : query.isError ? (
+          <p role="alert" className="p-6 text-sm text-destructive">
+            {(query.error as Error).message}
+          </p>
+        ) : options.length === 0 ? (
+          <p className="p-6 text-sm text-muted-foreground">
+            No customers returned by N3 for this query.
+          </p>
+        ) : (
+          <table className="w-full min-w-[40rem] border-collapse text-sm">
+            <caption className="sr-only">Customer records returned by N3</caption>
+            <thead>
+              <tr className="bg-secondary text-left">
+                <th
+                  scope="col"
+                  className="px-4 py-2 text-xs font-semibold tracking-wide text-secondary-foreground uppercase"
+                >
+                  Code
+                </th>
+                <th
+                  scope="col"
+                  className="px-4 py-2 text-xs font-semibold tracking-wide text-secondary-foreground uppercase"
+                >
+                  Name
+                </th>
+                <th
+                  scope="col"
+                  className="px-4 py-2 text-xs font-semibold tracking-wide text-secondary-foreground uppercase"
+                >
+                  Contact
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {options.map((option) => (
+                <tr key={option.id} className="border-t border-border">
+                  <td className="px-4 py-2 font-mono text-xs text-muted-foreground">
+                    {option.code ?? "—"}
+                  </td>
+                  <td className="px-4 py-2 text-foreground">{option.name ?? "—"}</td>
+                  <td className="px-4 py-2 text-muted-foreground">{option.detail ?? "—"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      {!totalReliable && !query.isPending && !query.isError ? (
+        <p
+          role="status"
+          className="border-t border-border bg-secondary/40 px-4 py-2 text-xs text-muted-foreground"
+        >
+          N3 did not return a reliable total for this query — the result set may be incomplete.
+          Refine your search to narrow it down.
+        </p>
+      ) : null}
+
+      <div className="flex flex-col gap-3 border-t border-border p-4 text-sm sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+        <p className="text-muted-foreground">
+          {totalReliable
+            ? `${total} record${total === 1 ? "" : "s"} · page ${page + 1} of ${(maxPage ?? 0) + 1}`
+            : `Page ${page + 1} · total unknown`}
+        </p>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            disabled={page === 0}
+            onClick={() => setPage((p) => Math.max(0, p - 1))}
+            className="rounded-md border border-input px-3 py-1.5 disabled:opacity-40"
+          >
+            Previous
+          </button>
+          <button
+            type="button"
+            disabled={totalReliable ? page >= (maxPage ?? 0) : !hasMore}
+            onClick={() => setPage((p) => p + 1)}
+            className="rounded-md border border-input px-3 py-1.5 disabled:opacity-40"
+          >
+            Next
+          </button>
+        </div>
+      </div>
+    </section>
+  );
 }
