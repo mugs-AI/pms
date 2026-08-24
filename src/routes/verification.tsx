@@ -5,6 +5,7 @@ import { AppShell } from "@/components/AppShell";
 import { useSession } from "@/lib/n3-session";
 import { n3Get, unwrapPageList } from "@/lib/n3-client";
 import { buildODataFilter, DATASETS, type Dataset } from "@/lib/n3-datasets";
+import { useN3CustomerPage } from "@/lib/projecthub-hooks";
 
 export const Route = createFileRoute("/verification")({
   head: () => ({
@@ -96,7 +97,13 @@ function VerificationPage() {
         </div>
       </div>
 
-      <DatasetPanel key={dataset.id} dataset={dataset} />
+      {dataset.id === "customers" ? (
+        // P1-N3-CUST-01: customers verify through the same server-controlled
+        // adapter as the business picker — never a browser-built OData query.
+        <CustomersVerificationPanel key="customers" />
+      ) : (
+        <DatasetPanel key={dataset.id} dataset={dataset} />
+      )}
     </div>
   );
 }
