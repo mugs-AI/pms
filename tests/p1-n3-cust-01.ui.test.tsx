@@ -83,8 +83,9 @@ vi.mock("@/lib/projecthub-hooks", async (importOriginal) => {
 import { Route as VerificationRoute } from "@/routes/verification";
 import { N3Picker } from "@/components/projecthub/ui";
 
-const VerificationPage = (VerificationRoute as unknown as { options: { component: () => React.JSX.Element } })
-  .options.component;
+const VerificationPage = (
+  VerificationRoute as unknown as { options: { component: () => React.JSX.Element } }
+).options.component;
 
 const PAGE = {
   options: [
@@ -127,10 +128,11 @@ describe("verification customers tab", () => {
     expect(screen.getByText(/Loading from N3/)).toBeTruthy();
     expect(await screen.findByText("Acme Builders")).toBeTruthy();
     expect(screen.getByText("C001")).toBeTruthy();
-    expect(
-      requestedUrls().some((u) => u === "n3/customers" || u.startsWith("n3/customers")),
-    ).toBe(true);
-    expect(n3Get).not.toHaveBeenCalled();
+    expect(requestedUrls().some((u) => u === "n3/customers" || u.startsWith("n3/customers"))).toBe(
+      true,
+    );
+    // No customer read went through the browser N3 client.
+    expect(n3Get.mock.calls.some(([path]) => String(path).includes("Customers"))).toBe(false);
     expect(screen.getByText(/2 records/)).toBeTruthy();
     expect(screen.queryByRole("status")).toBeNull();
   });
@@ -146,7 +148,9 @@ describe("verification customers tab", () => {
     fireEvent.click(screen.getByRole("button", { name: "Search" }));
     await waitFor(() => {
       const searchCalls = projectHubRequest.mock.calls.filter(
-        (c) => String(c[0]) === "n3/customers" && (c[1] as { query?: { search?: string } })?.query?.search === "Bayside",
+        (c) =>
+          String(c[0]) === "n3/customers" &&
+          (c[1] as { query?: { search?: string } })?.query?.search === "Bayside",
       );
       expect(searchCalls.length).toBeGreaterThan(0);
       expect((searchCalls[0]![1] as { query: { page: number } }).query.page).toBe(0);
@@ -157,9 +161,7 @@ describe("verification customers tab", () => {
     projectHubRequest.mockResolvedValue({ options: [], total: 0, hasMore: false });
     renderVerification();
     fireEvent.click(screen.getByRole("tab", { name: "Customers" }));
-    expect(
-      await screen.findByText("No customers returned by N3 for this query."),
-    ).toBeTruthy();
+    expect(await screen.findByText("No customers returned by N3 for this query.")).toBeTruthy();
   });
 
   it("shows the completeness state instead of a fabricated total when the count is missing", async () => {
@@ -174,7 +176,9 @@ describe("verification customers tab", () => {
     expect(screen.getByRole("status").textContent).toContain("may be incomplete");
     expect(screen.getByText(/total unknown/)).toBeTruthy();
     // Next stays enabled because the server probe says more results exist.
-    expect((screen.getByRole("button", { name: "Next" }) as HTMLButtonElement).disabled).toBe(false);
+    expect((screen.getByRole("button", { name: "Next" }) as HTMLButtonElement).disabled).toBe(
+      false,
+    );
   });
 
   it("shows the error state when the adapter rejects", async () => {
@@ -192,9 +196,7 @@ describe("picker completeness hint", () => {
       total: null,
       hasMore: true,
     };
-    render(
-      <N3Picker label="N3 customer" kind="customers" value={null} onChange={() => {}} />,
-    );
+    render(<N3Picker label="N3 customer" kind="customers" value={null} onChange={() => {}} />);
     const input = screen.getByRole("combobox", { name: /customer/i });
     fireEvent.focus(input);
     const hint = await screen.findByText(/refine your search/i);
