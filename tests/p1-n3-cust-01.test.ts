@@ -55,7 +55,11 @@ const { handleProjectHubRequest } = await import("@/lib/projecthub-api.server");
 const BASE = "http://localhost:8080/api/projecthub";
 const SPLAT = "n3/customers";
 
-function get(query = "", token: string | null = OWNER_TOKEN, extraHeaders: Record<string, string> = {}) {
+function get(
+  query = "",
+  token: string | null = OWNER_TOKEN,
+  extraHeaders: Record<string, string> = {},
+) {
   const headers: Record<string, string> = { ...extraHeaders };
   if (token) headers["authorization"] = `Bearer ${token}`;
   return new Request(`${BASE}/n3/customers${query}`, { headers });

@@ -399,8 +399,7 @@ export function N3Picker({
                 role="presentation"
                 className="border-t border-border px-3 py-2 text-xs text-muted-foreground"
               >
-                Showing the first {options.length} matches — refine your search to narrow the
-                list.
+                Showing the first {options.length} matches — refine your search to narrow the list.
               </li>
             ) : null}
           </ul>
