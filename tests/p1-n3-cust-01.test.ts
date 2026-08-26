@@ -62,8 +62,8 @@ function get(query = "", token: string | null = OWNER_TOKEN, extraHeaders: Recor
 }
 
 const ROWS = [
-  { Code: "C001", CompanyName: "Acme Builders", Tel: "010 555 0101" },
-  { Code: "C002", CompanyName: "Bayside Holdings", Tel: "010 555 0102" },
+  { id: "cust-1", code: "C001", companyName: "Acme Builders", phone1: "010 555 0101" },
+  { id: "cust-2", code: "C002", companyName: "Bayside Holdings", phone1: "010 555 0102" },
 ];
 
 function n3Page(value: unknown[], count?: number) {
@@ -109,7 +109,7 @@ describe("P1-N3-CUST-01 server behavior", () => {
     const res = await handleProjectHubRequest(get("", USER_TOKEN), SPLAT);
     expect(res.status).toBe(403);
     const body = await res.json();
-    expect(String(body.error)).toMatch(/role does not allow/i);
+    expect(String(body.message)).toMatch(/role does not allow/i);
     expect(customerCalls(up.calls)).toHaveLength(0);
   });
 
@@ -129,22 +129,27 @@ describe("P1-N3-CUST-01 server behavior", () => {
     expect(calls).toHaveLength(1);
     const url = new URL(calls[0]!);
     expect(url.searchParams.get("$filter")).toBe(
-      "contains(tolower(code),'acme') or contains(tolower(companyname),'acme')",
+      "contains(tolower(code),'acme') or contains(tolower(companyName),'acme')",
     );
     // $top carries the one-row completeness probe.
     expect(url.searchParams.get("$top")).toBe("51");
     expect(url.searchParams.get("$skip")).toBe("0");
   });
 
-  it("lowercases and escapes apostrophes in the search term", async () => {
+  it("lowercases the term and strips OData-hostile characters (no injection)", async () => {
     const up = upstreamFor(() => n3Page(ROWS, 2));
     const res = await handleProjectHubRequest(
-      get(`?search=${encodeURIComponent("O'Brien")}`),
+      get(`?search=${encodeURIComponent("O'Brien') or true or ('")}`),
       SPLAT,
     );
     expect(res.status).toBe(200);
-    const url = new URL(customerCalls(up.calls)[0]!);
-    expect(url.searchParams.get("$filter")).toContain("o''brien");
+    const filter = new URL(customerCalls(up.calls)[0]!).searchParams.get("$filter")!;
+    // Quotes and parentheses-injection payloads are removed, never escaped
+    // into the expression, so the OR clause count stays at exactly two.
+    expect(filter).not.toContain("'");
+    expect(filter.split(" or ")).toHaveLength(2);
+    expect(filter).toContain("obrien");
+    expect(filter).not.toContain("true");
   });
 
   it("honours explicit paging with skip = page * pageSize", async () => {
@@ -168,7 +173,7 @@ describe("P1-N3-CUST-01 server behavior", () => {
   });
 
   it("exposes hasMore via the probe row and never includes the probe row in the page", async () => {
-    upstreamFor(() => n3Page([...ROWS, { Code: "C003", CompanyName: "Cobalt Ltd" }]));
+    upstreamFor(() => n3Page([...ROWS, { id: "cust-3", code: "C003", companyName: "Cobalt Ltd" }]));
     const res = await handleProjectHubRequest(get("?search=C&pageSize=2"), SPLAT);
     expect(res.status).toBe(200);
     const body = await res.json();
@@ -205,7 +210,7 @@ describe("P1-N3-CUST-01 server behavior", () => {
     const res = await handleProjectHubRequest(get(""), SPLAT);
     expect(res.status).toBe(502);
     const body = await res.json();
-    expect(String(body.error)).toMatch(/contract/i);
+    expect(String(body.message)).toMatch(/contract/i);
   });
 
   it("scopes every diagnostic row to the resolved internal tenant row id", async () => {
