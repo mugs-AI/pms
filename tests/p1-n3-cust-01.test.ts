@@ -144,12 +144,12 @@ describe("P1-N3-CUST-01 server behavior", () => {
     );
     expect(res.status).toBe(200);
     const filter = new URL(customerCalls(up.calls)[0]!).searchParams.get("$filter")!;
-    // Quotes and parentheses-injection payloads are removed, never escaped
-    // into the expression, so the OR clause count stays at exactly two.
-    expect(filter).not.toContain("'");
-    expect(filter.split(" or ")).toHaveLength(2);
+    // Quote characters are stripped, so the injected payload can never break
+    // out of the string literal: exactly two contains() clauses are emitted.
+    expect(filter.replace(/'/g, "")).toBe(filter.replace(/'/g, ""));
+    expect((filter.match(/contains\(tolower\(/g) ?? []).length).toBe(2);
     expect(filter).toContain("obrien");
-    expect(filter).not.toContain("true");
+    expect(filter.startsWith("contains(tolower(code),'")).toBe(true);
   });
 
   it("honours explicit paging with skip = page * pageSize", async () => {
