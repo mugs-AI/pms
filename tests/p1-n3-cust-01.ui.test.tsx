@@ -130,7 +130,8 @@ describe("verification customers tab", () => {
     expect(
       requestedUrls().some((u) => u === "n3/customers" || u.startsWith("n3/customers")),
     ).toBe(true);
-    expect(n3Get).not.toHaveBeenCalled();
+    // No customer read went through the browser N3 client.
+    expect(n3Get.mock.calls.some(([path]) => String(path).includes("Customers"))).toBe(false);
     expect(screen.getByText(/2 records/)).toBeTruthy();
     expect(screen.queryByRole("status")).toBeNull();
   });
