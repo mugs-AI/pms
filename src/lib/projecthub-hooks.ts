@@ -39,7 +39,11 @@ export type PickerPage = {
   options: PickerOption[];
   total: number | null;
   hasMore: boolean;
+  /** `incomplete` never means "no matching records". */
+  completeness?: "complete" | "incomplete";
+  reason?: string | null;
 };
+
 
 export type ProjectRow = {
   id: string;
