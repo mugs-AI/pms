@@ -19,6 +19,9 @@ export const qk = {
   picker: (kind: string, search: string) => ["projecthub", "n3", kind, search] as const,
   customerPage: (search: string, page: number, pageSize: number) =>
     ["projecthub", "n3", "customers", search, page, pageSize] as const,
+  masterPage: (kind: string, search: string, page: number, pageSize: number) =>
+    ["projecthub", "n3-master", kind, search, page, pageSize] as const,
+
 };
 
 export type PickerOption = {
@@ -39,7 +42,11 @@ export type PickerPage = {
   options: PickerOption[];
   total: number | null;
   hasMore: boolean;
+  /** `incomplete` never means "no matching records". */
+  completeness?: "complete" | "incomplete";
+  reason?: string | null;
 };
+
 
 export type ProjectRow = {
   id: string;
@@ -193,21 +200,31 @@ export function useN3Picker(kind: string, search: string, enabled = true) {
 }
 
 /**
- * Verification customers tab (P1-N3-CUST-01). Reads through the SAME
- * server-controlled adapter as the New Enquiry business picker
- * (`GET /api/projecthub/n3/customers`) with explicit paging, so both
- * surfaces share one normalized search expression and one truthful total.
+ * Owner-only N3 Data Verification page read for ANY of the ten master kinds.
+ * Same canonical server registry and bounded scan as every business picker.
  */
-export function useN3CustomerPage(search: string, page: number, pageSize: number, enabled = true) {
+export function useN3MasterPage(
+  kind: string,
+  search: string,
+  page: number,
+  pageSize: number,
+  enabled = true,
+) {
   return useQuery({
-    queryKey: qk.customerPage(search, page, pageSize),
+    queryKey: qk.masterPage(kind, search, page, pageSize),
     enabled,
     queryFn: () =>
-      projectHubRequest<PickerPage>("n3/customers", {
+      projectHubRequest<PickerPage>(`master/${kind}`, {
         query: { search, page, pageSize },
       }),
   });
 }
+
+/** Customers tab convenience wrapper over the shared master search. */
+export function useN3CustomerPage(search: string, page: number, pageSize: number, enabled = true) {
+  return useN3MasterPage("customers", search, page, pageSize, enabled);
+}
+
 
 export function useRoleDirectory(search: string, enabled: boolean) {
   return useQuery({

@@ -1,11 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { useSession } from "@/lib/n3-session";
-import { n3Get, unwrapPageList } from "@/lib/n3-client";
-import { buildODataFilter, DATASETS, type Dataset } from "@/lib/n3-datasets";
-import { useN3CustomerPage } from "@/lib/projecthub-hooks";
+import { MASTER_KINDS, MASTER_SPECS, type MasterKind } from "@/lib/n3-master-registry";
+import { useN3MasterPage } from "@/lib/projecthub-hooks";
 
 export const Route = createFileRoute("/verification")({
   head: () => ({
@@ -33,9 +31,8 @@ export const Route = createFileRoute("/verification")({
 const PAGE_SIZE = 25;
 
 function VerificationPage() {
-  const { isOwner, companyName, tenantCode, email, status } = useSession();
-  const [activeId, setActiveId] = useState(DATASETS[0]!.id);
-  const dataset = DATASETS.find((d) => d.id === activeId)!;
+  const { isOwner, companyName, status } = useSession();
+  const [activeId, setActiveId] = useState<MasterKind>(MASTER_KINDS[0]!);
 
   if (status === "loading") {
     return <p className="text-sm text-muted-foreground">Checking your N3 session…</p>;
@@ -51,8 +48,8 @@ function VerificationPage() {
           Verification is limited to N3 account owners. Owner authority is decided only from the
           exact tenant-bound N3 token role <code>sys-admin</code>; live{" "}
           <code>CompanyProfile/BasicInfo</code> is used to validate the bearer and tenant code, not
-          to grant Owner. Every underlying read is authorised again by N3 for your token — hiding
-          the menu is not the only control.
+          to grant Owner. Every underlying read is authorised again by the server for your token —
+          hiding the menu is not the only control.
         </p>
       </section>
     );
@@ -68,8 +65,7 @@ function VerificationPage() {
           Read-only. Nothing on this page creates, updates, voids or posts an N3 record.
         </p>
         <p className="mt-2 text-sm text-foreground">
-          Data below was returned by N3 for <strong>{companyName ?? "—"}</strong> (tenant{" "}
-          <code>{tenantCode ?? "—"}</code>) as <strong>{email ?? "—"}</strong>.
+          Data below was returned by N3 for <strong>{companyName ?? "—"}</strong>.
         </p>
       </header>
 
@@ -79,124 +75,78 @@ function VerificationPage() {
           aria-label="N3 master data"
           className="flex w-max min-w-full gap-2 sm:w-auto sm:flex-wrap"
         >
-          {DATASETS.map((d) => (
+          {MASTER_KINDS.map((kind) => (
             <button
-              key={d.id}
+              key={kind}
               role="tab"
-              aria-selected={d.id === activeId}
-              onClick={() => setActiveId(d.id)}
+              aria-selected={kind === activeId}
+              onClick={() => setActiveId(kind)}
               className={`min-h-11 shrink-0 rounded-md border px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none ${
-                d.id === activeId
+                kind === activeId
                   ? "border-accent bg-accent/15 text-foreground"
                   : "border-border bg-card text-muted-foreground hover:text-foreground"
               }`}
             >
-              {d.label}
+              {MASTER_SPECS[kind].label}
             </button>
           ))}
         </div>
       </div>
 
-      {dataset.id === "customers" ? (
-        // P1-N3-CUST-01: customers verify through the same server-controlled
-        // adapter as the business picker — never a browser-built OData query.
-        <CustomersVerificationPanel key="customers" />
-      ) : (
-        <DatasetPanel key={dataset.id} dataset={dataset} />
-      )}
+      <DatasetPanel key={activeId} kind={activeId} />
     </div>
   );
 }
 
-function DatasetPanel({ dataset }: { dataset: Dataset }) {
+/**
+ * One shared verification panel for all ten datasets.
+ *
+ * Every tab reads through the SAME server-owned registry and bounded search
+ * (`GET /api/projecthub/master/:kind`) used by the business pickers. The
+ * browser never builds an OData expression and never sees a raw N3 record.
+ */
+function DatasetPanel({ kind }: { kind: MasterKind }) {
+  const spec = MASTER_SPECS[kind];
   const [search, setSearch] = useState("");
   const [term, setTerm] = useState("");
   const [page, setPage] = useState(0);
 
-  const query = useQuery({
-    queryKey: ["n3", dataset.id, term, page],
-    queryFn: async () => {
-      if (dataset.mode === "all") {
-        const data = await n3Get<unknown>(dataset.path);
-        const rows = Array.isArray(data)
-          ? (data as Record<string, unknown>[])
-          : unwrapPageList<Record<string, unknown>>(data).rows;
-        return { rows, total: rows.length, clientSide: true };
-      }
-      const data = await n3Get<unknown>(dataset.path, {
-        $top: PAGE_SIZE,
-        $skip: page * PAGE_SIZE,
-        $filter: buildODataFilter(dataset.searchFields, term),
-      });
-      const { rows, total } = unwrapPageList<Record<string, unknown>>(data);
-      return { rows, total, clientSide: false };
-    },
-  });
+  const query = useN3MasterPage(kind, term, page, PAGE_SIZE);
+  const rows = query.data?.options ?? [];
+  const total = query.data?.total ?? null;
+  const hasMore = query.data?.hasMore === true;
+  const incomplete = query.data?.completeness === "incomplete";
+  const maxPage = total !== null ? Math.max(0, Math.ceil(total / PAGE_SIZE) - 1) : null;
 
-  const rows = useMemo(() => {
-    const all = query.data?.rows ?? [];
-    if (!query.data?.clientSide) return all;
-    const q = term.trim().toLowerCase();
-    const filtered = q
-      ? all.filter((r) =>
-          dataset.searchFields.some((f) =>
-            String(r[f] ?? "")
-              .toLowerCase()
-              .includes(q),
-          ),
-        )
-      : all;
-    return filtered.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE);
-  }, [query.data, term, page, dataset.searchFields]);
-
-  const total = query.data?.clientSide
-    ? (() => {
-        const all = query.data?.rows ?? [];
-        const q = term.trim().toLowerCase();
-        return q
-          ? all.filter((r) =>
-              dataset.searchFields.some((f) =>
-                String(r[f] ?? "")
-                  .toLowerCase()
-                  .includes(q),
-              ),
-            ).length
-          : all.length;
-      })()
-    : (query.data?.total ?? 0);
-
-  const maxPage = Math.max(0, Math.ceil(total / PAGE_SIZE) - 1);
+  const runSearch = () => {
+    setPage(0);
+    setTerm(search);
+  };
 
   return (
     <section className="rounded-lg border border-border bg-card shadow-card">
       <div className="flex flex-col gap-3 border-b border-border p-4 sm:flex-row sm:flex-wrap sm:items-end">
         <div className="min-w-0 sm:min-w-56 sm:flex-1">
           <label
-            htmlFor={`search-${dataset.id}`}
+            htmlFor={`search-${kind}`}
             className="block text-xs font-semibold tracking-widest text-muted-foreground uppercase"
           >
             Search code or name
           </label>
           <div className="mt-1 flex flex-col gap-2 sm:flex-row">
             <input
-              id={`search-${dataset.id}`}
+              id={`search-${kind}`}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  setPage(0);
-                  setTerm(search);
-                }
+                if (e.key === "Enter") runSearch();
               }}
               className="w-full min-w-0 rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
-              placeholder={dataset.searchFields.join(", ")}
+              placeholder={spec.searchHint}
             />
             <button
               type="button"
-              onClick={() => {
-                setPage(0);
-                setTerm(search);
-              }}
+              onClick={runSearch}
               className="min-h-11 shrink-0 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
             >
               Search
@@ -216,9 +166,9 @@ function DatasetPanel({ dataset }: { dataset: Dataset }) {
           </div>
         </div>
         <p className="text-xs break-words text-muted-foreground">
-          <span className="font-medium text-foreground">{dataset.scope}</span> ·{" "}
-          <code>GET /{dataset.path}</code> ·{" "}
-          {dataset.mode === "page" ? "OData $top/$skip/$filter" : "full list"}
+          <span className="font-medium text-foreground">{spec.scope}</span> ·{" "}
+          <code>GET /api/projecthub/master/{kind}</code> · shared server adapter ·{" "}
+          {spec.mode === "page" ? "bounded paged scan" : "full list"}
         </p>
       </div>
 
@@ -231,35 +181,33 @@ function DatasetPanel({ dataset }: { dataset: Dataset }) {
           </p>
         ) : rows.length === 0 ? (
           <p className="p-6 text-sm text-muted-foreground">
-            No records returned by N3 for this query.
+            {incomplete
+              ? "Search incomplete — N3 did not return a complete searchable set. Refine the search or retry."
+              : "No matching N3 records."}
           </p>
         ) : (
-          <table className="w-full min-w-[48rem] border-collapse text-sm">
-            <caption className="sr-only">{dataset.label} records returned by N3</caption>
+          <table className="w-full min-w-[40rem] border-collapse text-sm">
+            <caption className="sr-only">{spec.label} records returned by N3</caption>
             <thead>
               <tr className="bg-secondary text-left">
-                {dataset.columns.map((c) => (
+                {["Code", "Name", "Detail", "N3 id"].map((label) => (
                   <th
-                    key={c.key}
+                    key={label}
                     scope="col"
                     className="px-4 py-2 text-xs font-semibold tracking-wide text-secondary-foreground uppercase"
                   >
-                    {c.label}
+                    {label}
                   </th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {rows.map((row, i) => (
-                <tr key={String(row[dataset.idKey] ?? i)} className="border-t border-border">
-                  {dataset.columns.map((c) => (
-                    <td
-                      key={c.key}
-                      className={`px-4 py-2 text-foreground ${c.mono ? "font-mono text-xs text-muted-foreground" : ""}`}
-                    >
-                      {formatCell(row[c.key])}
-                    </td>
-                  ))}
+              {rows.map((row) => (
+                <tr key={row.id} className="border-t border-border">
+                  <td className="px-4 py-2 font-mono text-xs text-foreground">{row.code ?? "—"}</td>
+                  <td className="px-4 py-2 text-foreground">{row.name ?? "—"}</td>
+                  <td className="px-4 py-2 text-foreground">{row.detail ?? "—"}</td>
+                  <td className="px-4 py-2 font-mono text-xs text-muted-foreground">{row.id}</td>
                 </tr>
               ))}
             </tbody>
@@ -269,182 +217,12 @@ function DatasetPanel({ dataset }: { dataset: Dataset }) {
 
       <div className="flex flex-col gap-3 border-t border-border p-4 text-sm sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
         <p className="text-muted-foreground">
-          {total} record{total === 1 ? "" : "s"} · page {page + 1} of {maxPage + 1}
-        </p>
-        <div className="flex gap-2">
-          <button
-            type="button"
-            disabled={page === 0}
-            onClick={() => setPage((p) => Math.max(0, p - 1))}
-            className="rounded-md border border-input px-3 py-1.5 disabled:opacity-40"
-          >
-            Previous
-          </button>
-          <button
-            type="button"
-            disabled={page >= maxPage}
-            onClick={() => setPage((p) => p + 1)}
-            className="rounded-md border border-input px-3 py-1.5 disabled:opacity-40"
-          >
-            Next
-          </button>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function formatCell(value: unknown) {
-  if (value === null || value === undefined || value === "") return "—";
-  if (typeof value === "boolean") return value ? "Yes" : "No";
-  if (typeof value === "object") return JSON.stringify(value);
-  return String(value);
-}
-
-/**
- * Customers verification (P1-N3-CUST-01).
- *
- * Reads through the SAME server-controlled adapter as the New Enquiry
- * business picker (`GET /api/projecthub/n3/customers`): one normalized
- * case-insensitive `contains` search over the Customers/List contract
- * fields, explicit `$top`/`$skip` paging, and a total that is displayed only
- * when N3 reported a reliable count. When the count is missing or
- * inconsistent, an explicit completeness state is shown instead of a
- * fabricated number.
- */
-function CustomersVerificationPanel() {
-  const [search, setSearch] = useState("");
-  const [term, setTerm] = useState("");
-  const [page, setPage] = useState(0);
-
-  const query = useN3CustomerPage(term, page, PAGE_SIZE);
-  const options = query.data?.options ?? [];
-  const total = query.data?.total ?? null;
-  const hasMore = query.data?.hasMore === true;
-  const totalReliable = total !== null;
-  const maxPage = totalReliable ? Math.max(0, Math.ceil(total / PAGE_SIZE) - 1) : null;
-
-  return (
-    <section className="rounded-lg border border-border bg-card shadow-card">
-      <div className="flex flex-col gap-3 border-b border-border p-4 sm:flex-row sm:flex-wrap sm:items-end">
-        <div className="min-w-0 sm:min-w-56 sm:flex-1">
-          <label
-            htmlFor="search-customers"
-            className="block text-xs font-semibold tracking-widest text-muted-foreground uppercase"
-          >
-            Search code or name
-          </label>
-          <div className="mt-1 flex flex-col gap-2 sm:flex-row">
-            <input
-              id="search-customers"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  setPage(0);
-                  setTerm(search);
-                }
-              }}
-              className="w-full min-w-0 rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
-              placeholder="code, companyName"
-            />
-            <button
-              type="button"
-              onClick={() => {
-                setPage(0);
-                setTerm(search);
-              }}
-              className="min-h-11 shrink-0 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-            >
-              Search
-            </button>
-            <button
-              type="button"
-              disabled={search === "" && term === "" && page === 0}
-              onClick={() => {
-                setSearch("");
-                setTerm("");
-                setPage(0);
-              }}
-              className="min-h-11 shrink-0 rounded-md border border-input px-3 py-2 text-sm font-medium hover:bg-secondary disabled:opacity-40"
-            >
-              Clear
-            </button>
-          </div>
-        </div>
-        <p className="text-xs break-words text-muted-foreground">
-          <span className="font-medium text-foreground">Master data (requires owner)</span> ·{" "}
-          <code>GET /api/projecthub/n3/customers</code> · shared server adapter · server-controlled
-          OData $top/$skip/$filter
-        </p>
-      </div>
-
-      <div className="overflow-x-auto">
-        {query.isPending ? (
-          <p className="p-6 text-sm text-muted-foreground">Loading from N3…</p>
-        ) : query.isError ? (
-          <p role="alert" className="p-6 text-sm text-destructive">
-            {(query.error as Error).message}
-          </p>
-        ) : options.length === 0 ? (
-          <p className="p-6 text-sm text-muted-foreground">
-            No customers returned by N3 for this query.
-          </p>
-        ) : (
-          <table className="w-full min-w-[40rem] border-collapse text-sm">
-            <caption className="sr-only">Customer records returned by N3</caption>
-            <thead>
-              <tr className="bg-secondary text-left">
-                <th
-                  scope="col"
-                  className="px-4 py-2 text-xs font-semibold tracking-wide text-secondary-foreground uppercase"
-                >
-                  Code
-                </th>
-                <th
-                  scope="col"
-                  className="px-4 py-2 text-xs font-semibold tracking-wide text-secondary-foreground uppercase"
-                >
-                  Name
-                </th>
-                <th
-                  scope="col"
-                  className="px-4 py-2 text-xs font-semibold tracking-wide text-secondary-foreground uppercase"
-                >
-                  Contact
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {options.map((option) => (
-                <tr key={option.id} className="border-t border-border">
-                  <td className="px-4 py-2 font-mono text-xs text-muted-foreground">
-                    {option.code ?? "—"}
-                  </td>
-                  <td className="px-4 py-2 text-foreground">{option.name ?? "—"}</td>
-                  <td className="px-4 py-2 text-muted-foreground">{option.detail ?? "—"}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
-
-      {!totalReliable && !query.isPending && !query.isError ? (
-        <p
-          role="status"
-          className="border-t border-border bg-secondary/40 px-4 py-2 text-xs text-muted-foreground"
-        >
-          N3 did not return a reliable total for this query — the result set may be incomplete.
-          Refine your search to narrow it down.
-        </p>
-      ) : null}
-
-      <div className="flex flex-col gap-3 border-t border-border p-4 text-sm sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
-        <p className="text-muted-foreground">
-          {totalReliable
+          {total !== null
             ? `${total} record${total === 1 ? "" : "s"} · page ${page + 1} of ${(maxPage ?? 0) + 1}`
             : `Page ${page + 1} · total unknown`}
+          {incomplete
+            ? " · Search incomplete — N3 did not return a complete searchable set. Refine the search or retry."
+            : ""}
         </p>
         <div className="flex gap-2">
           <button
@@ -457,7 +235,7 @@ function CustomersVerificationPanel() {
           </button>
           <button
             type="button"
-            disabled={totalReliable ? page >= (maxPage ?? 0) : !hasMore}
+            disabled={!hasMore && (maxPage === null || page >= maxPage)}
             onClick={() => setPage((p) => p + 1)}
             className="rounded-md border border-input px-3 py-1.5 disabled:opacity-40"
           >

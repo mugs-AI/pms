@@ -15,7 +15,14 @@ import {
   type Actor,
 } from "./projecthub-actor.server";
 import * as boq from "./projecthub-boq.server";
-import { isPickerKind, pickerPermission, readPicker } from "./projecthub-n3.server";
+import {
+  isMasterKind,
+  isPickerKind,
+  pickerPermission,
+  readPicker,
+  searchMaster,
+} from "./projecthub-n3.server";
+
 import * as projects from "./projecthub-projects.server";
 import { getQuotationPreview } from "./projecthub-quotation.server";
 import { assignRole, listRoleDirectory } from "./projecthub-roles.server";
@@ -116,13 +123,46 @@ export async function handleProjectHubRequest(request: Request, splat: string): 
     if (isParseError(query)) return fail(400, query.__error, correlationId);
     const result = await readPicker(actor, kind, query);
     if (!result.ok) return fail(result.status, result.message, correlationId);
-    // `total` is null when N3 did not report a reliable count; `hasMore`
-    // comes from the server's one-row completeness probe.
+    // `total` is null when the count is not proven; `hasMore` and
+    // `completeness` come from the server's bounded scan, never from a guess.
     return ok(
-      { options: result.options, total: result.total, hasMore: result.hasMore },
+      {
+        options: result.options,
+        total: result.total,
+        hasMore: result.hasMore,
+        completeness: result.completeness,
+        reason: result.reason,
+      },
       correlationId,
     );
   }
+
+  // ---- N3 Data Verification (Owner only) ---------------------------------
+  if (segments[0] === "master" && segments.length === 2) {
+    if (method !== "GET") return methodNotAllowed(correlationId, "GET");
+    const kind = segments[1] as string;
+    if (!isMasterKind(kind)) return fail(404, "Not found", correlationId);
+    // Verification stays Owner-only: Owner is the live, exact `sys-admin`
+    // signal resolved server-side, never a browser hint.
+    if (!actor.session.isOwner) {
+      return fail(403, "N3 Data Verification is available to the N3 Owner only", correlationId);
+    }
+    const query = parse(S.masterSearchSchema, search);
+    if (isParseError(query)) return fail(400, query.__error, correlationId);
+    const result = await searchMaster(actor, kind, query);
+    if (!result.ok) return fail(result.status, result.message, correlationId);
+    return ok(
+      {
+        options: result.options,
+        total: result.total,
+        hasMore: result.hasMore,
+        completeness: result.completeness,
+        reason: result.reason,
+      },
+      correlationId,
+    );
+  }
+
 
   // ---- projects ----------------------------------------------------------
   if (segments[0] === "projects") {
