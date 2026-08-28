@@ -15,7 +15,14 @@ import {
   type Actor,
 } from "./projecthub-actor.server";
 import * as boq from "./projecthub-boq.server";
-import { isPickerKind, pickerPermission, readPicker } from "./projecthub-n3.server";
+import {
+  isMasterKind,
+  isPickerKind,
+  pickerPermission,
+  readPicker,
+  searchMaster,
+} from "./projecthub-n3.server";
+
 import * as projects from "./projecthub-projects.server";
 import { getQuotationPreview } from "./projecthub-quotation.server";
 import { assignRole, listRoleDirectory } from "./projecthub-roles.server";
