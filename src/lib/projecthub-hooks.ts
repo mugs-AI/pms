@@ -19,6 +19,9 @@ export const qk = {
   picker: (kind: string, search: string) => ["projecthub", "n3", kind, search] as const,
   customerPage: (search: string, page: number, pageSize: number) =>
     ["projecthub", "n3", "customers", search, page, pageSize] as const,
+  masterPage: (kind: string, search: string, page: number, pageSize: number) =>
+    ["projecthub", "n3-master", kind, search, page, pageSize] as const,
+
 };
 
 export type PickerOption = {
