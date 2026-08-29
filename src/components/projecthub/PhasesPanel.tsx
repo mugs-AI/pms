@@ -2,6 +2,7 @@
  * Phases tab: create and edit project phases, including the N3 project-code
  * plan. Codes are chosen from live N3 reads; ProjectHub never writes to N3.
  */
+import { MalaysianDateInput } from "@/components/projecthub/DateInput";
 import { useState } from "react";
 import { Badge, Card, EmptyState, ErrorState, Field, N3Picker, inputClass } from "./ui";
 import { projectHubRequest } from "@/lib/projecthub-client";
@@ -187,19 +188,21 @@ function CreatePhase({ projectId, onDone }: { projectId: string; onDone: () => v
           setRequested={setRequested}
         />
         <Field label="Expected start date">
-          <input
-            type="date"
-            className={inputClass}
+          <MalaysianDateInput
+            id={`${fieldIdPrefix}-start`}
             value={start}
-            onChange={(e) => setStart(e.target.value)}
+            onChange={setStart}
+            onInvalidChange={setStartInvalid}
+            ariaLabel="Expected start date"
           />
         </Field>
         <Field label="Expected end date">
-          <input
-            type="date"
-            className={inputClass}
+          <MalaysianDateInput
+            id={`${fieldIdPrefix}-end`}
             value={end}
-            onChange={(e) => setEnd(e.target.value)}
+            onChange={setEnd}
+            onInvalidChange={setEndInvalid}
+            ariaLabel="Expected end date"
           />
         </Field>
       </div>
@@ -296,19 +299,21 @@ function EditPhase({
           />
         )}
         <Field label="Expected start date">
-          <input
-            type="date"
-            className={inputClass}
+          <MalaysianDateInput
+            id={`${fieldIdPrefix}-start`}
             value={start}
-            onChange={(e) => setStart(e.target.value)}
+            onChange={setStart}
+            onInvalidChange={setStartInvalid}
+            ariaLabel="Expected start date"
           />
         </Field>
         <Field label="Expected end date">
-          <input
-            type="date"
-            className={inputClass}
+          <MalaysianDateInput
+            id={`${fieldIdPrefix}-end`}
             value={end}
-            onChange={(e) => setEnd(e.target.value)}
+            onChange={setEnd}
+            onInvalidChange={setEndInvalid}
+            ariaLabel="Expected end date"
           />
         </Field>
       </div>

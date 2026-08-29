@@ -3,6 +3,7 @@
  * Cancel / Lost action. Every write goes through the same-origin ProjectHub API;
  * the browser never supplies tenant, role or N3 display values.
  */
+import { MalaysianDateInput } from "@/components/projecthub/DateInput";
 import { useState } from "react";
 import { Card, ErrorState, Field, inputClass } from "./ui";
 import { Detail } from "./detail";
@@ -191,27 +192,30 @@ function EditForm({
           </select>
         </Field>
         <Field label="Enquiry date">
-          <input
-            type="date"
-            className={inputClass}
+          <MalaysianDateInput
+            id="project-enquiryDate"
             value={form.enquiryDate}
-            onChange={(e) => set("enquiryDate")(e.target.value)}
+            onChange={set("enquiryDate")}
+            onInvalidChange={(invalid) => setInvalidDates((c) => ({ ...c, enquiryDate: invalid }))}
+            ariaLabel="Enquiry date"
           />
         </Field>
         <Field label="Expected start date">
-          <input
-            type="date"
-            className={inputClass}
+          <MalaysianDateInput
+            id="project-expectedStartDate"
             value={form.expectedStartDate}
-            onChange={(e) => set("expectedStartDate")(e.target.value)}
+            onChange={set("expectedStartDate")}
+            onInvalidChange={(invalid) => setInvalidDates((c) => ({ ...c, expectedStartDate: invalid }))}
+            ariaLabel="Expected start date"
           />
         </Field>
         <Field label="Expected end date">
-          <input
-            type="date"
-            className={inputClass}
+          <MalaysianDateInput
+            id="project-expectedEndDate"
             value={form.expectedEndDate}
-            onChange={(e) => set("expectedEndDate")(e.target.value)}
+            onChange={set("expectedEndDate")}
+            onInvalidChange={(invalid) => setInvalidDates((c) => ({ ...c, expectedEndDate: invalid }))}
+            ariaLabel="Expected end date"
           />
         </Field>
         <Field label="Address line 1">
