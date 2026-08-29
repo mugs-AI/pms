@@ -161,7 +161,10 @@ function CreatePhase({ projectId, onDone }: { projectId: string; onDone: () => v
   const [requested, setRequested] = useState({ code: "", name: "" });
   const [start, setStart] = useState("");
   const [end, setEnd] = useState("");
+  const [startInvalid, setStartInvalid] = useState(false);
+  const [endInvalid, setEndInvalid] = useState(false);
   const [fieldError, setFieldError] = useState<string | null>(null);
+  const fieldIdPrefix = "create-phase";
 
   const mutation = useProjectMutation(projectId, (body: Record<string, unknown>) =>
     projectHubRequest(`projects/${projectId}/phases`, { method: "POST", body }),
@@ -213,6 +216,12 @@ function CreatePhase({ projectId, onDone }: { projectId: string; onDone: () => v
         onClick={() => {
           setFieldError(null);
           if (!phaseName.trim()) return setFieldError("A phase name is required.");
+          if (startInvalid || endInvalid) {
+            return setFieldError("Enter phase dates as DD/MM/YYYY.");
+          }
+          if (start && end && start > end) {
+            return setFieldError("The expected end date must not precede the start date.");
+          }
           if (mode === "linked_existing" && !picked) {
             return setFieldError("Select an existing N3 project code.");
           }
@@ -257,6 +266,9 @@ function EditPhase({
   const [phaseName, setPhaseName] = useState(phase.phase_name);
   const [start, setStart] = useState(phase.expected_start_date ?? "");
   const [end, setEnd] = useState(phase.expected_end_date ?? "");
+  const [startInvalid, setStartInvalid] = useState(false);
+  const [endInvalid, setEndInvalid] = useState(false);
+  const fieldIdPrefix = `edit-phase-${phase.id}`;
   const [mode, setMode] = useState<CodeMode>(phase.link_status as CodeMode);
   const [picked, setPicked] = useState<PickerOption | null>(null);
   const [requested, setRequested] = useState({
@@ -327,6 +339,12 @@ function EditPhase({
           onClick={() => {
             setFieldError(null);
             if (!phaseName.trim()) return setFieldError("A phase name is required.");
+            if (startInvalid || endInvalid) {
+              return setFieldError("Enter phase dates as DD/MM/YYYY.");
+            }
+            if (start && end && start > end) {
+              return setFieldError("The expected end date must not precede the start date.");
+            }
             if (!linkLocked && mode === "linked_existing" && !picked) {
               return setFieldError("Select an existing N3 project code.");
             }
