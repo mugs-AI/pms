@@ -2,6 +2,7 @@ import { malaysiaToday } from "@/lib/projecthub-date";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMemo, useRef, useState } from "react";
 import { AppShell } from "@/components/AppShell";
+import { MalaysianDateInput } from "@/components/projecthub/DateInput";
 import {
   AccessState,
   Card,
@@ -82,6 +83,7 @@ function NewEnquiryPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<unknown>(null);
   const [fieldError, setFieldError] = useState<string | null>(null);
+  const [invalidDates, setInvalidDates] = useState<Record<string, boolean>>({});
   const [invalidField, setInvalidField] = useState<string | null>(null);
   const fields = useRef<Record<string, HTMLElement | null>>({});
   const errorId = "new-enquiry-error";
@@ -108,6 +110,15 @@ function NewEnquiryPage() {
     setInvalidField(null);
 
     if (!title.trim()) return reject("title", "A project title is required.");
+    for (const [field, label] of [
+      ["enquiryDate", "Enquiry date"],
+      ["expectedStartDate", "Expected start date"],
+      ["expectedEndDate", "Expected end date"],
+    ] as const) {
+      if (invalidDates[field]) {
+        return reject(field, `${label} must be a real date in DD/MM/YYYY format.`);
+      }
+    }
     if (expectedStartDate && expectedEndDate && expectedStartDate > expectedEndDate) {
       return reject("expectedEndDate", "The expected end date must not precede the start date.");
     }
@@ -211,12 +222,17 @@ function NewEnquiryPage() {
             <option value="renovation">Renovation</option>
           </select>
         </Field>
-        <Field label="Enquiry date">
-          <input
-            type="date"
-            className={inputClass}
+        <Field label="Enquiry date" error={invalidField === "enquiryDate" ? fieldError : null}>
+          <MalaysianDateInput
+            id="new-enquiry-enquiryDate"
             value={enquiryDate}
-            onChange={(e) => setEnquiryDate(e.target.value)}
+            onChange={setEnquiryDate}
+            onInvalidChange={(invalid) => setInvalidDates((c) => ({ ...c, enquiryDate: invalid }))}
+            invalid={invalidField === "enquiryDate"}
+            describedBy={invalidField === "enquiryDate" ? errorId : undefined}
+            inputRef={(node) => {
+              fields.current["enquiryDate"] = node;
+            }}
           />
         </Field>
         <Field label="Budget mode">
@@ -229,27 +245,30 @@ function NewEnquiryPage() {
             <option value="simple_budget">Simple budget</option>
           </select>
         </Field>
-        <Field label="Expected start date">
-          <input
-            type="date"
-            className={inputClass}
+        <Field label="Expected start date" error={invalidField === "expectedStartDate" ? fieldError : null}>
+          <MalaysianDateInput
+            id="new-enquiry-expectedStartDate"
             value={expectedStartDate}
-            onChange={(e) => setExpectedStartDate(e.target.value)}
+            onChange={setExpectedStartDate}
+            onInvalidChange={(invalid) => setInvalidDates((c) => ({ ...c, expectedStartDate: invalid }))}
+            invalid={invalidField === "expectedStartDate"}
+            describedBy={invalidField === "expectedStartDate" ? errorId : undefined}
+            inputRef={(node) => {
+              fields.current["expectedStartDate"] = node;
+            }}
           />
         </Field>
-        <Field
-          label="Expected end date"
-          error={invalidField === "expectedEndDate" ? fieldError : null}
-        >
-          <input
-            ref={(node) => {
+        <Field label="Expected end date" error={invalidField === "expectedEndDate" ? fieldError : null}>
+          <MalaysianDateInput
+            id="new-enquiry-expectedEndDate"
+            value={expectedEndDate}
+            onChange={setExpectedEndDate}
+            onInvalidChange={(invalid) => setInvalidDates((c) => ({ ...c, expectedEndDate: invalid }))}
+            invalid={invalidField === "expectedEndDate"}
+            describedBy={invalidField === "expectedEndDate" ? errorId : undefined}
+            inputRef={(node) => {
               fields.current["expectedEndDate"] = node;
             }}
-            type="date"
-            className={inputClass}
-            value={expectedEndDate}
-            onChange={(e) => setExpectedEndDate(e.target.value)}
-            {...invalidProps("expectedEndDate")}
           />
         </Field>
         {budgetMode === "simple_budget" ? (
