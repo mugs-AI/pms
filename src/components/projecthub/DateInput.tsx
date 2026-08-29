@@ -9,11 +9,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import { CalendarIcon } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import {
-  displayDateToIso,
-  isValidDisplayDate,
-  isoToDisplayDate,
-} from "@/lib/projecthub-date";
+import { displayDateToIso, isValidDisplayDate, isoToDisplayDate } from "@/lib/projecthub-date";
 
 export type MalaysianDateInputProps = {
   id: string;

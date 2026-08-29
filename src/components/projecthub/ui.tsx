@@ -309,7 +309,6 @@ export function N3Picker({
   // silently truncated list.
   const truncated = query.data?.hasMore === true && options.length > 0;
 
-
   return (
     <div className="space-y-1">
       <span

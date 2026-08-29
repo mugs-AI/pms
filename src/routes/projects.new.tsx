@@ -245,12 +245,17 @@ function NewEnquiryPage() {
             <option value="simple_budget">Simple budget</option>
           </select>
         </Field>
-        <Field label="Expected start date" error={invalidField === "expectedStartDate" ? fieldError : null}>
+        <Field
+          label="Expected start date"
+          error={invalidField === "expectedStartDate" ? fieldError : null}
+        >
           <MalaysianDateInput
             id="new-enquiry-expectedStartDate"
             value={expectedStartDate}
             onChange={setExpectedStartDate}
-            onInvalidChange={(invalid) => setInvalidDates((c) => ({ ...c, expectedStartDate: invalid }))}
+            onInvalidChange={(invalid) =>
+              setInvalidDates((c) => ({ ...c, expectedStartDate: invalid }))
+            }
             invalid={invalidField === "expectedStartDate"}
             describedBy={invalidField === "expectedStartDate" ? errorId : undefined}
             inputRef={(node) => {
@@ -258,12 +263,17 @@ function NewEnquiryPage() {
             }}
           />
         </Field>
-        <Field label="Expected end date" error={invalidField === "expectedEndDate" ? fieldError : null}>
+        <Field
+          label="Expected end date"
+          error={invalidField === "expectedEndDate" ? fieldError : null}
+        >
           <MalaysianDateInput
             id="new-enquiry-expectedEndDate"
             value={expectedEndDate}
             onChange={setExpectedEndDate}
-            onInvalidChange={(invalid) => setInvalidDates((c) => ({ ...c, expectedEndDate: invalid }))}
+            onInvalidChange={(invalid) =>
+              setInvalidDates((c) => ({ ...c, expectedEndDate: invalid }))
+            }
             invalid={invalidField === "expectedEndDate"}
             describedBy={invalidField === "expectedEndDate" ? errorId : undefined}
             inputRef={(node) => {

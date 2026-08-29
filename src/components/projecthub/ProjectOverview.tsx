@@ -207,7 +207,9 @@ function EditForm({
             id="project-expectedStartDate"
             value={form.expectedStartDate}
             onChange={set("expectedStartDate")}
-            onInvalidChange={(invalid) => setInvalidDates((c) => ({ ...c, expectedStartDate: invalid }))}
+            onInvalidChange={(invalid) =>
+              setInvalidDates((c) => ({ ...c, expectedStartDate: invalid }))
+            }
             ariaLabel="Expected start date"
           />
         </Field>
@@ -216,7 +218,9 @@ function EditForm({
             id="project-expectedEndDate"
             value={form.expectedEndDate}
             onChange={set("expectedEndDate")}
-            onInvalidChange={(invalid) => setInvalidDates((c) => ({ ...c, expectedEndDate: invalid }))}
+            onInvalidChange={(invalid) =>
+              setInvalidDates((c) => ({ ...c, expectedEndDate: invalid }))
+            }
             ariaLabel="Expected end date"
           />
         </Field>
