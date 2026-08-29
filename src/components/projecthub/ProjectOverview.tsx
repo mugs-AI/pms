@@ -157,6 +157,7 @@ function EditForm({
     simpleBudgetCost: p.simple_budget_cost ?? "",
     simpleBudgetSelling: p.simple_budget_selling ?? "",
   });
+  const [invalidDates, setInvalidDates] = useState<Record<string, boolean>>({});
   const [fieldError, setFieldError] = useState<string | null>(null);
 
   const mutation = useProjectMutation(projectId, (body: Record<string, unknown>) =>
@@ -301,6 +302,9 @@ function EditForm({
         onClick={() => {
           setFieldError(null);
           if (!form.title.trim()) return setFieldError("A project title is required.");
+          if (Object.values(invalidDates).some(Boolean)) {
+            return setFieldError("Enter dates as DD/MM/YYYY.");
+          }
           if (
             form.expectedStartDate &&
             form.expectedEndDate &&
