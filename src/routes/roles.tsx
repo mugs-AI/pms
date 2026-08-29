@@ -1,3 +1,4 @@
+import { formatMalaysianDateTime } from "@/lib/projecthub-date";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { AppShell } from "@/components/AppShell";
@@ -127,7 +128,7 @@ function RoleRow({ entry }: { entry: RoleDirectoryEntry }) {
           <p className="mt-1 text-xs text-muted-foreground">
             N3 user {maskId(entry.n3UserId)} · {entry.roleLabel}
             {entry.roleSource ? ` · source ${entry.roleSource}` : ""}
-            {entry.assignedAt ? ` · assigned ${new Date(entry.assignedAt).toLocaleString()}` : ""}
+            {entry.assignedAt ? ` · assigned ${formatMalaysianDateTime(entry.assignedAt)}` : ""}
           </p>
           <div className="mt-2 flex flex-wrap gap-2">
             <Badge tone={entry.isActive ? "success" : "destructive"}>

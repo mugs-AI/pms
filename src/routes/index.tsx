@@ -1,3 +1,4 @@
+import { formatMalaysianDateTime } from "@/lib/projecthub-date";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppShell } from "@/components/AppShell";
 import {
@@ -122,7 +123,7 @@ function DashboardBody() {
                         </Link>
                         <p className="text-xs text-muted-foreground">
                           {row.enquiry_reference} · {row.project_type} · updated{" "}
-                          {new Date(row.updated_at).toLocaleDateString()}
+                          {formatMalaysianDateTime(row.updated_at)}
                         </p>
                       </div>
                       <Badge tone={statusTone(row.status)}>

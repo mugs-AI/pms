@@ -1,3 +1,4 @@
+import { formatMalaysianDate } from "@/lib/projecthub-date";
 /**
  * Project Overview tab: read-only detail, permission-controlled editing and the
  * Cancel / Lost action. Every write goes through the same-origin ProjectHub API;
@@ -86,9 +87,9 @@ export function ProjectOverview({
       ) : null}
 
       <Card className="grid gap-4 sm:grid-cols-2">
-        <Detail label="Enquiry date" value={p.enquiry_date} />
-        <Detail label="Expected start" value={p.expected_start_date} />
-        <Detail label="Expected end" value={p.expected_end_date} />
+        <Detail label="Enquiry date" value={formatMalaysianDate(p.enquiry_date)} />
+        <Detail label="Expected start" value={formatMalaysianDate(p.expected_start_date)} />
+        <Detail label="Expected end" value={formatMalaysianDate(p.expected_end_date)} />
         <Detail
           label="Customer"
           value={p.n3_customer_name ?? p.requested_customer_name ?? "Not recorded"}

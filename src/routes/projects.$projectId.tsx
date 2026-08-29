@@ -1,3 +1,4 @@
+import { formatMalaysianDateTime } from "@/lib/projecthub-date";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { AppShell } from "@/components/AppShell";
@@ -116,7 +117,7 @@ function Workspace() {
             <Card key={event.id}>
               <p className="text-sm text-foreground">{event.summary}</p>
               <p className="mt-1 text-xs text-muted-foreground">
-                {new Date(event.occurred_at).toLocaleString()} · {event.event_type}
+                {formatMalaysianDateTime(event.occurred_at)} · {event.event_type}
               </p>
             </Card>
           ))}
