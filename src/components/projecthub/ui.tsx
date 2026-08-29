@@ -292,17 +292,21 @@ export function N3Picker({
     }
   };
 
+  const incomplete = query.data?.completeness === "incomplete";
+
   const status = query.isLoading
     ? "Searching N3\u2026"
     : query.isError
       ? describeError(query.error).message
       : options.length === 0
-        ? "No matching N3 records"
+        ? incomplete
+          ? "Search incomplete \u2014 N3 did not return a complete searchable set. Refine the search or retry."
+          : "No matching N3 records"
         : null;
 
-  // Completeness state: the server's one-row probe found more matches than
-  // the bounded page can show, so the user is told to refine the search
-  // instead of being left with a silently truncated list.
+  // Completeness state: more matches exist than this bounded page can show,
+  // so the user is told to refine the search instead of being left with a
+  // silently truncated list.
   const truncated = query.data?.hasMore === true && options.length > 0;
 
   return (

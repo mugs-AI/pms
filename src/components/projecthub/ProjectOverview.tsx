@@ -1,8 +1,10 @@
+import { formatMalaysianDate } from "@/lib/projecthub-date";
 /**
  * Project Overview tab: read-only detail, permission-controlled editing and the
  * Cancel / Lost action. Every write goes through the same-origin ProjectHub API;
  * the browser never supplies tenant, role or N3 display values.
  */
+import { MalaysianDateInput } from "@/components/projecthub/DateInput";
 import { useState } from "react";
 import { Card, ErrorState, Field, inputClass } from "./ui";
 import { Detail } from "./detail";
@@ -85,9 +87,9 @@ export function ProjectOverview({
       ) : null}
 
       <Card className="grid gap-4 sm:grid-cols-2">
-        <Detail label="Enquiry date" value={p.enquiry_date} />
-        <Detail label="Expected start" value={p.expected_start_date} />
-        <Detail label="Expected end" value={p.expected_end_date} />
+        <Detail label="Enquiry date" value={formatMalaysianDate(p.enquiry_date)} />
+        <Detail label="Expected start" value={formatMalaysianDate(p.expected_start_date)} />
+        <Detail label="Expected end" value={formatMalaysianDate(p.expected_end_date)} />
         <Detail
           label="Customer"
           value={p.n3_customer_name ?? p.requested_customer_name ?? "Not recorded"}
@@ -156,6 +158,7 @@ function EditForm({
     simpleBudgetCost: p.simple_budget_cost ?? "",
     simpleBudgetSelling: p.simple_budget_selling ?? "",
   });
+  const [invalidDates, setInvalidDates] = useState<Record<string, boolean>>({});
   const [fieldError, setFieldError] = useState<string | null>(null);
 
   const mutation = useProjectMutation(projectId, (body: Record<string, unknown>) =>
@@ -191,27 +194,34 @@ function EditForm({
           </select>
         </Field>
         <Field label="Enquiry date">
-          <input
-            type="date"
-            className={inputClass}
+          <MalaysianDateInput
+            id="project-enquiryDate"
             value={form.enquiryDate}
-            onChange={(e) => set("enquiryDate")(e.target.value)}
+            onChange={set("enquiryDate")}
+            onInvalidChange={(invalid) => setInvalidDates((c) => ({ ...c, enquiryDate: invalid }))}
+            ariaLabel="Enquiry date"
           />
         </Field>
         <Field label="Expected start date">
-          <input
-            type="date"
-            className={inputClass}
+          <MalaysianDateInput
+            id="project-expectedStartDate"
             value={form.expectedStartDate}
-            onChange={(e) => set("expectedStartDate")(e.target.value)}
+            onChange={set("expectedStartDate")}
+            onInvalidChange={(invalid) =>
+              setInvalidDates((c) => ({ ...c, expectedStartDate: invalid }))
+            }
+            ariaLabel="Expected start date"
           />
         </Field>
         <Field label="Expected end date">
-          <input
-            type="date"
-            className={inputClass}
+          <MalaysianDateInput
+            id="project-expectedEndDate"
             value={form.expectedEndDate}
-            onChange={(e) => set("expectedEndDate")(e.target.value)}
+            onChange={set("expectedEndDate")}
+            onInvalidChange={(invalid) =>
+              setInvalidDates((c) => ({ ...c, expectedEndDate: invalid }))
+            }
+            ariaLabel="Expected end date"
           />
         </Field>
         <Field label="Address line 1">
@@ -297,6 +307,9 @@ function EditForm({
         onClick={() => {
           setFieldError(null);
           if (!form.title.trim()) return setFieldError("A project title is required.");
+          if (Object.values(invalidDates).some(Boolean)) {
+            return setFieldError("Enter dates as DD/MM/YYYY.");
+          }
           if (
             form.expectedStartDate &&
             form.expectedEndDate &&

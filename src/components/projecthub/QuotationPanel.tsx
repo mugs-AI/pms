@@ -1,3 +1,4 @@
+import { formatMalaysianDateTime } from "@/lib/projecthub-date";
 import { Badge, EmptyState, ErrorState, Skeleton } from "@/components/projecthub/ui";
 import { useQuotationPreview, type QuotationDto } from "@/lib/projecthub-hooks";
 
@@ -190,7 +191,7 @@ function QuotationDocument({ quotation }: { quotation: QuotationDto }) {
           <Row label="Total" value={doc.totals.total} strong />
         </dl>
         <p className="mt-4 text-xs text-muted-foreground">
-          Generated {new Date(quotation.previewGeneratedAt).toLocaleString()} · Preview only, not a
+          Generated {formatMalaysianDateTime(quotation.previewGeneratedAt)} · Preview only, not a
           tax document and not posted to N3.
         </p>
       </footer>

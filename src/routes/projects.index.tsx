@@ -1,3 +1,4 @@
+import { formatMalaysianDate, formatMalaysianDateTime } from "@/lib/projecthub-date";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { AppShell } from "@/components/AppShell";
@@ -233,7 +234,7 @@ function ProjectCard({ row }: { row: ProjectRow }) {
       <dl className="mt-3 grid gap-2 text-xs text-muted-foreground sm:grid-cols-3">
         <div>
           <dt className="font-semibold uppercase">Enquiry date</dt>
-          <dd>{row.enquiry_date ?? "—"}</dd>
+          <dd>{formatMalaysianDate(row.enquiry_date)}</dd>
         </div>
         <div>
           <dt className="font-semibold uppercase">Type</dt>
@@ -241,7 +242,7 @@ function ProjectCard({ row }: { row: ProjectRow }) {
         </div>
         <div>
           <dt className="font-semibold uppercase">Updated</dt>
-          <dd>{new Date(row.updated_at).toLocaleString()}</dd>
+          <dd>{formatMalaysianDateTime(row.updated_at)}</dd>
         </div>
       </dl>
     </Link>
