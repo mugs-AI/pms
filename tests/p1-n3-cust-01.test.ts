@@ -140,10 +140,7 @@ describe("P1-N3-CUST-01 server behavior", () => {
 
   it("matches case-insensitively server-side and never forwards the raw term", async () => {
     const up = upstreamFor(() => n3Page(ROWS, 2));
-    const res = await handleProjectHubRequest(
-      get(`?search=${encodeURIComponent("acme")}`),
-      SPLAT,
-    );
+    const res = await handleProjectHubRequest(get(`?search=${encodeURIComponent("acme")}`), SPLAT);
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.data.options.map((o: { code: string }) => o.code)).toEqual(["C001"]);

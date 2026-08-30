@@ -21,7 +21,6 @@ export const qk = {
     ["projecthub", "n3", "customers", search, page, pageSize] as const,
   masterPage: (kind: string, search: string, page: number, pageSize: number) =>
     ["projecthub", "n3-master", kind, search, page, pageSize] as const,
-
 };
 
 export type PickerOption = {
@@ -46,7 +45,6 @@ export type PickerPage = {
   completeness?: "complete" | "incomplete";
   reason?: string | null;
 };
-
 
 export type ProjectRow = {
   id: string;
@@ -224,7 +222,6 @@ export function useN3MasterPage(
 export function useN3CustomerPage(search: string, page: number, pageSize: number, enabled = true) {
   return useN3MasterPage("customers", search, page, pageSize, enabled);
 }
-
 
 export function useRoleDirectory(search: string, enabled: boolean) {
   return useQuery({
