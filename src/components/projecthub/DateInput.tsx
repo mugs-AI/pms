@@ -128,7 +128,7 @@ export function MalaysianDateInput({
             mode="single"
             weekStartsOn={1}
             selected={selected}
-            defaultMonth={selected}
+            {...(selected ? { defaultMonth: selected } : {})}
             onSelect={selectFromCalendar}
             className="pointer-events-auto p-3"
           />

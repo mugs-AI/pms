@@ -163,7 +163,6 @@ export async function handleProjectHubRequest(request: Request, splat: string): 
     );
   }
 
-
   // ---- projects ----------------------------------------------------------
   if (segments[0] === "projects") {
     if (segments.length === 2 && segments[1] === "dashboard") {

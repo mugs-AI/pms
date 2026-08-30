@@ -61,6 +61,12 @@ vi.mock("@/lib/projecthub-hooks", () => ({
     return roleQuery;
   },
   useAssignRole: () => ({ mutate: vi.fn(), isPending: false, isError: false }),
+  useN3MasterPage: () => ({
+    isPending: false,
+    isError: false,
+    error: null,
+    data: { options: [], total: 0, hasMore: false, completeness: "complete", reason: null },
+  }),
 }));
 
 const verificationQuery = {

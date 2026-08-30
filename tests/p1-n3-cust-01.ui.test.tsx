@@ -94,6 +94,8 @@ const PAGE = {
   ],
   total: 2 as number | null,
   hasMore: false,
+  completeness: "complete" as "complete" | "incomplete",
+  reason: null as string | null,
 };
 
 function renderVerification() {
@@ -128,13 +130,11 @@ describe("verification customers tab", () => {
     expect(screen.getByText(/Loading from N3/)).toBeTruthy();
     expect(await screen.findByText("Acme Builders")).toBeTruthy();
     expect(screen.getByText("C001")).toBeTruthy();
-    expect(requestedUrls().some((u) => u === "n3/customers" || u.startsWith("n3/customers"))).toBe(
-      true,
-    );
+    expect(requestedUrls().some((u) => u === "master/customers")).toBe(true);
     // No customer read went through the browser N3 client.
     expect(n3Get.mock.calls.some(([path]) => String(path).includes("Customers"))).toBe(false);
     expect(screen.getByText(/2 records/)).toBeTruthy();
-    expect(screen.queryByRole("status")).toBeNull();
+    expect(screen.queryByText(/Search incomplete/)).toBeNull();
   });
 
   it("sends the normalized search term and resets paging", async () => {
@@ -149,7 +149,7 @@ describe("verification customers tab", () => {
     await waitFor(() => {
       const searchCalls = projectHubRequest.mock.calls.filter(
         (c) =>
-          String(c[0]) === "n3/customers" &&
+          String(c[0]) === "master/customers" &&
           (c[1] as { query?: { search?: string } })?.query?.search === "Bayside",
       );
       expect(searchCalls.length).toBeGreaterThan(0);
@@ -158,10 +158,16 @@ describe("verification customers tab", () => {
   });
 
   it("shows the explicit empty state when N3 returns no customers", async () => {
-    projectHubRequest.mockResolvedValue({ options: [], total: 0, hasMore: false });
+    projectHubRequest.mockResolvedValue({
+      options: [],
+      total: 0,
+      hasMore: false,
+      completeness: "complete",
+      reason: null,
+    });
     renderVerification();
     fireEvent.click(screen.getByRole("tab", { name: "Customers" }));
-    expect(await screen.findByText("No customers returned by N3 for this query.")).toBeTruthy();
+    expect(await screen.findByText("No matching N3 records.")).toBeTruthy();
   });
 
   it("shows the completeness state instead of a fabricated total when the count is missing", async () => {
@@ -169,11 +175,13 @@ describe("verification customers tab", () => {
       options: [PAGE.options[0]],
       total: null,
       hasMore: true,
+      completeness: "incomplete",
+      reason: "page_budget",
     });
     renderVerification();
     fireEvent.click(screen.getByRole("tab", { name: "Customers" }));
     expect(await screen.findByText("Acme Builders")).toBeTruthy();
-    expect(screen.getByRole("status").textContent).toContain("may be incomplete");
+    expect(screen.getByText(/Search incomplete/)).toBeTruthy();
     expect(screen.getByText(/total unknown/)).toBeTruthy();
     // Next stays enabled because the server probe says more results exist.
     expect((screen.getByRole("button", { name: "Next" }) as HTMLButtonElement).disabled).toBe(
