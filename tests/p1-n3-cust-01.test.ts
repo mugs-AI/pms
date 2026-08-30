@@ -125,36 +125,44 @@ describe("P1-N3-CUST-01 server behavior", () => {
     expect(res.status).toBe(400);
   });
 
-  it("builds one normalized OR filter across code and companyName with a probe row", async () => {
+  it("never sends an unproven $filter and scans allowlisted pages instead", async () => {
     const up = upstreamFor(() => n3Page(ROWS, 2));
     const res = await handleProjectHubRequest(get("?search=Acme&pageSize=50"), SPLAT);
     expect(res.status).toBe(200);
     const calls = customerCalls(up.calls);
     expect(calls).toHaveLength(1);
     const url = new URL(calls[0]!);
-    expect(url.searchParams.get("$filter")).toBe(
-      "contains(tolower(code),'acme') or contains(tolower(companyName),'acme')",
-    );
-    // $top carries the one-row completeness probe.
-    expect(url.searchParams.get("$top")).toBe("51");
+    expect(url.searchParams.get("$filter")).toBeNull();
+    // One bounded scan page plus the completeness probe row.
+    expect(url.searchParams.get("$top")).toBe("200");
     expect(url.searchParams.get("$skip")).toBe("0");
   });
 
-  it("lowercases the term and strips OData-hostile characters (no injection)", async () => {
+  it("matches case-insensitively server-side and never forwards the raw term", async () => {
+    const up = upstreamFor(() => n3Page(ROWS, 2));
+    const res = await handleProjectHubRequest(
+      get(`?search=${encodeURIComponent("acme")}`),
+      SPLAT,
+    );
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.data.options.map((o: { code: string }) => o.code)).toEqual(["C001"]);
+    // The caller-supplied term is never part of the upstream URL.
+    expect(customerCalls(up.calls)[0]!.toLowerCase()).not.toContain("acme");
+  });
+
+  it("cannot be used to inject OData: hostile terms only affect local matching", async () => {
     const up = upstreamFor(() => n3Page(ROWS, 2));
     const res = await handleProjectHubRequest(
       get(`?search=${encodeURIComponent("O'Brien') or true or ('")}`),
       SPLAT,
     );
     expect(res.status).toBe(200);
-    const filter = new URL(customerCalls(up.calls)[0]!).searchParams.get("$filter")!;
-    // Quote characters are stripped, so the injected payload can never break
-    // out of the string literal: exactly two contains() clauses are emitted.
-    // Only the four literal delimiters remain — no injected quote survives.
-    expect((filter.match(/'/g) ?? []).length).toBe(4);
-    expect((filter.match(/contains\(tolower\(/g) ?? []).length).toBe(2);
-    expect(filter).toContain("obrien");
-    expect(filter.startsWith("contains(tolower(code),'")).toBe(true);
+    const url = customerCalls(up.calls)[0]!;
+    expect(url).not.toContain("%27");
+    expect(url).not.toContain("$filter");
+    const body = await res.json();
+    expect(body.data.options).toHaveLength(0);
   });
 
   it("honours explicit paging with skip = page * pageSize", async () => {
@@ -177,13 +185,14 @@ describe("P1-N3-CUST-01 server behavior", () => {
     expect(body.data.options[0]).toMatchObject({ code: "C001", name: "Acme Builders" });
   });
 
-  it("exposes hasMore via the probe row and never includes the probe row in the page", async () => {
+  it("pages the locally matched set and reports a truthful total when the scan completed", async () => {
     upstreamFor(() => n3Page([...ROWS, { id: "cust-3", code: "C003", companyName: "Cobalt Ltd" }]));
-    const res = await handleProjectHubRequest(get("?search=C&pageSize=2"), SPLAT);
+    const res = await handleProjectHubRequest(get("?search=C0&pageSize=2"), SPLAT);
     expect(res.status).toBe(200);
     const body = await res.json();
+    expect(body.data.completeness).toBe("complete");
     expect(body.data.hasMore).toBe(true);
-    expect(body.data.total).toBeNull();
+    expect(body.data.total).toBe(3);
     expect(body.data.options).toHaveLength(2);
     expect(body.data.options.map((o: { code: string }) => o.code)).toEqual(["C001", "C002"]);
   });
@@ -225,7 +234,7 @@ describe("P1-N3-CUST-01 server behavior", () => {
     const diag = lastDiagnostic();
     expect(diag).toBeDefined();
     expect(diag!.tenant_id).toBe("tenant-row-1");
-    expect(diag!.operation_id).toBe("picker.customers");
+    expect(diag!.operation_id).toBe("master.customers");
     expect(diag!.outcome).toBe("succeeded");
   });
 });
