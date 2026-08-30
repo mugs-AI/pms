@@ -154,7 +154,7 @@ async function readOnePage(
       statusCode,
       outcome,
       responseBytes: responseBytes ?? null,
-      ...(outcome === "succeeded" ? { responseBytes } : { errorCode: outcome }),
+      ...(outcome === "succeeded" ? {} : { errorCode: outcome }),
     });
 
   if (!upstream.ok) {
