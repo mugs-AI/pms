@@ -57,9 +57,8 @@ vi.mock("@/integrations/supabase/client.server", () => {
 });
 
 const { handleProjectHubRequest } = await import("@/lib/projecthub-api.server");
-const { mapMasterRow, SCAN_PAGE_SIZE, isPickerKind, pickerPermission } = await import(
-  "@/lib/projecthub-n3.server"
-);
+const { mapMasterRow, SCAN_PAGE_SIZE, isPickerKind, pickerPermission } =
+  await import("@/lib/projecthub-n3.server");
 
 const BASE = "http://localhost:8080/api/projecthub";
 
@@ -112,7 +111,12 @@ const SAMPLE: Record<MasterKind, Record<string, unknown>> = {
     companyName: "Motive Engineering Sdn Bhd",
     email: "ops@motive.test",
   },
-  suppliers: { Id: "sup-1", supplierCode: "S001", companyName: "Bina Bekal Sdn Bhd", phone1: "011" },
+  suppliers: {
+    Id: "sup-1",
+    supplierCode: "S001",
+    companyName: "Bina Bekal Sdn Bhd",
+    phone1: "011",
+  },
   stocks: { stockId: "stk-1", stockCode: "ST-9", description: "Cement Bag 50kg", uom: "BAG" },
   uoms: { id: "uom-1", uomCode: "BAG", description: "Bag", rate: 1 },
   locations: { id: "loc-1", locationCode: "HQ", name: "Ibu Pejabat Kuala Lumpur" },
@@ -327,9 +331,8 @@ describe("D3 shared bounded scan for all ten datasets", () => {
   it.each(TEN)("%s writes tenant-scoped master.<kind> diagnostics", async (kind) => {
     upstreamFor(kind, () => payloadFor(kind, [SAMPLE[kind]], 1));
     await handleProjectHubRequest(get(`master/${kind}`), `master/${kind}`);
-    const diag = dbCalls
-      .filter((c) => c.table === "projecthub_n3_request_diagnostics")
-      .pop()!.row as Record<string, unknown>;
+    const diag = dbCalls.filter((c) => c.table === "projecthub_n3_request_diagnostics").pop()!
+      .row as Record<string, unknown>;
     expect(diag["tenant_id"]).toBe("tenant-row-1");
     expect(diag["operation_id"]).toBe(`master.${kind}`);
   });

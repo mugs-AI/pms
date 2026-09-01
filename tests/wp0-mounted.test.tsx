@@ -88,7 +88,6 @@ vi.mock("@/lib/projecthub-hooks", () => ({
   useProjectMutation: () => ({ mutate: vi.fn(), mutateAsync: vi.fn(), isPending: false }),
 }));
 
-
 import { DisplayWidthControl } from "@/components/projecthub/DisplayWidthControl";
 import { QuotationPanel } from "@/components/projecthub/QuotationPanel";
 import { N3Picker } from "@/components/projecthub/ui";

@@ -87,7 +87,6 @@ describe("architecture guards", () => {
     }
   });
 
-
   it("ignores local env files but allows .env.example", () => {
     const ignore = readFileSync(join(root, ".gitignore"), "utf8");
     expect(ignore).toMatch(/^\.env$/m);
