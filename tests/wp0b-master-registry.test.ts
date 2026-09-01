@@ -387,7 +387,7 @@ describe("D3 shared bounded scan for all ten datasets", () => {
       n3Page(new URL(url).searchParams.get("$skip") === "0" ? rows : [rows[SCAN_PAGE_SIZE]]),
     );
     const res = await handleProjectHubRequest(
-      get("master/customers", "?search=motive&pageSize=200"),
+      get("master/customers", "?search=motive"),
       "master/customers",
     );
     const body = await res.json();
