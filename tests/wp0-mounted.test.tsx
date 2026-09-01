@@ -63,17 +63,31 @@ const pickerQuery = {
   isLoading: false,
   isError: false,
   error: null,
-  data: { options: [] as unknown[] },
+  data: { options: [] as unknown[] } as Record<string, unknown> | null,
   refetch: vi.fn(),
 };
+const masterQuery = {
+  isPending: false,
+  isLoading: false,
+  isError: false,
+  error: null,
+  data: null as Record<string, unknown> | null,
+  refetch: vi.fn(),
+};
+const masterCalls: string[] = [];
 
 vi.mock("@/lib/projecthub-hooks", () => ({
   useQuotationPreview: (_id: string, enabled: boolean) => ({ ...quotationQuery, enabled }),
   useProjectWorkspace: () => workspaceQuery,
   useN3Picker: () => pickerQuery,
+  useN3MasterPage: (kind: string) => {
+    masterCalls.push(`master/${kind}`);
+    return masterQuery;
+  },
   useBoq: () => ({ isLoading: false, isError: false, data: null, refetch: vi.fn() }),
   useProjectMutation: () => ({ mutate: vi.fn(), mutateAsync: vi.fn(), isPending: false }),
 }));
+
 
 import { DisplayWidthControl } from "@/components/projecthub/DisplayWidthControl";
 import { QuotationPanel } from "@/components/projecthub/QuotationPanel";
