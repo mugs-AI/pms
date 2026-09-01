@@ -348,3 +348,82 @@ describe("project workspace quotation tab permission (mounted)", () => {
     await waitFor(() => expect(screen.getByText("No quotation data")).toBeTruthy());
   });
 });
+
+/**
+ * WP0B-1 D5 — mounted truth for the registry-driven Verification surface and
+ * the shared business pickers. These render real components; no source scan.
+ */
+describe("WP0B N3 Data Verification (mounted, registry-driven)", () => {
+  async function renderVerification() {
+    masterCalls.length = 0;
+    const mod = await import("@/routes/verification");
+    const Component = (mod.Route as unknown as { options: { component: React.ComponentType } })
+      .options.component;
+    return render(<Component />);
+  }
+
+  it("renders exactly the ten registry tabs and reads master/<kind>", async () => {
+    const { MASTER_KINDS, MASTER_SPECS } = await import("@/lib/n3-master-registry");
+    masterQuery.data = { options: [], total: 0, hasMore: false, completeness: "complete" };
+    await renderVerification();
+    const tabs = screen.getAllByRole("tab");
+    expect(tabs).toHaveLength(10);
+    expect(tabs.map((t) => t.textContent)).toEqual(MASTER_KINDS.map((k) => MASTER_SPECS[k].label));
+    expect(masterCalls).toContain(`master/${MASTER_KINDS[0]}`);
+  });
+
+  it("switches tab and reads that dataset through the shared hook", async () => {
+    masterQuery.data = { options: [], total: 0, hasMore: false, completeness: "complete" };
+    await renderVerification();
+    fireEvent.click(screen.getAllByRole("tab")[1]!);
+    await waitFor(() => expect(masterCalls).toContain("master/customers"));
+  });
+
+  it("shows the complete-empty message only when the search was complete", async () => {
+    masterQuery.data = { options: [], total: 0, hasMore: false, completeness: "complete" };
+    await renderVerification();
+    expect(screen.getByText("No matching N3 records.")).toBeTruthy();
+  });
+
+  it("shows the incomplete warning instead of a complete-empty claim", async () => {
+    masterQuery.data = { options: [], total: null, hasMore: true, completeness: "incomplete" };
+    await renderVerification();
+    expect(screen.queryByText("No matching N3 records.")).toBeNull();
+    expect(screen.getAllByText(/Search incomplete/i).length).toBeGreaterThan(0);
+  });
+
+  it("never builds or forwards an OData filter from the browser", async () => {
+    masterQuery.data = { options: [], total: 0, hasMore: false, completeness: "complete" };
+    const { container } = await renderVerification();
+    expect(container.textContent).not.toContain("$filter");
+  });
+});
+
+describe("WP0B business pickers (mounted, shared adapter)", () => {
+  const KINDS = ["customers", "projects", "stocks", "uoms", "tax-codes", "users"] as const;
+
+  it.each(KINDS)("%s picker renders the shared combobox", async (kind) => {
+    pickerQuery.data = { options: [] };
+    render(<N3Picker kind={kind} label={kind} value={null} onChange={vi.fn()} />);
+    expect(screen.getByRole("combobox", { name: kind })).toBeTruthy();
+  });
+
+  it("shows the incomplete refinement message rather than a complete-empty claim", async () => {
+    pickerQuery.data = { options: [], completeness: "incomplete", hasMore: true };
+    render(<N3Picker kind="customers" label="Customer" value={null} onChange={vi.fn()} />);
+    const input = screen.getByRole("combobox");
+    fireEvent.keyDown(input, { key: "ArrowDown" });
+    await waitFor(() => expect(screen.getByText(/Search incomplete/i)).toBeTruthy());
+  });
+
+  it("warns that the list is truncated when more matches exist", async () => {
+    pickerQuery.data = {
+      options: [{ id: "1", code: "C1", name: "Customer One" }],
+      completeness: "complete",
+      hasMore: true,
+    };
+    render(<N3Picker kind="customers" label="Customer" value={null} onChange={vi.fn()} />);
+    fireEvent.keyDown(screen.getByRole("combobox"), { key: "ArrowDown" });
+    await waitFor(() => expect(screen.getByText(/refine your search/i)).toBeTruthy());
+  });
+});
