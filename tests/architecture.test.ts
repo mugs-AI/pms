@@ -44,10 +44,49 @@ describe("architecture guards", () => {
       "src/integrations/supabase/client.ts",
       "src/integrations/supabase/auth-attacher.ts",
       "src/integrations/supabase/auth-middleware.ts",
+      "src/integrations/supabase/previewAuthStorage.ts",
     ]) {
       expect(existsSync(join(root, f)), `${f} must not exist`).toBe(false);
     }
   });
+
+  it("allows exactly two files in the Supabase integration directory", () => {
+    const dir = join(root, "src/integrations/supabase");
+    expect(readdirSync(dir).sort()).toEqual(["client.server.ts", "types.ts"]);
+  });
+
+  it("keeps the generated database types at the approved baseline contract", () => {
+    const types = readFileSync(join(root, "src/integrations/supabase/types.ts"), "utf8");
+    expect(types).toContain('PostgrestVersion: "14.15"');
+    for (const table of [
+      "projecthub_tenants",
+      "projecthub_user_roles",
+      "projecthub_projects",
+      "projecthub_project_phases",
+      "projecthub_project_team_members",
+      "projecthub_boq_versions",
+      "projecthub_boq_sections",
+      "projecthub_boq_items",
+      "projecthub_project_events",
+      "projecthub_integration_audit_events",
+      "projecthub_n3_request_diagnostics",
+      "projecthub_project_sequences",
+    ]) {
+      expect(types, `${table} must remain in the generated types`).toContain(table);
+    }
+    expect(types).toContain("projecthub_create_enquiry");
+    expect(types).toContain("projecthub_clone_boq_version");
+  });
+
+  it("adds no N3 mutation method or path anywhere in the source tree", () => {
+    for (const file of sourceFiles.filter((f) => /\.(ts|tsx)$/.test(f))) {
+      const src = readFileSync(file, "utf8");
+      expect(src, `${file} must not declare a non-GET N3 call`).not.toMatch(
+        /n3(Post|Put|Patch|Delete)\s*\(/,
+      );
+    }
+  });
+
 
   it("ignores local env files but allows .env.example", () => {
     const ignore = readFileSync(join(root, ".gitignore"), "utf8");
