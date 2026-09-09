@@ -6,6 +6,7 @@
 import type { Json } from "@/integrations/supabase/types";
 import type { Actor } from "./projecthub-actor.server";
 import { enquiryReferenceYear } from "./projecthub-date";
+import { classifyEnquiryFailure, recordEnquiryFailure } from "./projecthub-diagnostics.server";
 import { resolveN3Identity } from "./projecthub-n3.server";
 import { canViewAllProjects, roleHasPermission } from "./projecthub-rbac";
 import type {
@@ -392,7 +393,16 @@ export async function createEnquiry(
   });
 
   if (error) {
-    if ((error.message ?? "").includes("projecthub_idempotency_conflict")) {
+    const { classification, errorCode } = classifyEnquiryFailure(error);
+    await recordEnquiryFailure({
+      correlationId: actor.correlationId,
+      tenantRowId: actor.tenantRowId,
+      actor: actor.n3UserId,
+      classification,
+      errorCode,
+      error,
+    });
+    if (classification === "idempotency_conflict") {
       return {
         ok: false,
         status: 409,
@@ -402,8 +412,19 @@ export async function createEnquiry(
     return { ok: false, status: 503, message: "The enquiry could not be created" };
   }
   const row = (Array.isArray(data) ? data[0] : data) as
-    { project_id: string; enquiry_reference: string; replayed: boolean } | undefined;
-  if (!row) return { ok: false, status: 503, message: "The enquiry could not be created" };
+    | { project_id: string; enquiry_reference: string; replayed: boolean }
+    | undefined;
+  if (!row || typeof row.project_id !== "string" || typeof row.enquiry_reference !== "string") {
+    await recordEnquiryFailure({
+      correlationId: actor.correlationId,
+      tenantRowId: actor.tenantRowId,
+      actor: actor.n3UserId,
+      classification: "invalid_rpc_result",
+      errorCode: null,
+      error: null,
+    });
+    return { ok: false, status: 503, message: "The enquiry could not be created" };
+  }
 
   return {
     ok: true,
