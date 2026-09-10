@@ -6,7 +6,7 @@
  * idempotent replay, conflict, and the new bounded failure diagnostics.
  * Every N3 call is mocked; no live host and no N3 mutation is reachable.
  */
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { basicInfo, createMockSupabase, jsonResponse, mockUpstream, OWNER_TOKEN } from "./helpers";
@@ -299,29 +299,27 @@ describe("WP0C-0 enquiry creation", () => {
 describe("WP0C-0 boundary guards", () => {
   const read = (p: string) => readFileSync(join(process.cwd(), p), "utf8");
 
-  it("12/13. the atomic routine still owns phase, team and the three events", () => {
-    const sql = read("supabase/migrations")
-      ? readFileSync(join(process.cwd(), "supabase/migrations", latestMigration()), "utf8")
-      : "";
+  it("12/13. the forward migration keeps auto-assignment, phase and the three events atomic", () => {
+    const files = readdirSync(join(process.cwd(), "supabase", "migrations"))
+      .filter((f) => f.endsWith(".sql"))
+      .sort();
+    const sql = read(join("supabase", "migrations", files.at(-1)!));
     expect(sql).toContain("#variable_conflict use_column");
     expect(sql).toContain("projecthub_project_team_members");
     expect(sql).toContain("project.enquiry_created");
-    expect(sql).toContain("SECURITY INVOKER".toLowerCase()).toBeFalsy;
-    expect(sql).not.toContain("SECURITY DEFINER");
+    expect(sql.toLowerCase()).toContain("create or replace function public.projecthub_create_enquiry");
+    expect(sql.toLowerCase()).not.toContain("security definer");
   });
 
   it("15/16. no N3 mutation and no browser Supabase client exist", () => {
     const server = read("src/lib/projecthub-projects.server.ts");
     expect(server).not.toMatch(/method:\s*"(POST|PUT|PATCH|DELETE)"/);
     const diag = read("src/lib/projecthub-diagnostics.server.ts");
-    expect(diag).not.toContain("@/integrations/supabase/client\"");
+    expect(diag).not.toContain('@/integrations/supabase/client"');
+    expect(readdirSync(join(process.cwd(), "src", "integrations", "supabase")).sort()).toEqual([
+      "client.server.ts",
+      "types.ts",
+    ]);
   });
 });
 
-function latestMigration(): string {
-  const { readdirSync } = require("node:fs") as typeof import("node:fs");
-  return readdirSync(join(process.cwd(), "supabase", "migrations"))
-    .filter((f: string) => f.endsWith(".sql"))
-    .sort()
-    .at(-1)!;
-}
