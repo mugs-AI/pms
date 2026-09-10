@@ -153,9 +153,7 @@ describe("WP0C-0 enquiry creation", () => {
     mockCustomers();
     const result = await projects.createEnquiry(actor(), input());
     expect(result).toMatchObject({ ok: true, projectId: PROJECT_ID, replayed: false });
-    expect((result as { enquiryReference: string }).enquiryReference).toMatch(
-      /^ENQ-\d{4}-\d{5}$/,
-    );
+    expect((result as { enquiryReference: string }).enquiryReference).toMatch(/^ENQ-\d{4}-\d{5}$/);
   });
 
   it("5. replays the same project for an identical repeated request", async () => {
@@ -309,7 +307,9 @@ describe("WP0C-0 boundary guards", () => {
     expect(sql).toContain("#variable_conflict use_column");
     expect(sql).toContain("projecthub_project_team_members");
     expect(sql).toContain("project.enquiry_created");
-    expect(sql.toLowerCase()).toContain("create or replace function public.projecthub_create_enquiry");
+    expect(sql.toLowerCase()).toContain(
+      "create or replace function public.projecthub_create_enquiry",
+    );
     expect(sql.toLowerCase()).not.toContain("security definer");
   });
 
@@ -324,4 +324,3 @@ describe("WP0C-0 boundary guards", () => {
     ]);
   });
 });
-
