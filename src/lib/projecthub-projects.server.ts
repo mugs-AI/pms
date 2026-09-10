@@ -412,8 +412,7 @@ export async function createEnquiry(
     return { ok: false, status: 503, message: "The enquiry could not be created" };
   }
   const row = (Array.isArray(data) ? data[0] : data) as
-    | { project_id: string; enquiry_reference: string; replayed: boolean }
-    | undefined;
+    { project_id: string; enquiry_reference: string; replayed: boolean } | undefined;
   if (!row || typeof row.project_id !== "string" || typeof row.enquiry_reference !== "string") {
     await recordEnquiryFailure({
       correlationId: actor.correlationId,
