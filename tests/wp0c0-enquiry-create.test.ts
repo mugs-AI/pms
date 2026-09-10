@@ -167,7 +167,8 @@ describe("WP0C-0 enquiry creation", () => {
     });
     const result = await projects.createEnquiry(actor(), input());
     expect(result).toMatchObject({ ok: true, projectId: PROJECT_ID, replayed: true });
-    expect(db.calls.filter((c) => c.op === "insert")).toHaveLength(0);
+    // Only the N3 read diagnostic is written; no business row is inserted.
+    expect(db.calls.filter((c) => c.table.startsWith("projecthub_project"))).toHaveLength(0);
   });
 
   it("6. returns 409 when the same request id carries a different payload", async () => {
@@ -185,7 +186,8 @@ describe("WP0C-0 enquiry creation", () => {
     mockUpstream(() => jsonResponse({ code: "0000", data: { value: [], count: 0 } }));
     const result = await projects.createEnquiry(actor(), input());
     expect(result).toMatchObject({ ok: false, status: 422 });
-    expect(db.calls).toHaveLength(0);
+    expect(db.calls.filter((c) => c.table.startsWith("rpc:"))).toHaveLength(0);
+    expect(db.calls.filter((c) => c.table.startsWith("projecthub_project"))).toHaveLength(0);
   });
 
   it("8. returns the generic message on a database transaction failure", async () => {
