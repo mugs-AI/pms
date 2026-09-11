@@ -5,9 +5,9 @@
  * These tests render real components and drive them with keyboard and pointer
  * input. Source-string scans elsewhere remain supplementary only.
  */
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 const sessionState = {
   hasPermission: (_p: string) => true,
