@@ -5,9 +5,9 @@
  * These tests render real components and drive them with keyboard and pointer
  * input. Source-string scans elsewhere remain supplementary only.
  */
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 const sessionState = {
   hasPermission: (_p: string) => true,
@@ -271,32 +271,39 @@ describe("N3 combobox (mounted keyboard)", () => {
 });
 
 describe("new enquiry validation (mounted)", () => {
-  it("blocks submit, marks the field invalid and focuses it when the title is empty", async () => {
+  // Resolving the route module inside a timed test body charged the first test
+  // with the whole module transform/collect cost, which could exceed the test
+  // timeout and leave its DOM mounted for the next test. Resolve it once here.
+  let NewEnquiry: React.ComponentType;
+
+  beforeAll(async () => {
     const { Route } = await import("@/routes/projects.new");
-    const Component = (Route as unknown as { options: { component: React.ComponentType } }).options
+    NewEnquiry = (Route as unknown as { options: { component: React.ComponentType } }).options
       .component;
-    const { container } = render(<Component />);
+  });
+
+  it("blocks submit, marks the field invalid and focuses it when the title is empty", async () => {
+    const { container } = render(<NewEnquiry />);
+    const view = within(container);
     const form = container.querySelector("form") as HTMLFormElement;
     // Native validation must not pre-empt the accessible custom path.
     expect(form.hasAttribute("novalidate")).toBe(true);
-    const title = screen.getByRole("textbox", { name: /Project title/i }) as HTMLInputElement;
+    const title = view.getByRole("textbox", { name: /Project title/i }) as HTMLInputElement;
     expect(title.hasAttribute("required")).toBe(false);
     expect(title.getAttribute("aria-required")).toBe("true");
 
     fireEvent.submit(form);
     await waitFor(() => expect(title.getAttribute("aria-invalid")).toBe("true"));
-    expect(screen.getAllByText("A project title is required.").length).toBeGreaterThan(0);
+    expect(view.getAllByText("A project title is required.").length).toBeGreaterThan(0);
     expect(document.activeElement).toBe(title);
   });
 
   it("clears the invalid state once a title is supplied", async () => {
     const user = userEvent.setup();
-    const { Route } = await import("@/routes/projects.new");
-    const Component = (Route as unknown as { options: { component: React.ComponentType } }).options
-      .component;
-    const { container } = render(<Component />);
+    const { container } = render(<NewEnquiry />);
+    const view = within(container);
     const form = container.querySelector("form") as HTMLFormElement;
-    const title = screen.getByRole("textbox", { name: /Project title/i }) as HTMLInputElement;
+    const title = view.getByRole("textbox", { name: /Project title/i }) as HTMLInputElement;
     fireEvent.submit(form);
     await waitFor(() => expect(title.getAttribute("aria-invalid")).toBe("true"));
     await user.type(title, "Clubhouse renovation");
