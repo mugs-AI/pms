@@ -1,6 +1,6 @@
 import { malaysiaToday } from "@/lib/projecthub-date";
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useMemo, useRef, useState } from "react";
+import { createFileRoute, Link, useBlocker, useNavigate } from "@tanstack/react-router";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { MalaysianDateInput } from "@/components/projecthub/DateInput";
 import {
@@ -10,17 +10,18 @@ import {
   Field,
   N3Picker,
   PageHeading,
+  buttonClass,
   inputClass,
 } from "@/components/projecthub/ui";
 import { useSession } from "@/lib/n3-session";
 import { projectHubRequest } from "@/lib/projecthub-client";
 import type { PickerOption } from "@/lib/projecthub-hooks";
+import { PHASE_LINK_STATUSES } from "@/lib/projecthub-schemas";
 import {
-  CUSTOMER_LINK_LABELS,
-  CUSTOMER_LINK_STATUSES,
-  PHASE_LINK_LABELS,
-  PHASE_LINK_STATUSES,
-} from "@/lib/projecthub-schemas";
+  openNewEnquiryWorkspace,
+  replaceNewEnquiryWithProject,
+  setNewEnquiryDirty,
+} from "@/lib/workspace-tabs";
 
 export const Route = createFileRoute("/projects/new")({
   head: () => ({
@@ -38,14 +39,19 @@ export const Route = createFileRoute("/projects/new")({
     ],
   }),
   component: () => (
-    <AppShell>
+    <AppShell activeWorkspace={{ kind: "new" }}>
       <NewEnquiryPage />
     </AppShell>
   ),
 });
 
-type CustomerMode = (typeof CUSTOMER_LINK_STATUSES)[number];
 type CodeMode = (typeof PHASE_LINK_STATUSES)[number];
+
+const CODE_MODE_LABELS: Record<CodeMode, string> = {
+  unlinked: "Not assigned yet",
+  linked_existing: "Select existing code",
+  pending_n3_create_contract: "Request a new code",
+};
 
 function NewEnquiryPage() {
   const { hasPermission } = useSession();
@@ -71,9 +77,7 @@ function NewEnquiryPage() {
   const [simpleCost, setSimpleCost] = useState("");
   const [simpleSelling, setSimpleSelling] = useState("");
 
-  const [customerMode, setCustomerMode] = useState<CustomerMode>("linked_existing");
   const [customer, setCustomer] = useState<PickerOption | null>(null);
-  const [requested, setRequested] = useState({ name: "", contact: "", email: "", phone: "" });
 
   const [phaseName, setPhaseName] = useState("Main contract");
   const [codeMode, setCodeMode] = useState<CodeMode>("unlinked");
@@ -87,6 +91,22 @@ function NewEnquiryPage() {
   const [invalidField, setInvalidField] = useState<string | null>(null);
   const fields = useRef<Record<string, HTMLElement | null>>({});
   const errorId = "new-enquiry-error";
+  const dirty = Boolean(
+    title || expectedStartDate || expectedEndDate || description || customer || simpleCost || simpleSelling ||
+    Object.values(site).some(Boolean) || phaseName !== "Main contract" || codeMode !== "unlinked" || projectCode ||
+    requestedCode.code || requestedCode.name,
+  );
+
+  useEffect(() => {
+    openNewEnquiryWorkspace();
+    setNewEnquiryDirty(dirty);
+    return () => setNewEnquiryDirty(false);
+  }, [dirty]);
+
+  useBlocker({
+    enableBeforeUnload: dirty,
+    shouldBlockFn: () => dirty && !window.confirm("Discard this unfinished enquiry?"),
+  });
 
   /** Reports one validation failure and moves focus to the offending field. */
   function reject(field: string, message: string) {
@@ -122,12 +142,7 @@ function NewEnquiryPage() {
     if (expectedStartDate && expectedEndDate && expectedStartDate > expectedEndDate) {
       return reject("expectedEndDate", "The expected end date must not precede the start date.");
     }
-    if (customerMode === "linked_existing" && !customer) {
-      return reject("customer", "Select an existing N3 customer, or choose another customer mode.");
-    }
-    if (customerMode !== "linked_existing" && !requested.name.trim()) {
-      return reject("requestedName", "A prospect or requested customer name is required.");
-    }
+    if (!customer) return reject("customer", "Select a customer.");
     if (codeMode === "linked_existing" && !projectCode) {
       return reject("projectCode", "Select an existing N3 project code, or choose another mode.");
     }
@@ -162,15 +177,12 @@ function NewEnquiryPage() {
             simpleBudgetCost: budgetMode === "simple_budget" ? simpleCost || null : null,
             simpleBudgetSelling: budgetMode === "simple_budget" ? simpleSelling || null : null,
             customer: {
-              customerLinkStatus: customerMode,
-              n3CustomerId: customerMode === "linked_existing" ? customer?.id : null,
-              requestedCustomerName: customerMode === "linked_existing" ? null : requested.name,
-              requestedCustomerContact:
-                customerMode === "linked_existing" ? null : requested.contact || null,
-              requestedCustomerEmail:
-                customerMode === "linked_existing" ? null : requested.email || null,
-              requestedCustomerPhone:
-                customerMode === "linked_existing" ? null : requested.phone || null,
+              customerLinkStatus: "linked_existing",
+              n3CustomerId: customer.id,
+              requestedCustomerName: null,
+              requestedCustomerContact: null,
+              requestedCustomerEmail: null,
+              requestedCustomerPhone: null,
             },
             primaryProjectCode: {
               linkStatus: codeMode,
@@ -184,6 +196,12 @@ function NewEnquiryPage() {
           },
         },
       );
+      replaceNewEnquiryWithProject({
+        projectId: result.projectId,
+        reference: result.enquiryReference,
+        title: title.trim(),
+        section: "overview",
+      });
       await navigate({ to: "/projects/$projectId", params: { projectId: result.projectId } });
     } catch (e) {
       setError(e);
@@ -195,10 +213,10 @@ function NewEnquiryPage() {
     <form onSubmit={submit} noValidate className="space-y-6">
       <PageHeading
         title="New Enquiry"
-        subtitle="ProjectHub generates the ENQ-YYYY-##### reference. Nothing here writes to N3."
+        subtitle="Your enquiry reference is generated automatically when saved."
       />
 
-      <Card className="grid gap-4 sm:grid-cols-2">
+      <Card tone="information" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <Field label="Project title" error={invalidField === "title" ? fieldError : null}>
           <input
             ref={(node) => {
@@ -222,6 +240,16 @@ function NewEnquiryPage() {
             <option value="renovation">Renovation</option>
           </select>
         </Field>
+        <Field label="Budget mode">
+          <select
+            className={inputClass}
+            value={budgetMode}
+            onChange={(e) => setBudgetMode(e.target.value)}
+          >
+            <option value="detailed_boq">Detailed BOQ</option>
+            <option value="simple_budget">Simple budget</option>
+          </select>
+        </Field>
         <Field label="Enquiry date" error={invalidField === "enquiryDate" ? fieldError : null}>
           <MalaysianDateInput
             id="new-enquiry-enquiryDate"
@@ -234,16 +262,6 @@ function NewEnquiryPage() {
               fields.current["enquiryDate"] = node;
             }}
           />
-        </Field>
-        <Field label="Budget mode">
-          <select
-            className={inputClass}
-            value={budgetMode}
-            onChange={(e) => setBudgetMode(e.target.value)}
-          >
-            <option value="detailed_boq">Detailed BOQ</option>
-            <option value="simple_budget">Simple budget</option>
-          </select>
         </Field>
         <Field
           label="Expected start date"
@@ -301,7 +319,7 @@ function NewEnquiryPage() {
             </Field>
           </>
         ) : null}
-        <div className="sm:col-span-2">
+        <div className="sm:col-span-2 lg:col-span-3">
           <Field label="Description">
             <textarea
               className={inputClass}
@@ -314,25 +332,12 @@ function NewEnquiryPage() {
         </div>
       </Card>
 
-      <Card className="space-y-4">
-        <h2 className="font-display text-lg font-bold text-foreground">Customer</h2>
-        <Field label="Customer mode">
-          <select
-            className={inputClass}
-            value={customerMode}
-            onChange={(e) => setCustomerMode(e.target.value as CustomerMode)}
-          >
-            {CUSTOMER_LINK_STATUSES.map((value) => (
-              <option key={value} value={value}>
-                {CUSTOMER_LINK_LABELS[value]}
-              </option>
-            ))}
-          </select>
-        </Field>
-        {customerMode === "linked_existing" ? (
+      <Card tone="project" className="space-y-4">
+        <h2 className="font-display text-lg font-bold text-foreground">Customer &amp; Primary Phase</h2>
+        <div className="lg:max-w-3xl">
           <N3Picker
             kind="customers"
-            label="Existing N3 customer"
+            label="Customer"
             value={customer}
             onChange={setCustomer}
             error={invalidField === "customer" ? fieldError : null}
@@ -340,65 +345,16 @@ function NewEnquiryPage() {
               fields.current["customer"] = node;
             }}
           />
-        ) : (
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field
-              label="Customer / prospect name"
-              error={invalidField === "requestedName" ? fieldError : null}
-            >
-              <input
-                ref={(node) => {
-                  fields.current["requestedName"] = node;
-                }}
-                className={inputClass}
-                value={requested.name}
-                onChange={(e) => setRequested({ ...requested, name: e.target.value })}
-                {...invalidProps("requestedName")}
-              />
-            </Field>
-            <Field label="Contact person">
-              <input
-                className={inputClass}
-                value={requested.contact}
-                onChange={(e) => setRequested({ ...requested, contact: e.target.value })}
-              />
-            </Field>
-            <Field label="Email">
-              <input
-                type="email"
-                className={inputClass}
-                value={requested.email}
-                onChange={(e) => setRequested({ ...requested, email: e.target.value })}
-              />
-            </Field>
-            <Field label="Phone">
-              <input
-                className={inputClass}
-                value={requested.phone}
-                onChange={(e) => setRequested({ ...requested, phone: e.target.value })}
-              />
-            </Field>
-          </div>
-        )}
-        <p className="text-xs text-muted-foreground">
-          A pending or prospect customer is recorded in ProjectHub only. Nothing is created in N3
-          yet.
-        </p>
-      </Card>
-
-      <Card className="space-y-4">
-        <h2 className="font-display text-lg font-bold text-foreground">
-          Primary phase &amp; N3 project code
-        </h2>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Primary phase name">
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <Field label="Primary Phase">
             <input
               className={inputClass}
               value={phaseName}
               onChange={(e) => setPhaseName(e.target.value)}
             />
           </Field>
-          <Field label="Primary project code mode">
+          <Field label="Project Code Option">
             <select
               className={inputClass}
               value={codeMode}
@@ -406,28 +362,25 @@ function NewEnquiryPage() {
             >
               {PHASE_LINK_STATUSES.map((value) => (
                 <option key={value} value={value}>
-                  {PHASE_LINK_LABELS[value]}
+                  {CODE_MODE_LABELS[value]}
                 </option>
               ))}
             </select>
           </Field>
-        </div>
-        {codeMode === "linked_existing" ? (
-          <N3Picker
-            kind="projects"
-            label="Existing N3 project code"
-            value={projectCode}
-            onChange={setProjectCode}
-            error={invalidField === "projectCode" ? fieldError : null}
-            inputRef={(node) => {
-              fields.current["projectCode"] = node;
-            }}
-          />
-        ) : null}
-        {codeMode === "pending_n3_create_contract" ? (
-          <div className="grid gap-4 sm:grid-cols-2">
+          {codeMode === "linked_existing" ? (
+            <N3Picker
+              kind="projects"
+              label="Project Code"
+              value={projectCode}
+              onChange={setProjectCode}
+              error={invalidField === "projectCode" ? fieldError : null}
+              inputRef={(node) => { fields.current["projectCode"] = node; }}
+            />
+          ) : null}
+          {codeMode === "pending_n3_create_contract" ? (
+            <>
             <Field
-              label="Requested N3 project code"
+              label="Requested Code"
               error={invalidField === "requestedProjectCode" ? fieldError : null}
             >
               <input
@@ -441,7 +394,7 @@ function NewEnquiryPage() {
               />
             </Field>
             <Field
-              label="Requested N3 project name"
+              label="Requested Project Name"
               error={invalidField === "requestedProjectName" ? fieldError : null}
             >
               <input
@@ -454,11 +407,9 @@ function NewEnquiryPage() {
                 {...invalidProps("requestedProjectName")}
               />
             </Field>
-          </div>
-        ) : null}
-        <p className="text-xs text-muted-foreground">
-          A requested project code does not exist in N3 until someone creates it there.
-        </p>
+            </>
+          ) : null}
+        </div>
       </Card>
 
       {fieldError ? (
@@ -472,13 +423,13 @@ function NewEnquiryPage() {
         <button
           type="submit"
           disabled={submitting}
-          className="min-h-11 rounded-md bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+          className={buttonClass.primary}
         >
           {submitting ? "Creating enquiry…" : "Create enquiry"}
         </button>
         <Link
           to="/projects"
-          className="inline-flex min-h-11 items-center justify-center rounded-md border border-input px-5 py-2.5 text-sm font-medium hover:bg-secondary"
+          className={buttonClass.secondary}
         >
           Cancel
         </Link>

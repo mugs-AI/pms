@@ -33,13 +33,28 @@ export function PageHeading({
   );
 }
 
-export function Card({ children, className = "" }: { children: ReactNode; className?: string }) {
+export type CardTone = "neutral" | "information" | "project" | "financial" | "destructive";
+
+export function Card({ children, className = "", tone = "neutral" }: { children: ReactNode; className?: string; tone?: CardTone }) {
+  const tones: Record<CardTone, string> = {
+    neutral: "bg-card",
+    information: "border-information/30 bg-information-surface",
+    project: "border-project/30 bg-project-surface",
+    financial: "border-financial/35 bg-financial-surface",
+    destructive: "border-destructive/35 bg-destructive/5",
+  };
   return (
-    <div className={`rounded-lg border border-border bg-card p-5 shadow-card ${className}`}>
+    <div className={`rounded-lg border border-border p-5 shadow-card ${tones[tone]} ${className}`}>
       {children}
     </div>
   );
 }
+
+export const buttonClass = {
+  primary: "inline-flex min-h-11 items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none disabled:opacity-50",
+  secondary: "inline-flex min-h-11 items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-secondary focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none disabled:opacity-50",
+  destructive: "inline-flex min-h-11 items-center justify-center rounded-md border border-destructive/50 px-4 py-2 text-sm font-medium text-destructive transition-colors hover:bg-destructive/10 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none disabled:opacity-50",
+} as const;
 
 export function Skeleton({ rows = 4 }: { rows?: number }) {
   return (
