@@ -1,9 +1,12 @@
 import { Link } from "@tanstack/react-router";
-import { useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useSession } from "@/lib/n3-session";
 import { DevApiKeyLogin } from "@/components/DevApiKeyLogin";
 import type { Permission } from "@/lib/projecthub-rbac";
 import { useDisplayWidth, widthContainerClass } from "@/lib/display-preference";
+import { fontSizeClass, useFontSize } from "@/lib/font-preference";
+import { clearWorkspaceTabs } from "@/lib/workspace-tabs";
+import { WorkspaceTabs, type ActiveWorkspace } from "@/components/projecthub/WorkspaceTabs";
 
 // Compact top-level shell: Dashboard | Projects | Settings.
 // Team & Roles, N3 Data Verification and Capability Inventory now live inside
@@ -15,12 +18,22 @@ const NAV: { to: string; label: string; permission?: Permission; ownerOnly?: boo
   { to: "/settings", label: "Settings" },
 ];
 
-export function AppShell({ children }: { children: ReactNode }) {
+export function AppShell({ children, activeWorkspace }: { children: ReactNode; activeWorkspace?: ActiveWorkspace }) {
   const session = useSession();
   const [open, setOpen] = useState(false);
   const [width] = useDisplayWidth();
+  const [fontSize] = useFontSize();
+  const tenant = useRef<string | null | undefined>(undefined);
   const container = widthContainerClass(width);
   const loading = session.status === "loading";
+
+  useEffect(() => {
+    if (session.status === "anonymous" || session.status === "error") clearWorkspaceTabs();
+    if (session.status === "authenticated") {
+      if (tenant.current !== undefined && tenant.current !== session.tenantCode) clearWorkspaceTabs();
+      tenant.current = session.tenantCode;
+    }
+  }, [session.status, session.tenantCode]);
 
   if (session.status === "anonymous" || session.status === "error") {
     return <UnauthenticatedScreen />;
@@ -34,7 +47,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   });
 
   return (
-    <div className="min-h-dvh w-full max-w-full overflow-x-clip bg-background">
+    <div className={`${fontSizeClass(fontSize)} min-h-dvh w-full max-w-full overflow-x-clip bg-background`}>
       <a
         href="#main-content"
         className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:rounded-md focus:bg-accent focus:px-3 focus:py-2 focus:text-sm focus:font-medium focus:text-accent-foreground"
@@ -68,7 +81,10 @@ export function AppShell({ children }: { children: ReactNode }) {
             </div>
             <button
               type="button"
-              onClick={session.signOut}
+              onClick={() => {
+                clearWorkspaceTabs();
+                session.signOut();
+              }}
               className="min-h-10 shrink-0 rounded-md border border-primary-foreground/25 px-3 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary-foreground/10"
             >
               Sign out
@@ -112,6 +128,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             </ul>
           </div>
         </nav>
+        <WorkspaceTabs active={activeWorkspace} />
       </header>
 
       <main id="main-content" className={`${container} py-6 sm:py-8`}>

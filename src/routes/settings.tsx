@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { Card, EmptyState, PageHeading, inputClass } from "@/components/projecthub/ui";
 import { DisplayWidthControl } from "@/components/projecthub/DisplayWidthControl";
+import { FontSizeControl } from "@/components/projecthub/FontSizeControl";
 import { useSession } from "@/lib/n3-session";
 
 export const Route = createFileRoute("/settings")({
@@ -88,7 +89,16 @@ function SettingsPage() {
           Choose how wide ProjectHub pages are on a desktop screen. This preference is stored in
           this browser only and contains no company, user or session information.
         </p>
-        <DisplayWidthControl />
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <p className="mb-1 text-xs font-semibold text-muted-foreground uppercase">Page width</p>
+            <DisplayWidthControl />
+          </div>
+          <div>
+            <p className="mb-1 text-xs font-semibold text-muted-foreground uppercase">Font size</p>
+            <FontSizeControl />
+          </div>
+        </div>
       </Card>
 
       <section className="space-y-3">
