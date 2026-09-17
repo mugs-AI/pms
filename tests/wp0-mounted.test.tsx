@@ -26,6 +26,7 @@ const sessionState = {
   signIn: () => {},
   signOut: () => {},
 };
+let routeSection = "overview";
 
 vi.mock("@/lib/n3-session", () => ({
   useSession: () => sessionState,
@@ -40,9 +41,11 @@ vi.mock("@tanstack/react-router", () => ({
   createFileRoute: () => (options: Record<string, unknown>) => ({
     options,
     useParams: () => ({ projectId: "project-1" }),
+    useSearch: () => ({ section: routeSection }),
   }),
   Link: ({ children, ...rest }: { children: React.ReactNode }) => <a {...rest}>{children}</a>,
   useNavigate: () => vi.fn(),
+  useBlocker: () => undefined,
 }));
 
 const quotationQuery = {
@@ -94,6 +97,7 @@ import { N3Picker } from "@/components/projecthub/ui";
 
 beforeEach(() => {
   window.localStorage.clear();
+  routeSection = "overview";
   sessionState.hasPermission = () => true;
 });
 afterEach(() => cleanup());
@@ -340,18 +344,23 @@ describe("project workspace quotation tab permission (mounted)", () => {
   it("hides the Quotation tab from a role without projecthub:boq:view", async () => {
     sessionState.hasPermission = (p: string) => p === "projecthub:projects:list";
     await renderWorkspace();
-    expect(screen.queryByRole("button", { name: "Quotation" })).toBeNull();
-    expect(screen.getByRole("button", { name: "Overview" })).toBeTruthy();
+    expect(screen.queryByRole("tab", { name: "Quotation" })).toBeNull();
+    expect(screen.getByRole("tab", { name: "Overview" })).toBeTruthy();
   });
 
   it("shows the Quotation tab to a role with projecthub:boq:view", async () => {
     sessionState.hasPermission = (p: string) =>
       p === "projecthub:projects:list" || p === "projecthub:boq:view";
+    routeSection = "quotation";
     quotationQuery.data = null;
     await renderWorkspace();
-    const tab = screen.getByRole("button", { name: "Quotation" });
-    fireEvent.click(tab);
-    await waitFor(() => expect(screen.getByText("No quotation data")).toBeTruthy());
+    expect(screen.getByRole("tab", { name: "Quotation" }).getAttribute("aria-selected")).toBe(
+      "true",
+    );
+    expect(screen.getByText("No quotation data")).toBeTruthy();
+    const external = screen.getByRole("link", { name: "Open current project section in new tab" });
+    expect(external.textContent).toBe("Open in new tab ↗");
+    expect(external.getAttribute("target")).toBe("_blank");
   });
 });
 
