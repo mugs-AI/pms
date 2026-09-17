@@ -117,6 +117,7 @@ function DashboardBody() {
                         <Link
                           to="/projects/$projectId"
                           params={{ projectId: row.id }}
+                          search={{ section: "overview" }}
                           className="font-medium text-foreground hover:underline"
                         >
                           {row.title}

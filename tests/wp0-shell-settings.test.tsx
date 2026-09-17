@@ -32,6 +32,7 @@ vi.mock("@/lib/n3-session", () => ({
 vi.mock("@tanstack/react-router", () => ({
   createFileRoute: () => (options: Record<string, unknown>) => ({ options }),
   Link: ({ children, to }: { children: ReactNode; to: string }) => <a href={to}>{children}</a>,
+  useNavigate: () => vi.fn(),
 }));
 
 let latestProjectParams: Record<string, unknown> | null = null;
@@ -134,6 +135,7 @@ describe("compact real application shell", () => {
     expect(screen.queryByRole("link", { name: /N3 Data Verification/ })).toBeNull();
     expect(screen.queryByRole("link", { name: /Capability Inventory/ })).toBeNull();
     expect(screen.getByRole("radiogroup", { name: "Desktop display width" })).toBeTruthy();
+    expect(screen.getByRole("radiogroup", { name: "Application font size" })).toBeTruthy();
   });
 });
 
