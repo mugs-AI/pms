@@ -20,11 +20,7 @@ import { QuotationPanel } from "@/components/projecthub/QuotationPanel";
 import { TeamPanel } from "@/components/projecthub/TeamPanel";
 import { useSession } from "@/lib/n3-session";
 import { useProjectWorkspace } from "@/lib/projecthub-hooks";
-import {
-  normaliseSection,
-  openProjectWorkspace,
-  type ProjectSection,
-} from "@/lib/workspace-tabs";
+import { normaliseSection, openProjectWorkspace, type ProjectSection } from "@/lib/workspace-tabs";
 
 export const Route = createFileRoute("/projects/$projectId")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -77,7 +73,8 @@ function Workspace() {
   // without BOQ visibility are never offered a tab that will be denied.
   const canViewQuotation = hasPermission("projecthub:boq:view");
   const tabs = ALL_TABS.filter((item) => item.value !== "quotation" || canViewQuotation);
-  const section = requestedSection === "quotation" && !canViewQuotation ? "overview" : requestedSection;
+  const section =
+    requestedSection === "quotation" && !canViewQuotation ? "overview" : requestedSection;
   const query = useProjectWorkspace(projectId, hasPermission("projecthub:projects:list"));
   const ws = query.data?.workspace;
 
@@ -145,7 +142,9 @@ function Workspace() {
         {tabs.map((item, index) => (
           <Link
             key={item.value}
-            ref={(node) => { tabRefs.current[index] = node; }}
+            ref={(node) => {
+              tabRefs.current[index] = node;
+            }}
             role="tab"
             aria-selected={section === item.value}
             aria-controls={`project-panel-${item.value}`}
@@ -178,33 +177,33 @@ function Workspace() {
       >
         {section === "overview" ? <ProjectOverview projectId={projectId} workspace={ws} /> : null}
 
-      {section === "phases" ? <PhasesPanel projectId={projectId} workspace={ws} /> : null}
+        {section === "phases" ? <PhasesPanel projectId={projectId} workspace={ws} /> : null}
 
-      {section === "team" ? <TeamPanel projectId={projectId} workspace={ws} /> : null}
+        {section === "team" ? <TeamPanel projectId={projectId} workspace={ws} /> : null}
 
-      {section === "activity" ? (
-        <div className="grid gap-2">
-          {ws.events.length === 0 ? (
-            <EmptyState title="No activity yet" body="Project changes appear here." />
-          ) : null}
-          {ws.events.map((event) => (
-            <Card key={event.id}>
-              <p className="text-sm text-foreground">{event.summary}</p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                {formatMalaysianDateTime(event.occurred_at)} · {event.event_type}
-              </p>
-            </Card>
-          ))}
-        </div>
-      ) : null}
+        {section === "activity" ? (
+          <div className="grid gap-2">
+            {ws.events.length === 0 ? (
+              <EmptyState title="No activity yet" body="Project changes appear here." />
+            ) : null}
+            {ws.events.map((event) => (
+              <Card key={event.id}>
+                <p className="text-sm text-foreground">{event.summary}</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {formatMalaysianDateTime(event.occurred_at)} · {event.event_type}
+                </p>
+              </Card>
+            ))}
+          </div>
+        ) : null}
 
-      {section === "budget" ? (
-        p.budget_mode === "simple_budget" ? (
-          <SimpleBudgetPanel projectId={projectId} workspace={ws} />
-        ) : (
-          <BoqEditor projectId={projectId} workspace={ws} />
-        )
-      ) : null}
+        {section === "budget" ? (
+          p.budget_mode === "simple_budget" ? (
+            <SimpleBudgetPanel projectId={projectId} workspace={ws} />
+          ) : (
+            <BoqEditor projectId={projectId} workspace={ws} />
+          )
+        ) : null}
 
         {section === "quotation" && canViewQuotation ? (
           <QuotationPanel projectId={projectId} canView={canViewQuotation} />

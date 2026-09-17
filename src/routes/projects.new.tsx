@@ -92,9 +92,19 @@ function NewEnquiryPage() {
   const fields = useRef<Record<string, HTMLElement | null>>({});
   const errorId = "new-enquiry-error";
   const dirty = Boolean(
-    title || expectedStartDate || expectedEndDate || description || customer || simpleCost || simpleSelling ||
-    Object.values(site).some(Boolean) || phaseName !== "Main contract" || codeMode !== "unlinked" || projectCode ||
-    requestedCode.code || requestedCode.name,
+    title ||
+    expectedStartDate ||
+    expectedEndDate ||
+    description ||
+    customer ||
+    simpleCost ||
+    simpleSelling ||
+    Object.values(site).some(Boolean) ||
+    phaseName !== "Main contract" ||
+    codeMode !== "unlinked" ||
+    projectCode ||
+    requestedCode.code ||
+    requestedCode.name,
   );
 
   useEffect(() => {
@@ -105,7 +115,8 @@ function NewEnquiryPage() {
 
   useBlocker({
     enableBeforeUnload: dirty,
-    shouldBlockFn: () => dirty && !submitting && !window.confirm("Discard this unfinished enquiry?"),
+    shouldBlockFn: () =>
+      dirty && !submitting && !window.confirm("Discard this unfinished enquiry?"),
   });
 
   /** Reports one validation failure and moves focus to the offending field. */
@@ -337,7 +348,9 @@ function NewEnquiryPage() {
       </Card>
 
       <Card tone="project" className="space-y-4">
-        <h2 className="font-display text-lg font-bold text-foreground">Customer &amp; Primary Phase</h2>
+        <h2 className="font-display text-lg font-bold text-foreground">
+          Customer &amp; Primary Phase
+        </h2>
         <div className="lg:max-w-3xl">
           <N3Picker
             kind="customers"
@@ -378,39 +391,41 @@ function NewEnquiryPage() {
               value={projectCode}
               onChange={setProjectCode}
               error={invalidField === "projectCode" ? fieldError : null}
-              inputRef={(node) => { fields.current["projectCode"] = node; }}
+              inputRef={(node) => {
+                fields.current["projectCode"] = node;
+              }}
             />
           ) : null}
           {codeMode === "pending_n3_create_contract" ? (
             <>
-            <Field
-              label="Requested Code"
-              error={invalidField === "requestedProjectCode" ? fieldError : null}
-            >
-              <input
-                ref={(node) => {
-                  fields.current["requestedProjectCode"] = node;
-                }}
-                className={inputClass}
-                value={requestedCode.code}
-                onChange={(e) => setRequestedCode({ ...requestedCode, code: e.target.value })}
-                {...invalidProps("requestedProjectCode")}
-              />
-            </Field>
-            <Field
-              label="Requested Project Name"
-              error={invalidField === "requestedProjectName" ? fieldError : null}
-            >
-              <input
-                ref={(node) => {
-                  fields.current["requestedProjectName"] = node;
-                }}
-                className={inputClass}
-                value={requestedCode.name}
-                onChange={(e) => setRequestedCode({ ...requestedCode, name: e.target.value })}
-                {...invalidProps("requestedProjectName")}
-              />
-            </Field>
+              <Field
+                label="Requested Code"
+                error={invalidField === "requestedProjectCode" ? fieldError : null}
+              >
+                <input
+                  ref={(node) => {
+                    fields.current["requestedProjectCode"] = node;
+                  }}
+                  className={inputClass}
+                  value={requestedCode.code}
+                  onChange={(e) => setRequestedCode({ ...requestedCode, code: e.target.value })}
+                  {...invalidProps("requestedProjectCode")}
+                />
+              </Field>
+              <Field
+                label="Requested Project Name"
+                error={invalidField === "requestedProjectName" ? fieldError : null}
+              >
+                <input
+                  ref={(node) => {
+                    fields.current["requestedProjectName"] = node;
+                  }}
+                  className={inputClass}
+                  value={requestedCode.name}
+                  onChange={(e) => setRequestedCode({ ...requestedCode, name: e.target.value })}
+                  {...invalidProps("requestedProjectName")}
+                />
+              </Field>
             </>
           ) : null}
         </div>
@@ -424,17 +439,10 @@ function NewEnquiryPage() {
       {error ? <ErrorState error={error} /> : null}
 
       <div className="flex flex-col gap-2 pb-2 sm:flex-row sm:items-center">
-        <button
-          type="submit"
-          disabled={submitting}
-          className={buttonClass.primary}
-        >
+        <button type="submit" disabled={submitting} className={buttonClass.primary}>
           {submitting ? "Creating enquiry…" : "Create enquiry"}
         </button>
-        <Link
-          to="/projects"
-          className={buttonClass.secondary}
-        >
+        <Link to="/projects" className={buttonClass.secondary}>
           Cancel
         </Link>
       </div>

@@ -18,7 +18,13 @@ const NAV: { to: string; label: string; permission?: Permission; ownerOnly?: boo
   { to: "/settings", label: "Settings" },
 ];
 
-export function AppShell({ children, activeWorkspace }: { children: ReactNode; activeWorkspace?: ActiveWorkspace }) {
+export function AppShell({
+  children,
+  activeWorkspace,
+}: {
+  children: ReactNode;
+  activeWorkspace?: ActiveWorkspace;
+}) {
   const session = useSession();
   const [open, setOpen] = useState(false);
   const [width] = useDisplayWidth();
@@ -30,7 +36,8 @@ export function AppShell({ children, activeWorkspace }: { children: ReactNode; a
   useEffect(() => {
     if (session.status === "anonymous" || session.status === "error") clearWorkspaceTabs();
     if (session.status === "authenticated") {
-      if (tenant.current !== undefined && tenant.current !== session.tenantCode) clearWorkspaceTabs();
+      if (tenant.current !== undefined && tenant.current !== session.tenantCode)
+        clearWorkspaceTabs();
       tenant.current = session.tenantCode;
     }
   }, [session.status, session.tenantCode]);
@@ -47,7 +54,9 @@ export function AppShell({ children, activeWorkspace }: { children: ReactNode; a
   });
 
   return (
-    <div className={`${fontSizeClass(fontSize)} min-h-dvh w-full max-w-full overflow-x-clip bg-background`}>
+    <div
+      className={`${fontSizeClass(fontSize)} min-h-dvh w-full max-w-full overflow-x-clip bg-background`}
+    >
       <a
         href="#main-content"
         className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:rounded-md focus:bg-accent focus:px-3 focus:py-2 focus:text-sm focus:font-medium focus:text-accent-foreground"

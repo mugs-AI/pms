@@ -159,9 +159,15 @@
   --sidebar-ring: oklch(0.551 0.027 264.364);
 }
 
-.font-size-small { font-size: 90%; }
-.font-size-standard { font-size: 100%; }
-.font-size-large { font-size: 112.5%; }
+.font-size-small {
+  font-size: 90%;
+}
+.font-size-standard {
+  font-size: 100%;
+}
+.font-size-large {
+  font-size: 112.5%;
+}
 
 @media (max-width: 639px), (pointer: coarse) {
   .font-size-small input,
