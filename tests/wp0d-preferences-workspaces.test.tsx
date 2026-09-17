@@ -2,10 +2,7 @@
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { FontSizeControl } from "@/components/projecthub/FontSizeControl";
-import {
-  FONT_SIZE_KEY,
-  resetFontSizeMemory,
-} from "@/lib/font-preference";
+import { FONT_SIZE_KEY, resetFontSizeMemory } from "@/lib/font-preference";
 import {
   clearWorkspaceTabs,
   getWorkspaceCapMessage,
@@ -32,7 +29,9 @@ describe("WP0D font preference", () => {
     expect(radios.map((radio) => radio.textContent)).toEqual(["Small", "Standard", "Large"]);
     expect(radios[1]?.getAttribute("aria-checked")).toBe("true");
     fireEvent.keyDown(radios[1] as HTMLElement, { key: "End" });
-    await waitFor(() => expect(screen.getAllByRole("radio")[2]?.getAttribute("aria-checked")).toBe("true"));
+    await waitFor(() =>
+      expect(screen.getAllByRole("radio")[2]?.getAttribute("aria-checked")).toBe("true"),
+    );
     expect(window.localStorage.getItem(FONT_SIZE_KEY)).toBe("large");
   });
 });
@@ -59,19 +58,23 @@ describe("WP0D in-memory workspace model", () => {
 
   it("caps projects at eight and safely normalises URL sections", () => {
     for (let index = 1; index <= 8; index += 1) {
-      expect(openProjectWorkspace({
-        projectId: `p${index}`,
-        reference: `ENQ-${index}`,
-        title: `Project ${index}`,
-        section: "overview",
-      })).toBe(true);
+      expect(
+        openProjectWorkspace({
+          projectId: `p${index}`,
+          reference: `ENQ-${index}`,
+          title: `Project ${index}`,
+          section: "overview",
+        }),
+      ).toBe(true);
     }
-    expect(openProjectWorkspace({
-      projectId: "p9",
-      reference: "ENQ-9",
-      title: "Project 9",
-      section: "overview",
-    })).toBe(false);
+    expect(
+      openProjectWorkspace({
+        projectId: "p9",
+        reference: "ENQ-9",
+        title: "Project 9",
+        section: "overview",
+      }),
+    ).toBe(false);
     expect(getWorkspaceTabs()).toHaveLength(8);
     expect(getWorkspaceCapMessage()).toContain("Up to 8 projects");
     expect(normaliseSection("quotation")).toBe("quotation");
