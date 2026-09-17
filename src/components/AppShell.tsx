@@ -137,7 +137,7 @@ export function AppShell({
             </ul>
           </div>
         </nav>
-        <WorkspaceTabs active={activeWorkspace} />
+        <WorkspaceTabs {...(activeWorkspace ? { active: activeWorkspace } : {})} />
       </header>
 
       <main id="main-content" className={`${container} py-6 sm:py-8`}>

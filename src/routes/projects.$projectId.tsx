@@ -24,7 +24,7 @@ import { normaliseSection, openProjectWorkspace, type ProjectSection } from "@/l
 
 export const Route = createFileRoute("/projects/$projectId")({
   validateSearch: (search: Record<string, unknown>) => ({
-    section: normaliseSection(search.section),
+    section: normaliseSection(search["section"]),
   }),
   head: () => ({
     meta: [
