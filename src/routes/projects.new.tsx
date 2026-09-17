@@ -105,7 +105,7 @@ function NewEnquiryPage() {
 
   useBlocker({
     enableBeforeUnload: dirty,
-    shouldBlockFn: () => dirty && !window.confirm("Discard this unfinished enquiry?"),
+    shouldBlockFn: () => dirty && !submitting && !window.confirm("Discard this unfinished enquiry?"),
   });
 
   /** Reports one validation failure and moves focus to the offending field. */

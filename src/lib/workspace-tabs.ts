@@ -18,6 +18,7 @@ let tabs: WorkspaceTab[] = [];
 let counter = 0;
 let capMessage: string | null = null;
 const listeners = new Set<() => void>();
+const EMPTY_TABS: WorkspaceTab[] = [];
 
 function emit() { listeners.forEach((listener) => listener()); }
 function nextUse() { counter += 1; return counter; }
@@ -35,7 +36,7 @@ export function subscribeWorkspaceTabs(listener: () => void): () => void {
   return () => listeners.delete(listener);
 }
 export function useWorkspaceTabs(): WorkspaceTab[] {
-  return useSyncExternalStore(subscribeWorkspaceTabs, getWorkspaceTabs, () => []);
+  return useSyncExternalStore(subscribeWorkspaceTabs, getWorkspaceTabs, () => EMPTY_TABS);
 }
 
 export function openProjectWorkspace(input: Omit<WorkspaceTab, "key" | "lastUsed" | "dirty">): boolean {
@@ -63,6 +64,7 @@ export function openNewEnquiryWorkspace(): void {
 }
 
 export function setNewEnquiryDirty(dirty: boolean): void {
+  if (tabs.find((tab) => tab.key === "new-enquiry")?.dirty === dirty) return;
   tabs = tabs.map((tab) => tab.key === "new-enquiry" ? { ...tab, dirty } : tab);
   emit();
 }
