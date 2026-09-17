@@ -314,6 +314,16 @@ describe("new enquiry validation (mounted)", () => {
     fireEvent.submit(form);
     await waitFor(() => expect(title.getAttribute("aria-invalid")).not.toBe("true"));
   });
+
+  it("shows one required N3 customer picker with no prospect mode fields", () => {
+    const { container } = render(<NewEnquiry />);
+    const view = within(container);
+    expect(view.getByRole("heading", { name: "Customer & Primary Phase" })).toBeTruthy();
+    expect(view.getByRole("combobox", { name: "Customer" })).toBeTruthy();
+    expect(view.queryByText(/Customer mode/i)).toBeNull();
+    expect(view.queryByLabelText(/Requested customer/i)).toBeNull();
+    expect(view.queryByLabelText(/Prospect/i)).toBeNull();
+  });
 });
 
 describe("project workspace quotation tab permission (mounted)", () => {
@@ -358,7 +368,7 @@ describe("project workspace quotation tab permission (mounted)", () => {
       "true",
     );
     expect(screen.getByText("No quotation data")).toBeTruthy();
-    const external = screen.getByRole("link", { name: "Open current project section in new tab" });
+    const external = screen.getByLabelText("Open current project section in new tab");
     expect(external.textContent).toBe("Open in new tab ↗");
     expect(external.getAttribute("target")).toBe("_blank");
   });
