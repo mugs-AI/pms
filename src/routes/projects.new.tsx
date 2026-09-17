@@ -202,7 +202,11 @@ function NewEnquiryPage() {
         title: title.trim(),
         section: "overview",
       });
-      await navigate({ to: "/projects/$projectId", params: { projectId: result.projectId } });
+      await navigate({
+        to: "/projects/$projectId",
+        params: { projectId: result.projectId },
+        search: { section: "overview" },
+      });
     } catch (e) {
       setError(e);
       setSubmitting(false);

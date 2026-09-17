@@ -15,6 +15,7 @@ import {
 import { useSession } from "@/lib/n3-session";
 import { useProjects, type ProjectRow } from "@/lib/projecthub-hooks";
 import { PROJECT_STATUS_LABELS, statusTone } from "@/components/projecthub/status";
+import { openNewEnquiryWorkspace, openProjectWorkspace } from "@/lib/workspace-tabs";
 
 export const Route = createFileRoute("/projects/")({
   head: () => ({
@@ -69,6 +70,7 @@ function ProjectsPage() {
           canCreate ? (
             <Link
               to="/projects/new"
+              onClick={openNewEnquiryWorkspace}
               className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
             >
               New Enquiry
@@ -160,6 +162,7 @@ function ProjectsPage() {
             canCreate ? (
               <Link
                 to="/projects/new"
+                onClick={openNewEnquiryWorkspace}
                 className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
               >
                 New Enquiry
@@ -213,6 +216,16 @@ function ProjectCard({ row }: { row: ProjectRow }) {
     <Link
       to="/projects/$projectId"
       params={{ projectId: row.id }}
+      search={{ section: "overview" }}
+      onClick={(event) => {
+        const opened = openProjectWorkspace({
+          projectId: row.id,
+          reference: row.enquiry_reference,
+          title: row.title,
+          section: "overview",
+        });
+        if (!opened) event.preventDefault();
+      }}
       className="block rounded-lg border border-border bg-card p-4 shadow-card transition-colors hover:border-accent"
     >
       <div className="flex flex-wrap items-start justify-between gap-3">

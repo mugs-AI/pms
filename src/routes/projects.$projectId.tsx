@@ -140,8 +140,8 @@ function Workspace() {
       <nav
         className="-mx-4 flex gap-1 overflow-x-auto border-b border-border px-4 sm:mx-0 sm:flex-wrap sm:px-0"
         aria-label="Project sections"
-      >
         role="tablist"
+      >
         {tabs.map((item, index) => (
           <Link
             key={item.value}
@@ -171,8 +171,12 @@ function Workspace() {
         ))}
       </nav>
 
-      <section role="tabpanel" id={`project-panel-${section}`} aria-labelledby={`project-tab-${section}`}>
-      {section === "overview" ? <ProjectOverview projectId={projectId} workspace={ws} /> : null}
+      <section
+        role="tabpanel"
+        id={`project-panel-${section}`}
+        aria-labelledby={`project-tab-${section}`}
+      >
+        {section === "overview" ? <ProjectOverview projectId={projectId} workspace={ws} /> : null}
 
       {section === "phases" ? <PhasesPanel projectId={projectId} workspace={ws} /> : null}
 
@@ -202,9 +206,9 @@ function Workspace() {
         )
       ) : null}
 
-      {section === "quotation" && canViewQuotation ? (
-        <QuotationPanel projectId={projectId} canView={canViewQuotation} />
-      ) : null}
+        {section === "quotation" && canViewQuotation ? (
+          <QuotationPanel projectId={projectId} canView={canViewQuotation} />
+        ) : null}
       </section>
     </div>
   );
