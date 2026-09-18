@@ -1,11 +1,12 @@
 import { Link } from "@tanstack/react-router";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { useSession } from "@/lib/n3-session";
 import { DevApiKeyLogin } from "@/components/DevApiKeyLogin";
 import type { Permission } from "@/lib/projecthub-rbac";
 import { useDisplayWidth, widthContainerClass } from "@/lib/display-preference";
 import { fontSizeClass, useFontSize } from "@/lib/font-preference";
 import { clearWorkspaceTabs } from "@/lib/workspace-tabs";
+import { useWorkspaceLifecycle } from "@/lib/workspace-lifecycle";
 import { WorkspaceTabs, type ActiveWorkspace } from "@/components/projecthub/WorkspaceTabs";
 
 // Compact top-level shell: Dashboard | Projects | Settings.
@@ -29,18 +30,9 @@ export function AppShell({
   const [open, setOpen] = useState(false);
   const [width] = useDisplayWidth();
   const [fontSize] = useFontSize();
-  const tenant = useRef<string | null | undefined>(undefined);
   const container = widthContainerClass(width);
   const loading = session.status === "loading";
-
-  useEffect(() => {
-    if (session.status === "anonymous" || session.status === "error") clearWorkspaceTabs();
-    if (session.status === "authenticated") {
-      if (tenant.current !== undefined && tenant.current !== session.tenantCode)
-        clearWorkspaceTabs();
-      tenant.current = session.tenantCode;
-    }
-  }, [session.status, session.tenantCode]);
+  useWorkspaceLifecycle(session);
 
   if (session.status === "anonymous" || session.status === "error") {
     return <UnauthenticatedScreen />;
