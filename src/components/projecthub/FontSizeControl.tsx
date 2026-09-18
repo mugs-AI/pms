@@ -1,7 +1,7 @@
 import { useRef } from "react";
 import { useFontSize, type FontSize } from "@/lib/font-preference";
 
-export const FONT_SIZE_OPTIONS: { value: FontSize; label: string; title: string }[] = [
+const FONT_SIZE_OPTIONS: { value: FontSize; label: string; title: string }[] = [
   { value: "small", label: "Small", title: "Use 90% application text size" },
   { value: "standard", label: "Standard", title: "Use standard application text size" },
   { value: "large", label: "Large", title: "Use 112.5% application text size" },

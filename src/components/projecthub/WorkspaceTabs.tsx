@@ -30,24 +30,24 @@ export function WorkspaceTabs({ active }: { active?: ActiveWorkspace }) {
       : active?.kind === "project"
         ? `project:${active.projectId}`
         : null;
+  const activeKind = active?.kind;
+  const activeProject = active?.kind === "project" ? active : null;
+  const activeProjectId = activeProject?.projectId;
+  const activeReference = activeProject?.reference;
+  const activeTitle = activeProject?.title;
+  const activeSection = activeProject?.section;
 
   useEffect(() => {
-    if (active?.kind === "new") openNewEnquiryWorkspace();
-    if (active?.kind === "project") {
+    if (activeKind === "new") openNewEnquiryWorkspace();
+    if (activeKind === "project" && activeProjectId && activeSection) {
       openProjectWorkspace({
-        projectId: active.projectId,
-        reference: active.reference ?? "Project",
-        title: active.title ?? "Project workspace",
-        section: active.section,
+        projectId: activeProjectId,
+        reference: activeReference ?? "Project",
+        title: activeTitle ?? "Project workspace",
+        section: activeSection,
       });
     }
-  }, [
-    active?.kind,
-    active?.kind === "project" ? active.projectId : "",
-    active?.kind === "project" ? active.reference : "",
-    active?.kind === "project" ? active.title : "",
-    active?.kind === "project" ? active.section : "",
-  ]);
+  }, [activeKind, activeProjectId, activeReference, activeTitle, activeSection]);
 
   if (tabs.length === 0) return null;
   const capMessage = getWorkspaceCapMessage();
