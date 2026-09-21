@@ -4,7 +4,7 @@ import { useSession } from "@/lib/n3-session";
 import { DevApiKeyLogin } from "@/components/DevApiKeyLogin";
 import type { Permission } from "@/lib/projecthub-rbac";
 import { useDisplayWidth, widthContainerClass } from "@/lib/display-preference";
-import { fontSizeClass, useFontSize } from "@/lib/font-preference";
+import { useRootFontSize } from "@/lib/font-preference";
 import { clearWorkspaceTabs } from "@/lib/workspace-tabs";
 import { useWorkspaceLifecycle } from "@/lib/workspace-lifecycle";
 import { WorkspaceTabs, type ActiveWorkspace } from "@/components/projecthub/WorkspaceTabs";
@@ -29,7 +29,7 @@ export function AppShell({
   const session = useSession();
   const [open, setOpen] = useState(false);
   const [width] = useDisplayWidth();
-  const [fontSize] = useFontSize();
+  useRootFontSize();
   const container = widthContainerClass(width);
   const loading = session.status === "loading";
   useWorkspaceLifecycle(session);
@@ -46,9 +46,7 @@ export function AppShell({
   });
 
   return (
-    <div
-      className={`${fontSizeClass(fontSize)} min-h-dvh w-full max-w-full overflow-x-clip bg-background`}
-    >
+    <div className="min-h-dvh w-full max-w-full overflow-x-clip bg-background">
       <a
         href="#main-content"
         className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:rounded-md focus:bg-accent focus:px-3 focus:py-2 focus:text-sm focus:font-medium focus:text-accent-foreground"
