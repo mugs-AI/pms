@@ -20,6 +20,8 @@ export const PROJECT_SECTIONS: ProjectSection[] = [
   "quotation",
 ];
 export const WORKSPACE_TAB_LIMIT = 8;
+export const WORKSPACE_CAP_MESSAGE =
+  "Up to 8 projects can be open. Close a project tab before opening another.";
 
 let tabs: WorkspaceTab[] = [];
 let counter = 0;
@@ -61,7 +63,7 @@ export function openProjectWorkspace(
   const key = `project:${input.projectId}`;
   const existing = tabs.find((tab) => tab.key === key);
   if (!existing && tabs.filter((tab) => tab.projectId).length >= WORKSPACE_TAB_LIMIT) {
-    capMessage = `Up to ${WORKSPACE_TAB_LIMIT} projects can be open. Close a project tab before opening another.`;
+    capMessage = WORKSPACE_CAP_MESSAGE;
     emit();
     return false;
   }
@@ -71,6 +73,26 @@ export function openProjectWorkspace(
     : [...tabs, { key, ...input, lastUsed: nextUse() }];
   emit();
   return true;
+}
+
+export function isOrdinarySameTabActivation(
+  event: Pick<MouseEvent, "button" | "ctrlKey" | "metaKey" | "shiftKey" | "altKey">,
+): boolean {
+  return (
+    event.button === 0 &&
+    !event.ctrlKey &&
+    !event.metaKey &&
+    !event.shiftKey &&
+    !event.altKey
+  );
+}
+
+export function canOpenProjectWorkspace(projectId: string): boolean {
+  if (tabs.some((tab) => tab.projectId === projectId)) return true;
+  if (tabs.filter((tab) => tab.projectId).length < WORKSPACE_TAB_LIMIT) return true;
+  capMessage = WORKSPACE_CAP_MESSAGE;
+  emit();
+  return false;
 }
 
 export function openNewEnquiryWorkspace(): void {
@@ -103,6 +125,14 @@ export function removeWorkspaceTab(key: string): WorkspaceTab | null {
   tabs = tabs.filter((tab) => tab.key !== key);
   emit();
   return removed;
+}
+
+export function discardNewEnquiry(confirmDiscard: () => boolean): boolean {
+  const enquiry = tabs.find((tab) => tab.key === "new-enquiry");
+  if (!enquiry) return true;
+  if (enquiry.dirty && !confirmDiscard()) return false;
+  removeWorkspaceTab(enquiry.key);
+  return true;
 }
 
 export function mostRecentWorkspaceTab(): WorkspaceTab | null {

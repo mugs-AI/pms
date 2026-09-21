@@ -1,4 +1,4 @@
-import { useSyncExternalStore } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 
 export type FontSize = "small" | "standard" | "large";
 
@@ -7,6 +7,12 @@ export const FONT_SIZE_EVENT = "projecthub:font-size-change";
 export const DEFAULT_FONT_SIZE: FontSize = "standard";
 
 let memoryFontSize: FontSize | null = null;
+
+export const FONT_SIZE_ROOT_CLASSES: Record<FontSize, string> = {
+  small: "font-size-small",
+  standard: "font-size-standard",
+  large: "font-size-large",
+};
 
 export function isFontSize(value: unknown): value is FontSize {
   return value === "small" || value === "standard" || value === "large";
@@ -73,5 +79,17 @@ export function useFontSize(): [FontSize, (value: FontSize) => void] {
 }
 
 export function fontSizeClass(value: FontSize): string {
-  return `font-size-${value}`;
+  return FONT_SIZE_ROOT_CLASSES[value];
+}
+
+export function applyRootFontSize(value: FontSize, root: HTMLElement = document.documentElement) {
+  root.classList.remove(...Object.values(FONT_SIZE_ROOT_CLASSES));
+  root.classList.add(FONT_SIZE_ROOT_CLASSES[value]);
+  return () => root.classList.remove(...Object.values(FONT_SIZE_ROOT_CLASSES));
+}
+
+export function useRootFontSize(): FontSize {
+  const [value] = useFontSize();
+  useEffect(() => applyRootFontSize(value), [value]);
+  return value;
 }
