@@ -12,6 +12,10 @@ import {
 import { PROJECT_STATUS_LABELS, statusTone } from "@/components/projecthub/status";
 import { useSession } from "@/lib/n3-session";
 import { useDashboard } from "@/lib/projecthub-hooks";
+import {
+  canOpenProjectWorkspace,
+  isOrdinarySameTabActivation,
+} from "@/lib/workspace-tabs";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -118,6 +122,14 @@ function DashboardBody() {
                           to="/projects/$projectId"
                           params={{ projectId: row.id }}
                           search={{ section: "overview" }}
+                          onClick={(event) => {
+                            if (
+                              isOrdinarySameTabActivation(event.nativeEvent) &&
+                              !canOpenProjectWorkspace(row.id)
+                            ) {
+                              event.preventDefault();
+                            }
+                          }}
                           className="font-medium text-foreground hover:underline"
                         >
                           {row.title}

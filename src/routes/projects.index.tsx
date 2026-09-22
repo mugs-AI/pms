@@ -15,7 +15,11 @@ import {
 import { useSession } from "@/lib/n3-session";
 import { useProjects, type ProjectRow } from "@/lib/projecthub-hooks";
 import { PROJECT_STATUS_LABELS, statusTone } from "@/components/projecthub/status";
-import { openNewEnquiryWorkspace, openProjectWorkspace } from "@/lib/workspace-tabs";
+import {
+  canOpenProjectWorkspace,
+  isOrdinarySameTabActivation,
+  openNewEnquiryWorkspace,
+} from "@/lib/workspace-tabs";
 
 export const Route = createFileRoute("/projects/")({
   head: () => ({

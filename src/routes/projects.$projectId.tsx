@@ -20,7 +20,13 @@ import { QuotationPanel } from "@/components/projecthub/QuotationPanel";
 import { TeamPanel } from "@/components/projecthub/TeamPanel";
 import { useSession } from "@/lib/n3-session";
 import { useProjectWorkspace } from "@/lib/projecthub-hooks";
-import { normaliseSection, openProjectWorkspace, type ProjectSection } from "@/lib/workspace-tabs";
+import {
+  normaliseSection,
+  openProjectWorkspace,
+  removeWorkspaceTab,
+  type ProjectSection,
+} from "@/lib/workspace-tabs";
+import { ProjectHubError } from "@/lib/projecthub-client";
 
 export const Route = createFileRoute("/projects/$projectId")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -94,6 +100,13 @@ function Workspace() {
     });
   }, [projectId, section, ws]);
 
+  useEffect(() => {
+    if (!query.isError) return;
+    if (query.error instanceof ProjectHubError && [403, 404].includes(query.error.status)) {
+      removeWorkspaceTab(`project:${projectId}`);
+    }
+  }, [projectId, query.error, query.isError]);
+
   if (!hasPermission("projecthub:projects:list")) return <AccessState />;
   if (query.isLoading) return <Skeleton rows={8} />;
   if (query.isError) return <ErrorState error={query.error} onRetry={() => void query.refetch()} />;
@@ -147,7 +160,7 @@ function Workspace() {
             }}
             role="tab"
             aria-selected={section === item.value}
-            aria-controls={`project-panel-${item.value}`}
+            aria-controls="project-active-panel"
             id={`project-tab-${item.value}`}
             tabIndex={section === item.value ? 0 : -1}
             to="/projects/$projectId"
@@ -159,6 +172,11 @@ function Workspace() {
               else if (event.key === "ArrowLeft") target = (index - 1 + tabs.length) % tabs.length;
               else if (event.key === "Home") target = 0;
               else if (event.key === "End") target = tabs.length - 1;
+              else if (event.key === " " || event.key === "Enter") {
+                event.preventDefault();
+                event.currentTarget.click();
+                return;
+              }
               else return;
               event.preventDefault();
               tabRefs.current[target]?.focus();
@@ -172,7 +190,7 @@ function Workspace() {
 
       <section
         role="tabpanel"
-        id={`project-panel-${section}`}
+        id="project-active-panel"
         aria-labelledby={`project-tab-${section}`}
       >
         {section === "overview" ? <ProjectOverview projectId={projectId} workspace={ws} /> : null}

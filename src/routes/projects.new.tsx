@@ -4,8 +4,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { MalaysianDateInput } from "@/components/projecthub/DateInput";
 import {
-  consumeApprovedDiscardNavigation,
-  discardNewEnquiry,
   AccessState,
   Card,
   ErrorState,
@@ -20,6 +18,8 @@ import type { PickerOption } from "@/lib/projecthub-hooks";
 import { PHASE_LINK_STATUSES } from "@/lib/projecthub-schemas";
 import { buttonClass } from "@/lib/projecthub-ui";
 import {
+  consumeApprovedDiscardNavigation,
+  discardNewEnquiry,
   openNewEnquiryWorkspace,
   replaceNewEnquiryWithProject,
   setNewEnquiryDirty,
@@ -453,7 +453,7 @@ function NewEnquiryPage() {
         <Link
           to="/projects"
           onClick={(event) => {
-            if (!discardNewEnquiry(() => window.confirm("Discard this unfinished enquiry?"))) {
+            if (!discardNewEnquiry(() => window.confirm("Discard this unfinished enquiry?"), true)) {
               event.preventDefault();
             }
           }}

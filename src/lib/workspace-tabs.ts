@@ -128,11 +128,14 @@ export function removeWorkspaceTab(key: string): WorkspaceTab | null {
   return removed;
 }
 
-export function discardNewEnquiry(confirmDiscard: () => boolean): boolean {
+export function discardNewEnquiry(
+  confirmDiscard: () => boolean,
+  approveFollowingNavigation = false,
+): boolean {
   const enquiry = tabs.find((tab) => tab.key === "new-enquiry");
   if (!enquiry) return true;
   if (enquiry.dirty && !confirmDiscard()) return false;
-  approvedDiscardNavigation = true;
+  approvedDiscardNavigation = approveFollowingNavigation;
   removeWorkspaceTab(enquiry.key);
   return true;
 }
