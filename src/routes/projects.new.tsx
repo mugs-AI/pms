@@ -18,6 +18,8 @@ import type { PickerOption } from "@/lib/projecthub-hooks";
 import { PHASE_LINK_STATUSES } from "@/lib/projecthub-schemas";
 import { buttonClass } from "@/lib/projecthub-ui";
 import {
+  consumeApprovedDiscardNavigation,
+  discardNewEnquiry,
   openNewEnquiryWorkspace,
   replaceNewEnquiryWithProject,
   setNewEnquiryDirty,
@@ -93,6 +95,9 @@ function NewEnquiryPage() {
   const errorId = "new-enquiry-error";
   const dirty = Boolean(
     title ||
+    projectType !== "construction" ||
+    budgetMode !== "detailed_boq" ||
+    enquiryDate !== malaysiaToday() ||
     expectedStartDate ||
     expectedEndDate ||
     description ||
@@ -116,7 +121,10 @@ function NewEnquiryPage() {
   useBlocker({
     enableBeforeUnload: dirty,
     shouldBlockFn: () =>
-      dirty && !submitting && !window.confirm("Discard this unfinished enquiry?"),
+      dirty &&
+      !submitting &&
+      !consumeApprovedDiscardNavigation() &&
+      !discardNewEnquiry(() => window.confirm("Discard this unfinished enquiry?")),
   });
 
   /** Reports one validation failure and moves focus to the offending field. */
@@ -442,7 +450,15 @@ function NewEnquiryPage() {
         <button type="submit" disabled={submitting} className={buttonClass.primary}>
           {submitting ? "Creating enquiry…" : "Create enquiry"}
         </button>
-        <Link to="/projects" className={buttonClass.secondary}>
+        <Link
+          to="/projects"
+          onClick={(event) => {
+            if (!discardNewEnquiry(() => window.confirm("Discard this unfinished enquiry?"), true)) {
+              event.preventDefault();
+            }
+          }}
+          className={buttonClass.secondary}
+        >
           Cancel
         </Link>
       </div>

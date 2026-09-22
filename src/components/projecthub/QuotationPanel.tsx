@@ -1,5 +1,5 @@
 import { formatMalaysianDateTime } from "@/lib/projecthub-date";
-import { Badge, EmptyState, ErrorState, Skeleton } from "@/components/projecthub/ui";
+import { Badge, Card, EmptyState, ErrorState, Skeleton } from "@/components/projecthub/ui";
 import { useQuotationPreview, type QuotationDto } from "@/lib/projecthub-hooks";
 
 /**
@@ -59,7 +59,7 @@ function QuotationStatus({ quotation }: { quotation: QuotationDto }) {
   const preview = quotation.blockers.filter((b) => b.scope === "preview");
   const future = quotation.blockers.filter((b) => b.scope === "future_posting");
   return (
-    <section className="rounded-lg border border-border bg-card p-4 shadow-card print:hidden">
+    <Card tone="information" className="p-4 print:hidden">
       <div className="flex flex-wrap items-center gap-2">
         <h2 className="font-display text-lg font-bold tracking-wide text-foreground">
           Quotation readiness
@@ -76,7 +76,7 @@ function QuotationStatus({ quotation }: { quotation: QuotationDto }) {
       {future.length > 0 ? (
         <BlockerList title="Blocking a future N3 posting" blockers={future} />
       ) : null}
-    </section>
+    </Card>
   );
 }
 

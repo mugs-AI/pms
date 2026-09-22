@@ -45,7 +45,7 @@ export function Card({
   tone?: CardTone;
 }) {
   const tones: Record<CardTone, string> = {
-    neutral: "bg-card",
+    neutral: "bg-card/85",
     information: "border-information/30 bg-information-surface",
     project: "border-project/30 bg-project-surface",
     financial: "border-financial/35 bg-financial-surface",
@@ -112,7 +112,7 @@ export function AccessState() {
   const { roleStatus, roleLabel } = useSession();
   if (roleStatus === "disabled") {
     return (
-      <Card>
+      <Card tone="information">
         <h2 className="font-display text-lg font-bold text-foreground">
           ProjectHub access disabled
         </h2>
@@ -124,7 +124,7 @@ export function AccessState() {
   }
   if (roleStatus === "identity_missing") {
     return (
-      <Card>
+      <Card tone="information">
         <h2 className="font-display text-lg font-bold text-foreground">N3 identity incomplete</h2>
         <p className="mt-2 text-sm text-muted-foreground">
           Your N3 session did not return a usable immutable user identity, so ProjectHub cannot
@@ -134,7 +134,7 @@ export function AccessState() {
     );
   }
   return (
-    <Card>
+    <Card tone="information">
       <h2 className="font-display text-lg font-bold text-foreground">Role unassigned</h2>
       <p className="mt-2 text-sm text-muted-foreground">
         Ask your N3 account owner to assign a ProjectHub role.

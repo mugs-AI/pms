@@ -68,7 +68,7 @@ export function TeamPanel({ projectId, workspace }: { projectId: string; workspa
       ) : null}
 
       {workspace.team.map((member) => (
-        <Card key={member.id}>
+        <Card key={member.id} tone="project">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
               <p className="font-semibold text-foreground">{member.display_name ?? "N3 user"}</p>
@@ -124,7 +124,7 @@ function AssignForm({
   const candidates = (query.data?.candidates ?? []).filter((c) => !assigned.includes(c.n3UserId));
 
   return (
-    <Card className="space-y-4">
+    <Card tone="project" className="space-y-4">
       <h2 className="font-display text-lg font-bold text-foreground">Assign team member</h2>
       {candidates.length === 0 ? (
         <p className="text-sm text-muted-foreground">

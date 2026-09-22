@@ -119,7 +119,7 @@ export function BoqEditor({ projectId, workspace }: { projectId: string; workspa
         onCloned={(id) => setVersionId(id)}
       />
 
-      <Card className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+      <Card tone="financial" className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
         <Detail label="Cost" value={formatMoney(summary.totals.totalCost)} />
         <Detail label="Selling" value={formatMoney(summary.totals.totalSelling)} />
         <Detail label="Tax" value={formatMoney(summary.totals.totalTax)} />
@@ -191,7 +191,7 @@ function VersionBar({
   );
 
   return (
-    <Card className="space-y-3">
+    <Card tone="financial" className="space-y-3">
       <div className="flex flex-wrap items-center gap-3">
         <label className="text-sm">
           <span className="mr-2 text-xs font-semibold tracking-widest text-muted-foreground uppercase">
@@ -360,7 +360,7 @@ function SectionsPanel({
   );
 
   return (
-    <Card className="space-y-3">
+    <Card tone="financial" className="space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="font-display text-lg font-bold text-foreground">Sections</h2>
         {!readOnly ? (
@@ -535,7 +535,7 @@ function ItemsPanel({
   const phases = workspace.phases;
 
   return (
-    <Card className="space-y-3">
+    <Card tone="financial" className="space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="font-display text-lg font-bold text-foreground">BOQ items</h2>
         {!readOnly && phases.length > 0 ? (

@@ -15,7 +15,11 @@ import {
 import { useSession } from "@/lib/n3-session";
 import { useProjects, type ProjectRow } from "@/lib/projecthub-hooks";
 import { PROJECT_STATUS_LABELS, statusTone } from "@/components/projecthub/status";
-import { openNewEnquiryWorkspace, openProjectWorkspace } from "@/lib/workspace-tabs";
+import {
+  canOpenProjectWorkspace,
+  isOrdinarySameTabActivation,
+  openNewEnquiryWorkspace,
+} from "@/lib/workspace-tabs";
 
 export const Route = createFileRoute("/projects/")({
   head: () => ({
@@ -218,13 +222,9 @@ function ProjectCard({ row }: { row: ProjectRow }) {
       params={{ projectId: row.id }}
       search={{ section: "overview" }}
       onClick={(event) => {
-        const opened = openProjectWorkspace({
-          projectId: row.id,
-          reference: row.enquiry_reference,
-          title: row.title,
-          section: "overview",
-        });
-        if (!opened) event.preventDefault();
+        if (isOrdinarySameTabActivation(event.nativeEvent) && !canOpenProjectWorkspace(row.id)) {
+          event.preventDefault();
+        }
       }}
       className="block rounded-lg border border-border bg-card p-4 shadow-card transition-colors hover:border-accent"
     >
