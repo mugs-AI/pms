@@ -86,7 +86,7 @@ export function ProjectOverview({
         />
       ) : null}
 
-      <Card className="grid gap-4 sm:grid-cols-2">
+      <Card tone="project" className="grid gap-4 sm:grid-cols-2">
         <Detail label="Enquiry date" value={formatMalaysianDate(p.enquiry_date)} />
         <Detail label="Expected start" value={formatMalaysianDate(p.expected_start_date)} />
         <Detail label="Expected end" value={formatMalaysianDate(p.expected_end_date)} />
@@ -169,7 +169,7 @@ function EditForm({
     setForm((prev) => ({ ...prev, [key]: value }));
 
   return (
-    <Card className="space-y-4">
+    <Card tone="project" className="space-y-4">
       <h2 className="font-display text-lg font-bold text-foreground">Edit project</h2>
       <div className="grid gap-4 sm:grid-cols-2">
         <Field label="Project title">

@@ -111,7 +111,7 @@ export function PhasesPanel({ projectId, workspace }: { projectId: string; works
       ) : null}
 
       {workspace.phases.map((phase) => (
-        <Card key={phase.id}>
+        <Card key={phase.id} tone="project">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
               <p className="font-semibold text-foreground">{phase.phase_name}</p>
@@ -171,7 +171,7 @@ function CreatePhase({ projectId, onDone }: { projectId: string; onDone: () => v
   );
 
   return (
-    <Card className="space-y-4">
+    <Card tone="project" className="space-y-4">
       <h2 className="font-display text-lg font-bold text-foreground">Add phase</h2>
       <div className="grid gap-4 sm:grid-cols-2">
         <Field label="Phase name" error={fieldError}>

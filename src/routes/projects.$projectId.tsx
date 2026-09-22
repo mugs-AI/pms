@@ -205,7 +205,7 @@ function Workspace() {
               <EmptyState title="No activity yet" body="Project changes appear here." />
             ) : null}
             {ws.events.map((event) => (
-              <Card key={event.id}>
+              <Card key={event.id} tone="information">
                 <p className="text-sm text-foreground">{event.summary}</p>
                 <p className="mt-1 text-xs text-muted-foreground">
                   {formatMalaysianDateTime(event.occurred_at)} · {event.event_type}

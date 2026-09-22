@@ -37,7 +37,7 @@ export function SimpleBudgetPanel({
 
   return (
     <div className="space-y-4">
-      <Card className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <Card tone="financial" className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <Detail label="Budget cost" value={formatMoney(totals.totalCost)} />
         <Detail label="Budget selling" value={formatMoney(totals.totalSelling)} />
         <Detail label="Profit" value={formatMoney(totals.grossProfit)} />
@@ -55,7 +55,7 @@ export function SimpleBudgetPanel({
       ) : null}
 
       {editing && canEdit ? (
-        <Card className="space-y-4">
+        <Card tone="financial" className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label="Budget cost (MYR)" error={fieldError}>
               <input
