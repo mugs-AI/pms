@@ -1,10 +1,10 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef } from "react";
 import {
+  discardNewEnquiry,
   getWorkspaceCapMessage,
   mostRecentWorkspaceTab,
   openNewEnquiryWorkspace,
-  openProjectWorkspace,
   removeWorkspaceTab,
   type ProjectSection,
   useWorkspaceTabs,
@@ -23,7 +23,8 @@ export type ActiveWorkspace =
 export function WorkspaceTabs({ active }: { active?: ActiveWorkspace }) {
   const tabs = useWorkspaceTabs();
   const navigate = useNavigate();
-  const refs = useRef<(HTMLAnchorElement | null)[]>([]);
+  const refs = useRef(new Map<string, HTMLAnchorElement>());
+  const focusAfterClose = useRef<string | null>(null);
   const activeKey =
     active?.kind === "new"
       ? "new-enquiry"
@@ -31,23 +32,16 @@ export function WorkspaceTabs({ active }: { active?: ActiveWorkspace }) {
         ? `project:${active.projectId}`
         : null;
   const activeKind = active?.kind;
-  const activeProject = active?.kind === "project" ? active : null;
-  const activeProjectId = activeProject?.projectId;
-  const activeReference = activeProject?.reference;
-  const activeTitle = activeProject?.title;
-  const activeSection = activeProject?.section;
-
   useEffect(() => {
     if (activeKind === "new") openNewEnquiryWorkspace();
-    if (activeKind === "project" && activeProjectId && activeSection) {
-      openProjectWorkspace({
-        projectId: activeProjectId,
-        reference: activeReference ?? "Project",
-        title: activeTitle ?? "Project workspace",
-        section: activeSection,
-      });
-    }
-  }, [activeKind, activeProjectId, activeReference, activeTitle, activeSection]);
+  }, [activeKind]);
+
+  useEffect(() => {
+    const key = focusAfterClose.current;
+    if (!key) return;
+    refs.current.get(key)?.focus();
+    focusAfterClose.current = null;
+  }, [tabs]);
 
   if (tabs.length === 0) return null;
   const capMessage = getWorkspaceCapMessage();
@@ -55,32 +49,36 @@ export function WorkspaceTabs({ active }: { active?: ActiveWorkspace }) {
   const close = async (key: string, index: number) => {
     const tab = tabs.find((item) => item.key === key);
     if (!tab) return;
-    if (tab.dirty && !window.confirm("Discard this unfinished enquiry?")) return;
+    if (tab.key === "new-enquiry") {
+      if (!discardNewEnquiry(() => window.confirm("Discard this unfinished enquiry?"))) return;
+    } else {
+      removeWorkspaceTab(key);
+    }
     const wasActive = key === activeKey;
-    removeWorkspaceTab(key);
     if (wasActive) {
       const next = mostRecentWorkspaceTab();
       if (!next) await navigate({ to: "/projects" });
-      else if (next.projectId)
+      else if (next.projectId) {
+        focusAfterClose.current = next.key;
         await navigate({
           to: "/projects/$projectId",
           params: { projectId: next.projectId },
           search: { section: next.section },
         });
-      else await navigate({ to: "/projects/new" });
+      } else {
+        focusAfterClose.current = next.key;
+        await navigate({ to: "/projects/new" });
+      }
     } else {
-      refs.current[Math.max(0, index - 1)]?.focus();
+      const next = tabs[index + 1] ?? tabs[index - 1];
+      if (next) focusAfterClose.current = next.key;
     }
   };
 
   return (
-    <div className="border-t border-primary-foreground/10 bg-primary" aria-label="Open workspaces">
+    <nav className="border-t border-primary-foreground/10 bg-primary" aria-label="Open workspaces">
       <div className="overflow-x-auto px-4 sm:px-6 lg:px-8">
-        <div
-          role="tablist"
-          aria-label="Open project workspaces"
-          className="flex min-w-max items-stretch gap-1 py-1.5"
-        >
+        <div className="flex min-w-max items-stretch gap-1 py-1.5">
           {tabs.map((tab, index) => {
             const selected = tab.key === activeKey;
             const label = tab.projectId ? `${tab.reference} · ${tab.title}` : "New Enquiry";
@@ -90,11 +88,10 @@ export function WorkspaceTabs({ active }: { active?: ActiveWorkspace }) {
                 {tab.projectId ? (
                   <Link
                     ref={(node) => {
-                      refs.current[index] = node;
+                      if (node) refs.current.set(tab.key, node);
+                      else refs.current.delete(tab.key);
                     }}
-                    role="tab"
-                    aria-selected={selected}
-                    tabIndex={selected ? 0 : -1}
+                    aria-current={selected ? "page" : undefined}
                     to="/projects/$projectId"
                     params={{ projectId: tab.projectId }}
                     search={{ section: tab.section }}
@@ -106,9 +103,14 @@ export function WorkspaceTabs({ active }: { active?: ActiveWorkspace }) {
                         target = (index - 1 + tabs.length) % tabs.length;
                       else if (event.key === "Home") target = 0;
                       else if (event.key === "End") target = tabs.length - 1;
-                      else return;
+                      else if (event.key === " " || event.key === "Enter") {
+                        event.preventDefault();
+                        event.currentTarget.click();
+                        return;
+                      } else return;
                       event.preventDefault();
-                      refs.current[target]?.focus();
+                      const targetTab = tabs[target];
+                      if (targetTab) refs.current.get(targetTab.key)?.focus();
                     }}
                   >
                     {label}
@@ -116,13 +118,28 @@ export function WorkspaceTabs({ active }: { active?: ActiveWorkspace }) {
                 ) : (
                   <Link
                     ref={(node) => {
-                      refs.current[index] = node;
+                      if (node) refs.current.set(tab.key, node);
+                      else refs.current.delete(tab.key);
                     }}
-                    role="tab"
-                    aria-selected={selected}
-                    tabIndex={selected ? 0 : -1}
+                    aria-current={selected ? "page" : undefined}
                     to="/projects/new"
                     className={linkClass}
+                    onKeyDown={(event) => {
+                      let target = index;
+                      if (event.key === "ArrowRight") target = (index + 1) % tabs.length;
+                      else if (event.key === "ArrowLeft")
+                        target = (index - 1 + tabs.length) % tabs.length;
+                      else if (event.key === "Home") target = 0;
+                      else if (event.key === "End") target = tabs.length - 1;
+                      else if (event.key === " " || event.key === "Enter") {
+                        event.preventDefault();
+                        event.currentTarget.click();
+                        return;
+                      } else return;
+                      event.preventDefault();
+                      const targetTab = tabs[target];
+                      if (targetTab) refs.current.get(targetTab.key)?.focus();
+                    }}
                   >
                     {label}
                   </Link>
@@ -145,6 +162,6 @@ export function WorkspaceTabs({ active }: { active?: ActiveWorkspace }) {
           {capMessage}
         </p>
       ) : null}
-    </div>
+    </nav>
   );
 }

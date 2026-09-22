@@ -26,6 +26,7 @@ export const WORKSPACE_CAP_MESSAGE =
 let tabs: WorkspaceTab[] = [];
 let counter = 0;
 let capMessage: string | null = null;
+let approvedDiscardNavigation = false;
 const listeners = new Set<() => void>();
 const EMPTY_TABS: WorkspaceTab[] = [];
 
@@ -131,7 +132,14 @@ export function discardNewEnquiry(confirmDiscard: () => boolean): boolean {
   const enquiry = tabs.find((tab) => tab.key === "new-enquiry");
   if (!enquiry) return true;
   if (enquiry.dirty && !confirmDiscard()) return false;
+  approvedDiscardNavigation = true;
   removeWorkspaceTab(enquiry.key);
+  return true;
+}
+
+export function consumeApprovedDiscardNavigation(): boolean {
+  if (!approvedDiscardNavigation) return false;
+  approvedDiscardNavigation = false;
   return true;
 }
 
@@ -142,6 +150,7 @@ export function mostRecentWorkspaceTab(): WorkspaceTab | null {
 export function clearWorkspaceTabs(): void {
   tabs = [];
   capMessage = null;
+  approvedDiscardNavigation = false;
   counter = 0;
   emit();
 }
