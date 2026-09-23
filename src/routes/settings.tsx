@@ -83,7 +83,7 @@ function SettingsPage() {
         subtitle="Administration and display preferences. Nothing on this page writes to N3."
       />
 
-      <Card className="space-y-3">
+      <Card tone="information" className="space-y-3">
         <h2 className="font-display text-lg font-bold tracking-wide text-foreground">Display</h2>
         <p className="text-sm text-muted-foreground">
           Choose how wide ProjectHub pages are on a desktop screen. This preference is stored in

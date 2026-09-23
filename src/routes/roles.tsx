@@ -57,7 +57,7 @@ function RolesPage() {
         subtitle="Only an N3 sys-admin (proven from the tenant-bound token) can grant ProjectHub access. Owner itself is never assignable."
       />
 
-      <Card>
+      <Card tone="information">
         <div className="flex w-full max-w-md flex-col gap-2 sm:flex-row sm:items-end">
           <label className="block min-w-0 flex-1">
             <span className="text-xs font-semibold tracking-widest text-muted-foreground uppercase">
@@ -118,7 +118,7 @@ function RoleRow({ entry }: { entry: RoleDirectoryEntry }) {
   const isOwnerRow = entry.role === "owner";
 
   return (
-    <Card>
+    <Card tone="information">
       <div className="flex flex-col gap-4 lg:flex-row lg:flex-wrap lg:items-start lg:justify-between">
         <div className="min-w-0">
           <p className="truncate font-semibold text-foreground">

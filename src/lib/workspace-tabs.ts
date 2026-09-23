@@ -79,13 +79,7 @@ export function openProjectWorkspace(
 export function isOrdinarySameTabActivation(
   event: Pick<MouseEvent, "button" | "ctrlKey" | "metaKey" | "shiftKey" | "altKey">,
 ): boolean {
-  return (
-    event.button === 0 &&
-    !event.ctrlKey &&
-    !event.metaKey &&
-    !event.shiftKey &&
-    !event.altKey
-  );
+  return event.button === 0 && !event.ctrlKey && !event.metaKey && !event.shiftKey && !event.altKey;
 }
 
 export function canOpenProjectWorkspace(projectId: string): boolean {
@@ -162,6 +156,15 @@ export function replaceNewEnquiryWithProject(
   input: Omit<WorkspaceTab, "key" | "lastUsed" | "dirty">,
 ): void {
   tabs = tabs.filter((tab) => tab.key !== "new-enquiry");
+  if (
+    !tabs.some((tab) => tab.projectId === input.projectId) &&
+    tabs.filter((tab) => tab.projectId).length >= WORKSPACE_TAB_LIMIT
+  ) {
+    const leastRecent = [...tabs]
+      .filter((tab) => tab.projectId)
+      .sort((a, b) => a.lastUsed - b.lastUsed)[0];
+    if (leastRecent) tabs = tabs.filter((tab) => tab.key !== leastRecent.key);
+  }
   openProjectWorkspace(input);
 }
 

@@ -453,7 +453,9 @@ function NewEnquiryPage() {
         <Link
           to="/projects"
           onClick={(event) => {
-            if (!discardNewEnquiry(() => window.confirm("Discard this unfinished enquiry?"), true)) {
+            if (
+              !discardNewEnquiry(() => window.confirm("Discard this unfinished enquiry?"), true)
+            ) {
               event.preventDefault();
             }
           }}

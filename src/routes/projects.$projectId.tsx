@@ -92,13 +92,14 @@ function Workspace() {
 
   useEffect(() => {
     if (!ws) return;
-    openProjectWorkspace({
+    const opened = openProjectWorkspace({
       projectId,
       reference: ws.project.enquiry_reference,
       title: ws.project.title,
       section,
     });
-  }, [projectId, section, ws]);
+    if (!opened) void navigate({ to: "/projects", replace: true });
+  }, [navigate, projectId, section, ws]);
 
   useEffect(() => {
     if (!query.isError) return;
@@ -176,8 +177,7 @@ function Workspace() {
                 event.preventDefault();
                 event.currentTarget.click();
                 return;
-              }
-              else return;
+              } else return;
               event.preventDefault();
               tabRefs.current[target]?.focus();
             }}
@@ -188,11 +188,7 @@ function Workspace() {
         ))}
       </nav>
 
-      <section
-        role="tabpanel"
-        id="project-active-panel"
-        aria-labelledby={`project-tab-${section}`}
-      >
+      <section role="tabpanel" id="project-active-panel" aria-labelledby={`project-tab-${section}`}>
         {section === "overview" ? <ProjectOverview projectId={projectId} workspace={ws} /> : null}
 
         {section === "phases" ? <PhasesPanel projectId={projectId} workspace={ws} /> : null}

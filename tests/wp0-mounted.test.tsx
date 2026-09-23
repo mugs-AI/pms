@@ -43,7 +43,22 @@ vi.mock("@tanstack/react-router", () => ({
     useParams: () => ({ projectId: "project-1" }),
     useSearch: () => ({ section: routeSection }),
   }),
-  Link: ({ children, ...rest }: { children: React.ReactNode }) => <a {...rest}>{children}</a>,
+  Link: ({
+    children,
+    to,
+    params: _params,
+    search: _search,
+    ...rest
+  }: {
+    children: React.ReactNode;
+    to: string;
+    params?: unknown;
+    search?: unknown;
+  }) => (
+    <a href={to} {...rest}>
+      {children}
+    </a>
+  ),
   useNavigate: () => vi.fn(),
   useBlocker: () => undefined,
 }));
@@ -94,9 +109,17 @@ vi.mock("@/lib/projecthub-hooks", () => ({
 import { DisplayWidthControl } from "@/components/projecthub/DisplayWidthControl";
 import { QuotationPanel } from "@/components/projecthub/QuotationPanel";
 import { N3Picker } from "@/components/projecthub/ui";
+import { WorkspaceTabs } from "@/components/projecthub/WorkspaceTabs";
+import {
+  clearWorkspaceTabs,
+  getWorkspaceTabs,
+  openNewEnquiryWorkspace,
+  openProjectWorkspace,
+} from "@/lib/workspace-tabs";
 
 beforeEach(() => {
   window.localStorage.clear();
+  clearWorkspaceTabs();
   routeSection = "overview";
   sessionState.hasPermission = () => true;
 });
@@ -324,6 +347,65 @@ describe("new enquiry validation (mounted)", () => {
     expect(view.queryByLabelText(/Requested customer/i)).toBeNull();
     expect(view.queryByLabelText(/Prospect/i)).toBeNull();
   });
+
+  it("treats project type, budget mode and enquiry date changes as dirty", async () => {
+    const { container } = render(<NewEnquiry />);
+    const view = within(container);
+    fireEvent.change(view.getByRole("combobox", { name: "Project type" }), {
+      target: { value: "renovation" },
+    });
+    await waitFor(() =>
+      expect(getWorkspaceTabs().find((tab) => tab.key === "new-enquiry")?.dirty).toBe(true),
+    );
+  });
+});
+
+describe("workspace navigation (mounted)", () => {
+  it("uses labelled real-link navigation without tab semantics", () => {
+    openProjectWorkspace({
+      projectId: "p1",
+      reference: "ENQ-1",
+      title: "One",
+      section: "overview",
+    });
+    openNewEnquiryWorkspace();
+    render(<WorkspaceTabs active={{ kind: "project", projectId: "p1", section: "overview" }} />);
+    const navigation = screen.getByRole("navigation", { name: "Open workspaces" });
+    const links = within(navigation).getAllByRole("link");
+    expect(links).toHaveLength(2);
+    expect(links[0]?.getAttribute("aria-current")).toBe("page");
+    expect(within(navigation).queryByRole("tablist")).toBeNull();
+    expect(within(navigation).getByRole("button", { name: /Close ENQ-1/ })).toBeTruthy();
+  });
+
+  it("supports Left, Right, Home, End and Space activation", () => {
+    openProjectWorkspace({
+      projectId: "p1",
+      reference: "ENQ-1",
+      title: "One",
+      section: "overview",
+    });
+    openProjectWorkspace({
+      projectId: "p2",
+      reference: "ENQ-2",
+      title: "Two",
+      section: "team",
+    });
+    render(<WorkspaceTabs active={{ kind: "project", projectId: "p1", section: "overview" }} />);
+    const links = screen.getAllByRole("link");
+    links[0]?.focus();
+    fireEvent.keyDown(links[0] as HTMLElement, { key: "ArrowRight" });
+    expect(document.activeElement).toBe(links[1]);
+    fireEvent.keyDown(links[1] as HTMLElement, { key: "Home" });
+    expect(document.activeElement).toBe(links[0]);
+    fireEvent.keyDown(links[0] as HTMLElement, { key: "End" });
+    expect(document.activeElement).toBe(links[1]);
+    fireEvent.keyDown(links[1] as HTMLElement, { key: "ArrowLeft" });
+    expect(document.activeElement).toBe(links[0]);
+    const click = vi.spyOn(links[0] as HTMLAnchorElement, "click");
+    fireEvent.keyDown(links[0] as HTMLElement, { key: " " });
+    expect(click).toHaveBeenCalledTimes(1);
+  });
 });
 
 describe("project workspace quotation tab permission (mounted)", () => {
@@ -356,6 +438,10 @@ describe("project workspace quotation tab permission (mounted)", () => {
     await renderWorkspace();
     expect(screen.queryByRole("tab", { name: "Quotation" })).toBeNull();
     expect(screen.getByRole("tab", { name: "Overview" })).toBeTruthy();
+    expect(screen.getByRole("tab", { name: "Overview" }).getAttribute("aria-controls")).toBe(
+      "project-active-panel",
+    );
+    expect(document.getElementById("project-active-panel")).toBeTruthy();
   });
 
   it("shows the Quotation tab to a role with projecthub:boq:view", async () => {
@@ -367,6 +453,10 @@ describe("project workspace quotation tab permission (mounted)", () => {
     expect(screen.getByRole("tab", { name: "Quotation" }).getAttribute("aria-selected")).toBe(
       "true",
     );
+    expect(screen.getByRole("tabpanel").getAttribute("aria-labelledby")).toBe(
+      "project-tab-quotation",
+    );
+    expect(document.querySelectorAll('[role="tabpanel"]')).toHaveLength(1);
     expect(screen.getByText("No quotation data")).toBeTruthy();
     const external = screen.getByLabelText("Open current project section in new tab");
     expect(external.textContent).toBe("Open in new tab ↗");
