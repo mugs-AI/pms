@@ -12,10 +12,7 @@ import {
 import { PROJECT_STATUS_LABELS, statusTone } from "@/components/projecthub/status";
 import { useSession } from "@/lib/n3-session";
 import { useDashboard } from "@/lib/projecthub-hooks";
-import {
-  canOpenProjectWorkspace,
-  isOrdinarySameTabActivation,
-} from "@/lib/workspace-tabs";
+import { canOpenProjectWorkspace, isOrdinarySameTabActivation } from "@/lib/workspace-tabs";
 
 export const Route = createFileRoute("/")({
   head: () => ({

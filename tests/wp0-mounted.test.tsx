@@ -340,9 +340,7 @@ describe("new enquiry validation (mounted)", () => {
       target: { value: "renovation" },
     });
     await waitFor(() =>
-      expect(
-        getWorkspaceTabs().find((tab) => tab.key === "new-enquiry")?.dirty,
-      ).toBe(true),
+      expect(getWorkspaceTabs().find((tab) => tab.key === "new-enquiry")?.dirty).toBe(true),
     );
   });
 });

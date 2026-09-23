@@ -79,13 +79,7 @@ export function openProjectWorkspace(
 export function isOrdinarySameTabActivation(
   event: Pick<MouseEvent, "button" | "ctrlKey" | "metaKey" | "shiftKey" | "altKey">,
 ): boolean {
-  return (
-    event.button === 0 &&
-    !event.ctrlKey &&
-    !event.metaKey &&
-    !event.shiftKey &&
-    !event.altKey
-  );
+  return event.button === 0 && !event.ctrlKey && !event.metaKey && !event.shiftKey && !event.altKey;
 }
 
 export function canOpenProjectWorkspace(projectId: string): boolean {

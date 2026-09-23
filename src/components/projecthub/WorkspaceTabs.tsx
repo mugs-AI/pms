@@ -51,12 +51,7 @@ export function WorkspaceTabs({ active }: { active?: ActiveWorkspace }) {
     if (!tab) return;
     const wasActive = key === activeKey;
     if (tab.key === "new-enquiry") {
-      if (
-        !discardNewEnquiry(
-          () => window.confirm("Discard this unfinished enquiry?"),
-          wasActive,
-        )
-      )
+      if (!discardNewEnquiry(() => window.confirm("Discard this unfinished enquiry?"), wasActive))
         return;
     } else {
       removeWorkspaceTab(key);

@@ -177,8 +177,7 @@ function Workspace() {
                 event.preventDefault();
                 event.currentTarget.click();
                 return;
-              }
-              else return;
+              } else return;
               event.preventDefault();
               tabRefs.current[target]?.focus();
             }}
@@ -189,11 +188,7 @@ function Workspace() {
         ))}
       </nav>
 
-      <section
-        role="tabpanel"
-        id="project-active-panel"
-        aria-labelledby={`project-tab-${section}`}
-      >
+      <section role="tabpanel" id="project-active-panel" aria-labelledby={`project-tab-${section}`}>
         {section === "overview" ? <ProjectOverview projectId={projectId} workspace={ws} /> : null}
 
         {section === "phases" ? <PhasesPanel projectId={projectId} workspace={ws} /> : null}
