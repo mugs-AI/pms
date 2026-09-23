@@ -43,7 +43,22 @@ vi.mock("@tanstack/react-router", () => ({
     useParams: () => ({ projectId: "project-1" }),
     useSearch: () => ({ section: routeSection }),
   }),
-  Link: ({ children, ...rest }: { children: React.ReactNode }) => <a {...rest}>{children}</a>,
+  Link: ({
+    children,
+    to,
+    params: _params,
+    search: _search,
+    ...rest
+  }: {
+    children: React.ReactNode;
+    to: string;
+    params?: unknown;
+    search?: unknown;
+  }) => (
+    <a href={to} {...rest}>
+      {children}
+    </a>
+  ),
   useNavigate: () => vi.fn(),
   useBlocker: () => undefined,
 }));
