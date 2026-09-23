@@ -358,7 +358,7 @@ function CancelForm({ projectId, onDone }: { projectId: string; onDone: () => vo
   );
 
   return (
-    <Card className="space-y-4 border-destructive/40">
+    <Card tone="destructive" className="space-y-4">
       <h2 className="font-display text-lg font-bold text-foreground">Cancel / Lost</h2>
       <Field label="Reason (required)" error={fieldError}>
         <input

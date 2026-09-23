@@ -92,12 +92,13 @@ function Workspace() {
 
   useEffect(() => {
     if (!ws) return;
-    openProjectWorkspace({
+    const opened = openProjectWorkspace({
       projectId,
       reference: ws.project.enquiry_reference,
       title: ws.project.title,
       section,
     });
+    if (!opened) void navigate({ to: "/projects", replace: true });
   }, [projectId, section, ws]);
 
   useEffect(() => {

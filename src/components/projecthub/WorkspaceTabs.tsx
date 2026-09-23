@@ -49,12 +49,18 @@ export function WorkspaceTabs({ active }: { active?: ActiveWorkspace }) {
   const close = async (key: string, index: number) => {
     const tab = tabs.find((item) => item.key === key);
     if (!tab) return;
+    const wasActive = key === activeKey;
     if (tab.key === "new-enquiry") {
-      if (!discardNewEnquiry(() => window.confirm("Discard this unfinished enquiry?"))) return;
+      if (
+        !discardNewEnquiry(
+          () => window.confirm("Discard this unfinished enquiry?"),
+          wasActive,
+        )
+      )
+        return;
     } else {
       removeWorkspaceTab(key);
     }
-    const wasActive = key === activeKey;
     if (wasActive) {
       const next = mostRecentWorkspaceTab();
       if (!next) await navigate({ to: "/projects" });
