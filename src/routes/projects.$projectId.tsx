@@ -99,7 +99,7 @@ function Workspace() {
       section,
     });
     if (!opened) void navigate({ to: "/projects", replace: true });
-  }, [projectId, section, ws]);
+  }, [navigate, projectId, section, ws]);
 
   useEffect(() => {
     if (!query.isError) return;
