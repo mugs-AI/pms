@@ -97,6 +97,7 @@ import { N3Picker } from "@/components/projecthub/ui";
 import { WorkspaceTabs } from "@/components/projecthub/WorkspaceTabs";
 import {
   clearWorkspaceTabs,
+  getWorkspaceTabs,
   openNewEnquiryWorkspace,
   openProjectWorkspace,
 } from "@/lib/workspace-tabs";
@@ -340,9 +341,7 @@ describe("new enquiry validation (mounted)", () => {
     });
     await waitFor(() =>
       expect(
-        (await import("@/lib/workspace-tabs")).getWorkspaceTabs().find(
-          (tab) => tab.key === "new-enquiry",
-        )?.dirty,
+        getWorkspaceTabs().find((tab) => tab.key === "new-enquiry")?.dirty,
       ).toBe(true),
     );
   });
