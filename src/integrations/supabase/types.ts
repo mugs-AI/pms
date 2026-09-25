@@ -373,41 +373,116 @@ export type Database = {
       }
       projecthub_project_events: {
         Row: {
+          action: string | null
+          actor_display_name_snapshot: string | null
           actor_n3_user_id: string | null
+          actor_role_snapshot: string | null
+          actor_type: string | null
+          after_values: Json | null
+          before_values: Json | null
+          changed_fields: string[] | null
           correlation_id: string
+          document_id: string | null
+          document_number_snapshot: string | null
+          document_type: string | null
           entity_id: string | null
+          entity_key: string | null
+          entity_reference_snapshot: string | null
+          entity_title_snapshot: string | null
           entity_type: string | null
           event_type: string
           id: string
           metadata: Json
+          module: string | null
           occurred_at: string
+          outcome: string | null
+          phase_id: string | null
+          phase_name_snapshot: string | null
           project_id: string
+          project_reference_snapshot: string | null
+          project_title_snapshot: string | null
+          reason: string | null
+          recorded_at: string | null
+          related_event_id: string | null
+          schema_version: number | null
+          sequence_no: number | null
+          source_system: string | null
           summary: string
           tenant_id: string
         }
         Insert: {
+          action?: string | null
+          actor_display_name_snapshot?: string | null
           actor_n3_user_id?: string | null
+          actor_role_snapshot?: string | null
+          actor_type?: string | null
+          after_values?: Json | null
+          before_values?: Json | null
+          changed_fields?: string[] | null
           correlation_id: string
+          document_id?: string | null
+          document_number_snapshot?: string | null
+          document_type?: string | null
           entity_id?: string | null
+          entity_key?: string | null
+          entity_reference_snapshot?: string | null
+          entity_title_snapshot?: string | null
           entity_type?: string | null
           event_type: string
           id?: string
           metadata?: Json
+          module?: string | null
           occurred_at?: string
+          outcome?: string | null
+          phase_id?: string | null
+          phase_name_snapshot?: string | null
           project_id: string
+          project_reference_snapshot?: string | null
+          project_title_snapshot?: string | null
+          reason?: string | null
+          recorded_at?: string | null
+          related_event_id?: string | null
+          schema_version?: number | null
+          sequence_no?: number | null
+          source_system?: string | null
           summary: string
           tenant_id: string
         }
         Update: {
+          action?: string | null
+          actor_display_name_snapshot?: string | null
           actor_n3_user_id?: string | null
+          actor_role_snapshot?: string | null
+          actor_type?: string | null
+          after_values?: Json | null
+          before_values?: Json | null
+          changed_fields?: string[] | null
           correlation_id?: string
+          document_id?: string | null
+          document_number_snapshot?: string | null
+          document_type?: string | null
           entity_id?: string | null
+          entity_key?: string | null
+          entity_reference_snapshot?: string | null
+          entity_title_snapshot?: string | null
           entity_type?: string | null
           event_type?: string
           id?: string
           metadata?: Json
+          module?: string | null
           occurred_at?: string
+          outcome?: string | null
+          phase_id?: string | null
+          phase_name_snapshot?: string | null
           project_id?: string
+          project_reference_snapshot?: string | null
+          project_title_snapshot?: string | null
+          reason?: string | null
+          recorded_at?: string | null
+          related_event_id?: string | null
+          schema_version?: number | null
+          sequence_no?: number | null
+          source_system?: string | null
           summary?: string
           tenant_id?: string
         }
