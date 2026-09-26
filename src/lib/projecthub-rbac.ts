@@ -56,6 +56,10 @@ export const PERMISSIONS = [
   "projecthub:n3:stocks:read",
   "projecthub:n3:taxcodes:read",
   "projecthub:n3:users:read",
+  "projecthub:history:view_project",
+  "projecthub:history:export_project",
+  "projecthub:history:view_all",
+  "projecthub:history:export_all",
 ] as const;
 
 export type Permission = (typeof PERMISSIONS)[number];
@@ -78,6 +82,8 @@ const ROLE_PERMISSIONS: Record<ProjectHubRole, readonly Permission[]> = {
     "projecthub:n3:stocks:read",
     "projecthub:n3:taxcodes:read",
     "projecthub:n3:users:read",
+    "projecthub:history:view_project",
+    "projecthub:history:export_project",
   ],
   estimator: [
     "projecthub:projects:list",
@@ -87,21 +93,39 @@ const ROLE_PERMISSIONS: Record<ProjectHubRole, readonly Permission[]> = {
     "projecthub:boq:clone",
     "projecthub:n3:stocks:read",
     "projecthub:n3:taxcodes:read",
+    "projecthub:history:view_project",
   ],
   // Finance sees every tenant project and its commercial values, read-only.
-  finance: ["projecthub:projects:list", "projecthub:projects:view_all", "projecthub:boq:view"],
+    // Finance sees project history for visible projects only; never view_all history.
+  finance: [
+    "projecthub:projects:list",
+    "projecthub:projects:view_all",
+    "projecthub:boq:view",
+    "projecthub:history:view_project",
+    "projecthub:history:export_project",
+  ],
   procurement: [
     "projecthub:projects:list",
     "projecthub:projects:view_assigned",
     "projecthub:boq:view",
+    "projecthub:history:view_project",
   ],
   storekeeper: [
     "projecthub:projects:list",
     "projecthub:projects:view_assigned",
     "projecthub:boq:view",
+    "projecthub:history:view_project",
   ],
-  site_supervisor: ["projecthub:projects:list", "projecthub:projects:view_assigned"],
-  viewer: ["projecthub:projects:list", "projecthub:projects:view_assigned"],
+  site_supervisor: [
+    "projecthub:projects:list",
+    "projecthub:projects:view_assigned",
+    "projecthub:history:view_project",
+  ],
+  viewer: [
+    "projecthub:projects:list",
+    "projecthub:projects:view_assigned",
+    "projecthub:history:view_project",
+  ],
   // No ProjectHub business data at all.
   unassigned: [],
 };
