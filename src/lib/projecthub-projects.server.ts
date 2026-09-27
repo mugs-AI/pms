@@ -471,6 +471,7 @@ export async function updateProject(
     entityId: projectId,
     summary: "Project details updated",
     metadata: { fields: Object.keys(patch).filter((k) => k !== "updated_by_n3_user_id") },
+    changedFields: Object.keys(patch).filter((k) => k !== "updated_by_n3_user_id"),
   });
   return { ok: true, project: data as Record<string, unknown> };
 }
@@ -509,6 +510,7 @@ export async function cancelProject(
     entityId: projectId,
     summary: "Project marked Cancelled / Lost",
     metadata: { reason: input.reason.slice(0, 200) },
+    reason: input.reason.slice(0, 200),
   });
   return { ok: true, project: data as Record<string, unknown> };
 }
