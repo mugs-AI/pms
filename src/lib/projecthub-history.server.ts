@@ -130,7 +130,7 @@ export async function writeHistoryEvent(
     .maybeSingle();
   if (!project) return { ok: false, status: 404, message: "Not found" };
 
-  let actorName: string | null = actor.session.displayName ?? actor.session.email ?? null;
+  let actorName: string | null = actor.session.displayName ?? actor.session.displayEmail ?? null;
   if (actor.n3UserId) {
     const { data: role } = await supabaseAdmin
       .from("projecthub_user_roles")

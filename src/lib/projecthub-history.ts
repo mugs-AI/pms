@@ -578,7 +578,10 @@ export function redactValues(
     const safeKey = key.slice(0, 60);
     if (raw === null || typeof raw === "boolean" || typeof raw === "number") out[safeKey] = raw;
     else if (typeof raw === "string") out[safeKey] = raw.slice(0, 300);
-    // Nested objects/arrays are dropped: no uncontrolled dumps.
+    else if (Array.isArray(raw) && raw.every((v) => typeof v === "string")) {
+      out[safeKey] = (raw as string[]).slice(0, 50).map((v) => v.slice(0, 60));
+    }
+    // Nested objects and mixed arrays are dropped: no uncontrolled dumps.
   }
   let text = JSON.stringify(out);
   while (text.length > 4000) {
