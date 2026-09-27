@@ -5,6 +5,7 @@
  */
 import type { Json } from "@/integrations/supabase/types";
 import type { Actor } from "./projecthub-actor.server";
+import { writeHistoryEvent, type HistoryEventInput } from "./projecthub-history.server";
 import { enquiryReferenceYear } from "./projecthub-date";
 import { classifyEnquiryFailure, recordEnquiryFailure } from "./projecthub-diagnostics.server";
 import { resolveN3Identity } from "./projecthub-n3.server";
@@ -289,29 +290,12 @@ export async function getProjectWorkspace(actor: Actor, projectId: string) {
   };
 }
 
-export async function recordEvent(
-  actor: Actor,
-  projectId: string,
-  event: {
-    eventType: string;
-    entityType?: string;
-    entityId?: string | null;
-    summary: string;
-    metadata?: Record<string, unknown>;
-  },
-) {
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  await supabaseAdmin.from("projecthub_project_events").insert({
-    tenant_id: actor.tenantRowId,
-    project_id: projectId,
-    actor_n3_user_id: actor.n3UserId,
-    event_type: event.eventType,
-    entity_type: event.entityType ?? null,
-    entity_id: event.entityId ?? null,
-    summary: event.summary.slice(0, 300),
-    metadata: (event.metadata ?? {}) as Json,
-    correlation_id: actor.correlationId,
-  });
+/**
+ * Every ProjectHub business mutation records history through the single
+ * WP0E writer, which derives tenant, actor and snapshots server-side.
+ */
+export async function recordEvent(actor: Actor, projectId: string, event: HistoryEventInput) {
+  await writeHistoryEvent(actor, projectId, event);
 }
 
 export async function createEnquiry(
