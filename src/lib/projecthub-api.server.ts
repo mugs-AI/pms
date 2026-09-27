@@ -23,6 +23,7 @@ import {
   searchMaster,
 } from "./projecthub-n3.server";
 
+import { handleHistoryRequest } from "./projecthub-history-api.server";
 import * as projects from "./projecthub-projects.server";
 import { getQuotationPreview } from "./projecthub-quotation.server";
 import { assignRole, listRoleDirectory } from "./projecthub-roles.server";
@@ -163,6 +164,15 @@ export async function handleProjectHubRequest(request: Request, splat: string): 
     );
   }
 
+  // ---- global history (exact Owner) --------------------------------------
+  if (
+    segments[0] === "history" &&
+    (segments.length === 1 || (segments.length === 2 && segments[1] === "export.xlsx"))
+  ) {
+    if (method !== "GET") return methodNotAllowed(correlationId, "GET");
+    return handleHistoryRequest(actor, "global", null, segments.length === 2, search);
+  }
+
   // ---- projects ----------------------------------------------------------
   if (segments[0] === "projects") {
     if (segments.length === 2 && segments[1] === "dashboard") {
@@ -223,6 +233,14 @@ export async function handleProjectHubRequest(request: Request, splat: string): 
     }
 
     const child = segments[2] as string;
+
+    if (
+      child === "history" &&
+      (segments.length === 3 || (segments.length === 4 && segments[3] === "export.xlsx"))
+    ) {
+      if (method !== "GET") return methodNotAllowed(correlationId, "GET");
+      return handleHistoryRequest(actor, "project", projectId, segments.length === 4, search);
+    }
 
     // Read-only customer quotation readiness/preview. No write of any kind.
     if (child === "quotation-preview" && segments.length === 3) {
