@@ -61,6 +61,13 @@ function SettingsPage() {
         visible: isOwner,
       },
       {
+        to: "/settings/history",
+        title: "Global History",
+        body: "Search, filter and export every ProjectHub project's history in one grid.",
+        scope: "Owner only",
+        visible: isOwner && hasPermission("projecthub:history:view_all"),
+      },
+      {
         to: "/capabilities",
         title: "Capability Inventory",
         body: "The N3 operations ProjectHub can read today and the ones deliberately not built yet.",
