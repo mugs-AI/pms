@@ -96,7 +96,7 @@ const ROLE_PERMISSIONS: Record<ProjectHubRole, readonly Permission[]> = {
     "projecthub:history:view_project",
   ],
   // Finance sees every tenant project and its commercial values, read-only.
-    // Finance sees project history for visible projects only; never view_all history.
+  // Finance history: visible projects only; never Global History (view_all/export_all).
   finance: [
     "projecthub:projects:list",
     "projecthub:projects:view_all",
