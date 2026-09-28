@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from "react";
 
-export type ProjectSection = "overview" | "phases" | "team" | "activity" | "budget" | "quotation";
+export type ProjectSection = "overview" | "phases" | "team" | "history" | "budget" | "quotation";
 export type WorkspaceTab = {
   key: string;
   projectId: string | null;
@@ -15,7 +15,7 @@ export const PROJECT_SECTIONS: ProjectSection[] = [
   "overview",
   "phases",
   "team",
-  "activity",
+  "history",
   "budget",
   "quotation",
 ];
@@ -39,6 +39,8 @@ function nextUse() {
 }
 
 export function normaliseSection(value: unknown): ProjectSection {
+  // WP0E: the former Activity section is now History; old links keep working.
+  if (value === "activity") return "history";
   return typeof value === "string" && PROJECT_SECTIONS.includes(value as ProjectSection)
     ? (value as ProjectSection)
     : "overview";
