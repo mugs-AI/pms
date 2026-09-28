@@ -1,17 +1,16 @@
-import { formatMalaysianDateTime } from "@/lib/projecthub-date";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef } from "react";
 import { AppShell } from "@/components/AppShell";
 import {
   AccessState,
   Badge,
-  Card,
   EmptyState,
   ErrorState,
   PageHeading,
   Skeleton,
 } from "@/components/projecthub/ui";
 import { PROJECT_STATUS_LABELS, statusTone } from "@/components/projecthub/status";
+import { HistoryGrid } from "@/components/projecthub/HistoryGrid";
 import { BoqEditor } from "@/components/projecthub/BoqEditor";
 import { PhasesPanel } from "@/components/projecthub/PhasesPanel";
 import { ProjectOverview } from "@/components/projecthub/ProjectOverview";
@@ -38,7 +37,7 @@ export const Route = createFileRoute("/projects/$projectId")({
       {
         name: "description",
         content:
-          "Project overview, phases, team, activity and BOQ or simple budget for a ProjectHub construction project.",
+          "Project overview, phases, team, history and BOQ or simple budget for a ProjectHub construction project.",
       },
       { property: "og:title", content: "Project workspace — N3 ProjectHub" },
       { property: "og:description", content: "ProjectHub construction project workspace." },
@@ -63,7 +62,7 @@ const ALL_TABS: { label: string; value: ProjectSection }[] = [
   { label: "Overview", value: "overview" },
   { label: "Phases", value: "phases" },
   { label: "Team", value: "team" },
-  { label: "Activity", value: "activity" },
+  { label: "History", value: "history" },
   { label: "Budget", value: "budget" },
   { label: "Quotation", value: "quotation" },
 ];
@@ -195,20 +194,17 @@ function Workspace() {
 
         {section === "team" ? <TeamPanel projectId={projectId} workspace={ws} /> : null}
 
-        {section === "activity" ? (
-          <div className="grid gap-2">
-            {ws.events.length === 0 ? (
-              <EmptyState title="No activity yet" body="Project changes appear here." />
-            ) : null}
-            {ws.events.map((event) => (
-              <Card key={event.id} tone="information">
-                <p className="text-sm text-foreground">{event.summary}</p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  {formatMalaysianDateTime(event.occurred_at)} · {event.event_type}
-                </p>
-              </Card>
-            ))}
-          </div>
+        {section === "history" ? (
+          hasPermission("projecthub:history:view_project") ? (
+            <HistoryGrid
+              scope="project"
+              projectId={projectId}
+              canExport={hasPermission("projecthub:history:export_project")}
+              label={`History for ${p.enquiry_reference}`}
+            />
+          ) : (
+            <AccessState />
+          )
         ) : null}
 
         {section === "budget" ? (

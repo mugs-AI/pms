@@ -17,6 +17,7 @@ import { Route as VerificationRouteImport } from './routes/verification'
 import { Route as ProjectsIndexRouteImport } from './routes/projects.index'
 import { Route as ProjectsProjectIdRouteImport } from './routes/projects.$projectId'
 import { Route as ProjectsNewRouteImport } from './routes/projects.new'
+import { Route as SettingsHistoryRouteImport } from './routes/settings_.history'
 import { Route as ApiProjecthubSplatRouteImport } from './routes/api/projecthub/$'
 import { Route as ApiPublicAuthConnectRouteImport } from './routes/api/public/auth/connect'
 import { Route as ApiPublicN3SplatRouteImport } from './routes/api/public/n3/$'
@@ -61,6 +62,11 @@ const ProjectsNewRoute = ProjectsNewRouteImport.update({
   path: '/projects/new',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SettingsHistoryRoute = SettingsHistoryRouteImport.update({
+  id: '/settings_/history',
+  path: '/settings/history',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiProjecthubSplatRoute = ApiProjecthubSplatRouteImport.update({
   id: '/api/projecthub/$',
   path: '/api/projecthub/$',
@@ -85,6 +91,7 @@ export interface FileRoutesByFullPath {
   '/verification': typeof VerificationRoute
   '/projects/$projectId': typeof ProjectsProjectIdRoute
   '/projects/new': typeof ProjectsNewRoute
+  '/settings/history': typeof SettingsHistoryRoute
   '/projects/': typeof ProjectsIndexRoute
   '/api/projecthub/$': typeof ApiProjecthubSplatRoute
   '/api/public/auth/connect': typeof ApiPublicAuthConnectRoute
@@ -98,6 +105,7 @@ export interface FileRoutesByTo {
   '/verification': typeof VerificationRoute
   '/projects/$projectId': typeof ProjectsProjectIdRoute
   '/projects/new': typeof ProjectsNewRoute
+  '/settings/history': typeof SettingsHistoryRoute
   '/projects': typeof ProjectsIndexRoute
   '/api/projecthub/$': typeof ApiProjecthubSplatRoute
   '/api/public/auth/connect': typeof ApiPublicAuthConnectRoute
@@ -112,6 +120,7 @@ export interface FileRoutesById {
   '/verification': typeof VerificationRoute
   '/projects/$projectId': typeof ProjectsProjectIdRoute
   '/projects/new': typeof ProjectsNewRoute
+  '/settings_/history': typeof SettingsHistoryRoute
   '/projects/': typeof ProjectsIndexRoute
   '/api/projecthub/$': typeof ApiProjecthubSplatRoute
   '/api/public/auth/connect': typeof ApiPublicAuthConnectRoute
@@ -127,6 +136,7 @@ export interface FileRouteTypes {
     | '/verification'
     | '/projects/$projectId'
     | '/projects/new'
+    | '/settings/history'
     | '/projects/'
     | '/api/projecthub/$'
     | '/api/public/auth/connect'
@@ -140,6 +150,7 @@ export interface FileRouteTypes {
     | '/verification'
     | '/projects/$projectId'
     | '/projects/new'
+    | '/settings/history'
     | '/projects'
     | '/api/projecthub/$'
     | '/api/public/auth/connect'
@@ -153,6 +164,7 @@ export interface FileRouteTypes {
     | '/verification'
     | '/projects/$projectId'
     | '/projects/new'
+    | '/settings_/history'
     | '/projects/'
     | '/api/projecthub/$'
     | '/api/public/auth/connect'
@@ -167,6 +179,7 @@ export interface RootRouteChildren {
   VerificationRoute: typeof VerificationRoute
   ProjectsProjectIdRoute: typeof ProjectsProjectIdRoute
   ProjectsNewRoute: typeof ProjectsNewRoute
+  SettingsHistoryRoute: typeof SettingsHistoryRoute
   ProjectsIndexRoute: typeof ProjectsIndexRoute
   ApiProjecthubSplatRoute: typeof ApiProjecthubSplatRoute
   ApiPublicAuthConnectRoute: typeof ApiPublicAuthConnectRoute
@@ -231,6 +244,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProjectsNewRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/settings_/history': {
+      id: '/settings_/history'
+      path: '/settings/history'
+      fullPath: '/settings/history'
+      preLoaderRoute: typeof SettingsHistoryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/projecthub/$': {
       id: '/api/projecthub/$'
       path: '/api/projecthub/$'
@@ -263,6 +283,7 @@ const rootRouteChildren: RootRouteChildren = {
   VerificationRoute: VerificationRoute,
   ProjectsProjectIdRoute: ProjectsProjectIdRoute,
   ProjectsNewRoute: ProjectsNewRoute,
+  SettingsHistoryRoute: SettingsHistoryRoute,
   ProjectsIndexRoute: ProjectsIndexRoute,
   ApiProjecthubSplatRoute: ApiProjecthubSplatRoute,
   ApiPublicAuthConnectRoute: ApiPublicAuthConnectRoute,

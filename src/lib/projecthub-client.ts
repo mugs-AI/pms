@@ -96,3 +96,42 @@ export function describeError(error: unknown): { message: string; correlationId:
   if (error instanceof Error) return { message: error.message, correlationId: null };
   return { message: "Something went wrong", correlationId: null };
 }
+
+/**
+ * Downloads a same-origin binary export (XLSX). The bearer token travels in
+ * the Authorization header only; the file is handed to the browser as a blob.
+ */
+export async function downloadProjectHubFile(
+  path: string,
+  query: RequestOptions["query"],
+  fallbackName: string,
+): Promise<void> {
+  const token = getToken();
+  if (!token) throw new ProjectHubError("Not signed in", 401, null);
+  const res = await fetch(buildUrl(path, query), {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const correlationId = res.headers.get("x-correlation-id");
+  if (res.status === 401) {
+    clearToken();
+    throw new ProjectHubError("Session expired — relaunch from N3 My Apps", 401, correlationId);
+  }
+  if (!res.ok) {
+    const body = (await res.json().catch(() => null)) as { message?: string } | null;
+    throw new ProjectHubError(
+      body?.message ?? `Export failed (${res.status})`,
+      res.status,
+      correlationId,
+    );
+  }
+  const blob = await res.blob();
+  const match = /filename="([^"]+)"/.exec(res.headers.get("content-disposition") ?? "");
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = match?.[1] ?? fallbackName;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
