@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { AppShell } from "@/components/AppShell";
 import { HistoryGrid } from "@/components/projecthub/HistoryGrid";
 import { EmptyState, PageHeading } from "@/components/projecthub/ui";
@@ -45,14 +45,6 @@ function GlobalHistoryPage() {
       <PageHeading
         title="Global History"
         subtitle="Every ProjectHub project in your company. Times are Malaysia time. Nothing here writes to N3."
-        actions={
-          <Link
-            to="/settings"
-            className="rounded-md border border-input px-4 py-2 text-sm font-medium hover:bg-secondary"
-          >
-            Back to settings
-          </Link>
-        }
       />
       <HistoryGrid
         scope="global"

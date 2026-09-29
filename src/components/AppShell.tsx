@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { useState, type ReactNode } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { useSession } from "@/lib/n3-session";
 import { DevApiKeyLogin } from "@/components/DevApiKeyLogin";
 import type { Permission } from "@/lib/projecthub-rbac";
@@ -9,13 +9,20 @@ import { clearWorkspaceTabs } from "@/lib/workspace-tabs";
 import { useWorkspaceLifecycle } from "@/lib/workspace-lifecycle";
 import { WorkspaceTabs, type ActiveWorkspace } from "@/components/projecthub/WorkspaceTabs";
 
-// Compact top-level shell: Dashboard | Projects | Settings.
+// Compact top-level shell. The Owner-only global history link follows the
+// server-resolved N3 identity and permission set.
 // Team & Roles, N3 Data Verification and Capability Inventory now live inside
 // Settings. Settings itself is always reachable; each module inside it is
 // permission-filtered, and every route keeps its own server-side authorization.
 const NAV: { to: string; label: string; permission?: Permission; ownerOnly?: boolean }[] = [
   { to: "/", label: "Dashboard" },
   { to: "/projects", label: "Projects", permission: "projecthub:projects:list" },
+  {
+    to: "/settings/history",
+    label: "Global History",
+    permission: "projecthub:history:view_all",
+    ownerOnly: true,
+  },
   { to: "/settings", label: "Settings" },
 ];
 
@@ -28,6 +35,7 @@ export function AppShell({
 }) {
   const session = useSession();
   const [open, setOpen] = useState(false);
+  const menuButton = useRef<HTMLButtonElement>(null);
   const [width] = useDisplayWidth();
   useRootFontSize();
   const container = widthContainerClass(width);
@@ -40,8 +48,8 @@ export function AppShell({
 
   // Navigation follows the server-returned permission set, never a local guess.
   const nav = NAV.filter((item) => {
-    if (item.ownerOnly) return session.isOwner;
-    if (item.permission) return session.hasPermission(item.permission);
+    if (item.ownerOnly && (session.status !== "authenticated" || !session.isOwner)) return false;
+    if (item.permission && !session.hasPermission(item.permission)) return false;
     return true;
   });
 
@@ -54,79 +62,88 @@ export function AppShell({
         Skip to main content
       </a>
 
-      <header className="bg-primary shadow-header">
-        <div
-          className={`${container} flex flex-col gap-3 py-3 md:flex-row md:flex-wrap md:items-center md:gap-4`}
-        >
-          <div className="flex min-w-0 flex-1 items-center justify-between gap-3">
-            <div className="flex min-w-0 items-center gap-3">
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-accent font-display text-lg font-bold text-accent-foreground">
-                PH
-              </span>
-              <div className="min-w-0">
-                <p className="truncate font-display text-xl leading-none font-bold tracking-wide text-primary-foreground">
-                  N3 ProjectHub
-                </p>
-                {/* Company context only. Tenant code, email, immutable ids and
+      <header className="border-b border-border bg-card shadow-header">
+        <div className={`${container} flex flex-wrap items-center gap-x-5 gap-y-1 py-2`}>
+          <div className="flex min-w-0 items-center gap-2">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary font-display text-lg font-bold text-primary-foreground">
+              PH
+            </span>
+            <div className="min-w-0">
+              <p className="truncate font-display text-lg leading-none font-bold tracking-wide text-foreground">
+                N3 ProjectHub
+              </p>
+              {/* Company context only. Tenant code, email, immutable ids and
                     session diagnostics are deliberately not shown here. */}
-                {loading ? (
-                  <span className="mt-1 block h-3 w-32 max-w-full rounded bg-primary-foreground/15 motion-safe:animate-pulse" />
-                ) : (
-                  <p className="truncate text-xs text-primary-foreground/70">
-                    {session.companyName ?? "Construction & renovation PMS for N3"}
-                  </p>
-                )}
-              </div>
+              {loading ? (
+                <span className="mt-1 hidden h-3 w-32 max-w-full rounded bg-secondary motion-safe:animate-pulse sm:block" />
+              ) : (
+                <p className="hidden truncate text-xs text-muted-foreground sm:block">
+                  {session.companyName ?? "Construction & renovation PMS for N3"}
+                </p>
+              )}
             </div>
-            <button
-              type="button"
-              onClick={() => {
-                clearWorkspaceTabs();
-                session.signOut();
-              }}
-              className="min-h-10 shrink-0 rounded-md border border-primary-foreground/25 px-3 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary-foreground/10"
-            >
-              Sign out
-            </button>
           </div>
-        </div>
-
-        <nav aria-label="Main" className="border-t border-primary-foreground/10">
-          <div className={container}>
-            <button
-              type="button"
-              aria-expanded={open}
-              aria-controls="primary-navigation"
-              onClick={() => setOpen((v) => !v)}
-              className="my-2 min-h-10 w-full rounded-md border border-primary-foreground/25 px-3 text-xs font-medium text-primary-foreground sm:hidden"
-            >
-              {open ? "Hide menu" : "Menu"}
-            </button>
+          <nav
+            aria-label="Main"
+            className="order-3 w-full lg:order-none lg:min-w-0 lg:flex-1"
+            onKeyDown={(event) => {
+              if (event.key === "Escape" && open) {
+                setOpen(false);
+                menuButton.current?.focus();
+              }
+            }}
+          >
             <ul
               id="primary-navigation"
-              className={`${open ? "flex" : "hidden"} flex-col gap-1 pb-2 sm:flex sm:flex-row sm:gap-1 sm:pb-0`}
+              className={`${open ? "flex" : "hidden"} flex-col border-t border-border py-2 lg:flex lg:flex-row lg:items-center lg:gap-1 lg:border-0 lg:py-0`}
             >
               {nav.map((item) => (
                 <li key={item.to} className="min-w-0">
                   <Link
                     to={item.to}
                     onClick={() => setOpen(false)}
-                    activeOptions={{ exact: item.to === "/" }}
+                    activeOptions={{
+                      exact:
+                        item.to === "/" ||
+                        item.to === "/settings" ||
+                        item.to === "/settings/history",
+                    }}
                     activeProps={{
-                      className: "border-accent text-primary-foreground bg-primary-foreground/10",
+                      className: "border-accent bg-accent/10 text-foreground",
+                      "aria-current": "page",
                     }}
-                    inactiveProps={{
-                      className: "border-transparent text-primary-foreground/70",
-                    }}
-                    className="block w-full border-b-2 px-3 py-3 text-sm font-medium transition-colors hover:text-primary-foreground sm:py-2"
+                    inactiveProps={{ className: "border-transparent text-muted-foreground" }}
+                    className="flex min-h-11 w-full items-center rounded-t-sm border-b-2 px-3 text-sm font-medium transition-colors hover:bg-secondary hover:text-foreground lg:w-auto"
                   >
                     {item.label}
                   </Link>
                 </li>
               ))}
             </ul>
+          </nav>
+          <div className="ml-auto flex shrink-0 items-center gap-2">
+            <button
+              ref={menuButton}
+              type="button"
+              aria-expanded={open}
+              aria-controls="primary-navigation"
+              onClick={() => setOpen((v) => !v)}
+              className="min-h-11 rounded-md border border-input px-3 text-sm font-medium text-foreground hover:bg-secondary lg:hidden"
+            >
+              {open ? "Hide menu" : "Menu"}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                clearWorkspaceTabs();
+                session.signOut();
+              }}
+              className="min-h-11 rounded-md border border-input px-3 text-xs font-medium text-foreground transition-colors hover:bg-secondary"
+            >
+              Sign out
+            </button>
           </div>
-        </nav>
+        </div>
         <WorkspaceTabs {...(activeWorkspace ? { active: activeWorkspace } : {})} />
       </header>
 

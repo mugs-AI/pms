@@ -9,7 +9,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const sessionState = {
   hasPermission: (_permission: string) => true,
   isOwner: true,
-  status: "authenticated" as const,
+  status: "authenticated" as "authenticated" | "loading",
   companyName: "Acme Builders Sdn Bhd",
   tenantCode: "ACME-SECRET-CONTEXT",
   email: "owner@acme.test",
@@ -31,7 +31,30 @@ vi.mock("@/lib/n3-session", () => ({
 
 vi.mock("@tanstack/react-router", () => ({
   createFileRoute: () => (options: Record<string, unknown>) => ({ options }),
-  Link: ({ children, to }: { children: ReactNode; to: string }) => <a href={to}>{children}</a>,
+  Link: ({
+    children,
+    to,
+    activeOptions,
+    activeProps,
+    inactiveProps,
+    onClick,
+  }: {
+    children: ReactNode;
+    to: string;
+    activeOptions?: { exact?: boolean };
+    activeProps?: { className?: string; "aria-current"?: "page" };
+    inactiveProps?: { className?: string };
+    onClick?: () => void;
+  }) => {
+    const active = activeOptions?.exact
+      ? window.location.pathname === to
+      : window.location.pathname === to || window.location.pathname.startsWith(`${to}/`);
+    return (
+      <a href={to} onClick={onClick} {...(active ? activeProps : inactiveProps)}>
+        {children}
+      </a>
+    );
+  },
   useNavigate: () => vi.fn(),
 }));
 
@@ -97,12 +120,13 @@ beforeEach(() => {
   sessionState.isOwner = true;
   sessionState.status = "authenticated";
   sessionState.roleStatus = "owner";
+  window.history.replaceState({}, "", "/");
 });
 
 afterEach(() => cleanup());
 
 describe("compact real application shell", () => {
-  it("renders exactly Dashboard, Projects and Settings without private identity details", () => {
+  it("puts the Owner menu beside the brand without exposing private identity details", () => {
     const { container } = render(
       <AppShell>
         <p>Mounted content</p>
@@ -114,11 +138,50 @@ describe("compact real application shell", () => {
       within(navigation)
         .getAllByRole("link")
         .map((link) => link.textContent),
-    ).toEqual(["Dashboard", "Projects", "Settings"]);
+    ).toEqual(["Dashboard", "Projects", "Global History", "Settings"]);
+    expect(navigation.parentElement?.textContent).toContain("N3 ProjectHub");
+    expect(screen.getByRole("link", { name: "Global History" })).toHaveAttribute(
+      "href",
+      "/settings/history",
+    );
     expect(container.textContent).toContain("Acme Builders Sdn Bhd");
     expect(container.textContent).not.toContain("ACME-SECRET-CONTEXT");
     expect(container.textContent).not.toContain("owner@acme.test");
     expect(container.textContent).not.toContain("Private Owner Name");
+  });
+
+  it("shows Global History only for a confirmed Owner with its server permission", () => {
+    sessionState.isOwner = false;
+    sessionState.hasPermission = () => true;
+    const { rerender } = render(<AppShell>Content</AppShell>);
+    expect(screen.queryByRole("link", { name: "Global History" })).toBeNull();
+
+    sessionState.isOwner = true;
+    sessionState.hasPermission = (permission: string) =>
+      permission !== "projecthub:history:view_all";
+    rerender(<AppShell>Content</AppShell>);
+    expect(screen.queryByRole("link", { name: "Global History" })).toBeNull();
+
+    sessionState.status = "loading";
+    sessionState.hasPermission = () => true;
+    rerender(<AppShell>Content</AppShell>);
+    expect(screen.queryByRole("link", { name: "Global History" })).toBeNull();
+  });
+
+  it("highlights Global History rather than Settings and closes its mobile menu", () => {
+    window.history.replaceState({}, "", "/settings/history");
+    render(<AppShell>Content</AppShell>);
+    expect(screen.getByRole("link", { name: "Global History" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+    expect(screen.getByRole("link", { name: "Settings" })).not.toHaveAttribute("aria-current");
+    const menu = screen.getByRole("button", { name: "Menu" });
+    fireEvent.click(menu);
+    expect(menu).toHaveAttribute("aria-expanded", "true");
+    fireEvent.keyDown(screen.getByRole("navigation", { name: "Main" }), { key: "Escape" });
+    expect(menu).toHaveAttribute("aria-expanded", "false");
+    expect(menu).toHaveFocus();
   });
 
   it("keeps Settings reachable while permission-filtering navigation and modules", async () => {

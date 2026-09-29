@@ -175,9 +175,9 @@ describe("shell and route responsive contracts", () => {
     }
   });
 
-  it("applies one shared container to header, navigation and main", () => {
+  it("applies the same width preference to the combined header/navigation and main", () => {
     expect(shell).toContain("widthContainerClass(width)");
-    expect(shell.match(/\{container\}|\$\{container\}/g)?.length ?? 0).toBeGreaterThanOrEqual(3);
+    expect(shell.match(/\{container\}|\$\{container\}/g)?.length ?? 0).toBeGreaterThanOrEqual(2);
     expect(shell).not.toContain("mx-auto max-w-6xl px-4");
   });
 
