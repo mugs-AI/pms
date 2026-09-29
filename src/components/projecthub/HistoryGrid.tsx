@@ -414,9 +414,11 @@ function FilterCell({
   onChange: (param: string, value: string) => void;
 }) {
   const col = HISTORY_COLUMN_BY_KEY[columnKey];
+  const filter = col.filter;
+  if (!filter) return null;
   const small = `${inputClass} py-1 text-xs`;
   const name = `Filter ${col.label}`;
-  if (col.filter.kind === "date") {
+  if (filter.kind === "date") {
     return (
       <div className="flex gap-1">
         <input
@@ -440,10 +442,10 @@ function FilterCell({
       </div>
     );
   }
-  const param = col.filter.param;
-  if (col.filter.kind === "enum" || col.filter.kind === "boolean") {
+  const param = filter.param;
+  if (filter.kind === "enum" || filter.kind === "boolean") {
     const options =
-      col.filter.kind === "boolean" ? ["true", "false"] : [...(col.filter.options ?? [])];
+      filter.kind === "boolean" ? ["true", "false"] : [...(filter.options ?? [])];
     return (
       <select
         aria-label={name}
@@ -463,8 +465,8 @@ function FilterCell({
   return (
     <input
       aria-label={name}
-      placeholder={col.filter.kind === "uuid" ? "Full ID" : "Contains…"}
-      maxLength={col.filter.kind === "uuid" ? 36 : HISTORY_TEXT_MAX}
+      placeholder={filter.kind === "uuid" ? "Full ID" : "Contains…"}
+      maxLength={filter.kind === "uuid" ? 36 : HISTORY_TEXT_MAX}
       value={draft[param] ?? ""}
       onChange={(e) => onChange(param, e.target.value)}
       className={small}
