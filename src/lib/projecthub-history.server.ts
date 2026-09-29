@@ -454,8 +454,7 @@ async function toRows(actor: Actor, records: EventRecord[]): Promise<HistoryRow[
       recordedAt: str("recorded_at"),
       user:
         str("actor_display_name_snapshot") ??
-        (actorId ? (actorLabels.get(actorId) ?? null) : null) ??
-        (actorId ? "Unavailable user" : "System"),
+        (actorId ? actorLabels.get(actorId) || "Unavailable user" : "System"),
       title: r.summary,
       project:
         str("project_title_snapshot") ?? label?.title ?? (isLegacy ? "Project unavailable" : null),
