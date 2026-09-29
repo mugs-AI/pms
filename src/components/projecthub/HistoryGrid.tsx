@@ -82,8 +82,7 @@ export function HistoryGrid({ scope, projectId, canExport, label }: Props) {
     placeholderData: keepPreviousData,
   });
 
-  const setFilter = (param: string, value: string) =>
-    setDraft((d) => ({ ...d, [param]: value }));
+  const setFilter = (param: string, value: string) => setDraft((d) => ({ ...d, [param]: value }));
   const activeFilters = Object.values(draft).some((v) => v.trim());
 
   function toggleSort(key: HistorySortKey) {
@@ -283,11 +282,7 @@ export function HistoryGrid({ scope, projectId, canExport, label }: Props) {
               <td />
               {columns.map((key) => (
                 <td key={key} className="px-2 pb-2">
-                  <FilterCell
-                    columnKey={key}
-                    draft={draft}
-                    onChange={setFilter}
-                  />
+                  <FilterCell columnKey={key} draft={draft} onChange={setFilter} />
                 </td>
               ))}
             </tr>
@@ -320,9 +315,7 @@ export function HistoryGrid({ scope, projectId, canExport, label }: Props) {
                         type="button"
                         aria-expanded={expanded === row.eventId}
                         aria-label={`Details for ${row.title}`}
-                        onClick={() =>
-                          setExpanded((e) => (e === row.eventId ? null : row.eventId))
-                        }
+                        onClick={() => setExpanded((e) => (e === row.eventId ? null : row.eventId))}
                         className="rounded px-1 hover:bg-secondary"
                       >
                         {expanded === row.eventId ? "−" : "+"}
@@ -401,7 +394,11 @@ function renderCell(row: HistoryRow, key: HistoryColumnKey) {
     return <span className={`capitalize ${tone}`}>{row.outcome.replace(/_/g, " ")}</span>;
   }
   const text = cellText(row, key);
-  return text ? <span className="break-words">{text}</span> : <span className="text-muted-foreground">—</span>;
+  return text ? (
+    <span className="break-words">{text}</span>
+  ) : (
+    <span className="text-muted-foreground">—</span>
+  );
 }
 
 function FilterCell({
@@ -414,9 +411,11 @@ function FilterCell({
   onChange: (param: string, value: string) => void;
 }) {
   const col = HISTORY_COLUMN_BY_KEY[columnKey];
+  const filter = col.filter;
+  if (!filter) return null;
   const small = `${inputClass} py-1 text-xs`;
   const name = `Filter ${col.label}`;
-  if (col.filter.kind === "date") {
+  if (filter.kind === "date") {
     return (
       <div className="flex gap-1">
         <input
@@ -440,10 +439,9 @@ function FilterCell({
       </div>
     );
   }
-  const param = col.filter.param;
-  if (col.filter.kind === "enum" || col.filter.kind === "boolean") {
-    const options =
-      col.filter.kind === "boolean" ? ["true", "false"] : [...(col.filter.options ?? [])];
+  const param = filter.param;
+  if (filter.kind === "enum" || filter.kind === "boolean") {
+    const options = filter.kind === "boolean" ? ["true", "false"] : [...(filter.options ?? [])];
     return (
       <select
         aria-label={name}
@@ -463,8 +461,8 @@ function FilterCell({
   return (
     <input
       aria-label={name}
-      placeholder={col.filter.kind === "uuid" ? "Full ID" : "Contains…"}
-      maxLength={col.filter.kind === "uuid" ? 36 : HISTORY_TEXT_MAX}
+      placeholder={filter.kind === "uuid" ? "Full ID" : "Contains…"}
+      maxLength={filter.kind === "uuid" ? 36 : HISTORY_TEXT_MAX}
       value={draft[param] ?? ""}
       onChange={(e) => onChange(param, e.target.value)}
       className={small}
@@ -474,7 +472,9 @@ function FilterCell({
 
 function RowDetails({ row }: { row: HistoryRow }) {
   const entries = (obj: Record<string, unknown> | null) =>
-    obj ? Object.entries(obj).map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(", ") : String(v)}`) : [];
+    obj
+      ? Object.entries(obj).map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(", ") : String(v)}`)
+      : [];
   const before = entries(row.details.before);
   const after = entries(row.details.after);
   return (

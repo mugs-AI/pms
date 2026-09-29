@@ -63,26 +63,25 @@ export const HISTORY_ACTOR_TYPES = ["human", "system", "scheduled_job", "integra
  * to label legacy rows (written before WP0E) and to translate module/action
  * filters so legacy rows are matched exactly on the server.
  */
-export const KNOWN_EVENT_TYPES: Record<string, { module: HistoryModule; action: HistoryAction }> =
-  {
-    "project.enquiry_created": { module: "Enquiry", action: "created" },
-    "project.customer_linked": { module: "Enquiry", action: "linked" },
-    "project.customer_request_recorded": { module: "Enquiry", action: "recorded" },
-    "project.project_code_linked": { module: "Phase", action: "linked" },
-    "project.project_code_request_recorded": { module: "Phase", action: "recorded" },
-    "project.updated": { module: "Project", action: "updated" },
-    "project.cancelled": { module: "Project", action: "cancelled" },
-    "phase.created": { module: "Phase", action: "created" },
-    "phase.updated": { module: "Phase", action: "updated" },
-    "team.assigned": { module: "Team", action: "assigned" },
-    "team.deactivated": { module: "Team", action: "deactivated" },
-    "boq.version_created": { module: "BOQ", action: "created" },
-    "boq.version_cloned": { module: "BOQ", action: "cloned" },
-    "boq.version_updated": { module: "BOQ", action: "updated" },
-    "boq.section_created": { module: "BOQ", action: "created" },
-    "boq.item_created": { module: "BOQ", action: "created" },
-    "boq.item_updated": { module: "BOQ", action: "updated" },
-  };
+export const KNOWN_EVENT_TYPES: Record<string, { module: HistoryModule; action: HistoryAction }> = {
+  "project.enquiry_created": { module: "Enquiry", action: "created" },
+  "project.customer_linked": { module: "Enquiry", action: "linked" },
+  "project.customer_request_recorded": { module: "Enquiry", action: "recorded" },
+  "project.project_code_linked": { module: "Phase", action: "linked" },
+  "project.project_code_request_recorded": { module: "Phase", action: "recorded" },
+  "project.updated": { module: "Project", action: "updated" },
+  "project.cancelled": { module: "Project", action: "cancelled" },
+  "phase.created": { module: "Phase", action: "created" },
+  "phase.updated": { module: "Phase", action: "updated" },
+  "team.assigned": { module: "Team", action: "assigned" },
+  "team.deactivated": { module: "Team", action: "deactivated" },
+  "boq.version_created": { module: "BOQ", action: "created" },
+  "boq.version_cloned": { module: "BOQ", action: "cloned" },
+  "boq.version_updated": { module: "BOQ", action: "updated" },
+  "boq.section_created": { module: "BOQ", action: "created" },
+  "boq.item_created": { module: "BOQ", action: "created" },
+  "boq.item_updated": { module: "BOQ", action: "updated" },
+};
 
 /** Module/action for an event type; unknown types fall back to System/recorded. */
 export function deriveModuleAction(eventType: string): {
@@ -335,7 +334,12 @@ export const TEXT_FILTER_PARAMS = [
   "documentNumber",
   "changedField",
 ] as const;
-export const ENUM_FILTER_PARAMS = { module: HISTORY_MODULES, action: HISTORY_ACTIONS, outcome: HISTORY_OUTCOMES, sourceSystem: HISTORY_SOURCES } as const;
+export const ENUM_FILTER_PARAMS = {
+  module: HISTORY_MODULES,
+  action: HISTORY_ACTIONS,
+  outcome: HISTORY_OUTCOMES,
+  sourceSystem: HISTORY_SOURCES,
+} as const;
 export const UUID_FILTER_PARAMS = ["correlationId", "eventId"] as const;
 
 export const HISTORY_QUERY_PARAMS = [
@@ -457,6 +461,7 @@ export function parseHistoryQuery(search: Record<string, string>): ParseResult {
     if (raw.length > HISTORY_TEXT_MAX * 2) return { ok: false, message: `${param} is too long` };
     const value = normaliseFilterText(raw);
     if (value.length > HISTORY_TEXT_MAX) return { ok: false, message: `${param} is too long` };
+    // eslint-disable-next-line no-control-regex -- rejecting control characters is the intent
     if (/[\u0000-\u001f\u007f]/.test(value)) {
       return { ok: false, message: `${param} contains invalid characters` };
     }

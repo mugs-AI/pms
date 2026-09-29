@@ -10,3 +10,5 @@
 > the editor, so keep the branch in a working state.
 
 <!-- LOVABLE:END -->
+- History: all ProjectHub business events go through `writeHistoryEvent` (projecthub-history.server.ts) into the append-only `projecthub_project_events`; reads/exports share one allowlisted parser — why: one tenant-scoped, auditable ledger.
+- XLSX exports use the dependency-free `xlsx-writer.server.ts` (all cells text, formula-prefix neutralised) — why: no package changes and no formula injection.

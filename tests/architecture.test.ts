@@ -58,10 +58,11 @@ describe("architecture guards", () => {
 
   it("pins the frozen generated types file to its approved bytes", () => {
     const bytes = readFileSync(join(root, "src/integrations/supabase/types.ts"));
-    // Exact-byte pin for the frozen baseline. Platform regeneration must never
-    // change this silently; an approved schema-contract change updates it here.
+    // Exact-byte pin. Platform regeneration must never change this silently;
+    // an approved schema-contract change updates it here. WP0E (approved):
+    // baseline 35499a35… + 25 nullable projecthub_project_events history columns.
     expect(createHash("sha256").update(bytes).digest("hex")).toBe(
-      "35499a35e3218f60af562124f726240d617e1694b8680fbd049abf1985d34c71",
+      "653328735733e1dd66f3b5b0b5322c36a4e0bf537a99737ea3df79d2854075b5",
     );
   });
 
@@ -86,6 +87,9 @@ describe("architecture guards", () => {
     }
     expect(types).toContain("projecthub_create_enquiry");
     expect(types).toContain("projecthub_clone_boq_version");
+    for (const column of ["sequence_no", "project_reference_snapshot", "changed_fields"]) {
+      expect(types, `WP0E history column ${column}`).toContain(column);
+    }
   });
 
   it("adds no N3 mutation method or path anywhere in the source tree", () => {

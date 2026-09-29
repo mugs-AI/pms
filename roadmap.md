@@ -1,9 +1,11 @@
-# WP0D-1 roadmap
+# Roadmap
 
-- [x] Root font scaling, mobile minimum, and print reset
-- [x] Safe authorized workspace registration and consistent eight-project cap
-- [x] Workspace navigation semantics, keyboard/focus, and one-confirm draft discard
-- [x] Stable project section panel relationships and active-only mounting
-- [x] Subtle semantic card treatment across current ProjectHub screens
-- [x] Focused behavioral and regression test matrix
-- [x] Full release gates, frozen-boundary checks, and factual audit report
+## WP0E — History grid, Global History, Excel export
+- [x] Baseline normalisation (residue removed, frozen types restored)
+- [x] Forward-only history columns + enriched enquiry RPC (live schema verified)
+- [x] Central server event writer
+- [x] Project/global history API with filters, keyset paging, 20/50/100
+- [x] Owner-only Global History in Settings; Activity renamed History (old links alias)
+- [x] Secure XLSX export (50,000 cap, Export Info, audit)
+- [x] Tests and gates
+- [ ] External audit (waiting on auditor)
