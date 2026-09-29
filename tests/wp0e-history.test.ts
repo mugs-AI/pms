@@ -15,13 +15,22 @@ import {
 import { permissionsForRole, type ProjectHubRole } from "@/lib/projecthub-rbac";
 import { normaliseSection } from "@/lib/workspace-tabs";
 import { buildXlsx, crc32, safeCellText } from "@/lib/xlsx-writer.server";
-import { readHistoryColumns, resetHistoryColumnsMemory, writeHistoryColumns } from "@/lib/history-preference";
+import {
+  readHistoryColumns,
+  resetHistoryColumnsMemory,
+  writeHistoryColumns,
+} from "@/lib/history-preference";
 
 const PID = "0b1c2d3e-4f50-4a61-8b72-9c8d7e6f5a4b";
 
 describe("history query contract", () => {
   it("parses a project query with Malaysian inclusive day bounds", () => {
-    const r = parseHistoryQuery({ scope: "project", projectId: PID, dateFrom: "01/09/2026", dateTo: "01/09/2026" });
+    const r = parseHistoryQuery({
+      scope: "project",
+      projectId: PID,
+      dateFrom: "01/09/2026",
+      dateTo: "01/09/2026",
+    });
     expect(r.ok).toBe(true);
     if (!r.ok) return;
     expect(r.query.fromUtc).toBe("2026-08-31T16:00:00.000Z");
@@ -35,7 +44,9 @@ describe("history query contract", () => {
     expect(parseHistoryQuery({ scope: "project" }).ok).toBe(false);
     expect(parseHistoryQuery({ scope: "global", limit: "500" }).ok).toBe(false);
     expect(parseHistoryQuery({ scope: "global", dateFrom: "2026-09-01" }).ok).toBe(false);
-    expect(parseHistoryQuery({ scope: "global", dateFrom: "02/09/2026", dateTo: "01/09/2026" }).ok).toBe(false);
+    expect(
+      parseHistoryQuery({ scope: "global", dateFrom: "02/09/2026", dateTo: "01/09/2026" }).ok,
+    ).toBe(false);
     expect(parseHistoryQuery({ scope: "global", cursor: "not*valid" }).ok).toBe(false);
     expect(parseHistoryQuery({ scope: "global", module: "billing_hack" }).ok).toBe(false);
     expect(parseHistoryQuery({ scope: "global", sortKey: "tenant_id" }).ok).toBe(false);
@@ -43,14 +54,22 @@ describe("history query contract", () => {
 
   it("requires audit columns in an export column list", () => {
     expect(parseHistoryQuery({ scope: "global", columns: "user,title" }).ok).toBe(false);
-    expect(parseHistoryQuery({ scope: "global", columns: "occurredAt,title,project" }).ok).toBe(true);
-    expect(parseHistoryQuery({ scope: "global", columns: "occurredAt,title,project,title" }).ok).toBe(false);
+    expect(parseHistoryQuery({ scope: "global", columns: "occurredAt,title,project" }).ok).toBe(
+      true,
+    );
+    expect(
+      parseHistoryQuery({ scope: "global", columns: "occurredAt,title,project,title" }).ok,
+    ).toBe(false);
   });
 
   it("round-trips a cursor bound to the active sort", () => {
     const c = { k: "occurredAt" as const, d: "desc" as const, v: "2026-09-01T00:00:00Z", id: PID };
     expect(decodeCursor(encodeCursor(c))).toEqual(c);
-    const mismatch = parseHistoryQuery({ scope: "global", sortDirection: "asc", cursor: encodeCursor(c) });
+    const mismatch = parseHistoryQuery({
+      scope: "global",
+      sortDirection: "asc",
+      cursor: encodeCursor(c),
+    });
     expect(mismatch.ok).toBe(false);
   });
 
@@ -82,7 +101,9 @@ describe("history column preference", () => {
     writeHistoryColumns("project", ["title", "occurredAt", "user"]);
     expect(readHistoryColumns("project")).toEqual(["title", "occurredAt", "user"]);
     expect(readHistoryColumns("global")).toEqual(DEFAULT_COLUMNS.global);
-    expect(localStorage.getItem("projecthub:history-columns:project")).toBe('["title","occurredAt","user"]');
+    expect(localStorage.getItem("projecthub:history-columns:project")).toBe(
+      '["title","occurredAt","user"]',
+    );
     writeHistoryColumns("project", null);
     expect(readHistoryColumns("project")).toEqual(DEFAULT_COLUMNS.project);
   });
@@ -93,7 +114,16 @@ describe("history column preference", () => {
 });
 
 describe("history permissions", () => {
-  const roles: ProjectHubRole[] = ["project_manager", "estimator", "finance", "procurement", "storekeeper", "site_supervisor", "viewer", "unassigned"];
+  const roles: ProjectHubRole[] = [
+    "project_manager",
+    "estimator",
+    "finance",
+    "procurement",
+    "storekeeper",
+    "site_supervisor",
+    "viewer",
+    "unassigned",
+  ];
   it("grants Global History only to the Owner role", () => {
     expect(permissionsForRole("owner")).toContain("projecthub:history:view_all");
     expect(permissionsForRole("owner")).toContain("projecthub:history:export_all");
@@ -127,7 +157,15 @@ describe("xlsx writer", () => {
 
   it("produces a real workbook readable by a spreadsheet library", () => {
     const bytes = buildXlsx([
-      { name: "Project History", header: ["Date & Time", "Title"], rows: [["01/09/2026 10:00", "=cmd"], ["02/09/2026 11:00", "Café <&>"]], table: true },
+      {
+        name: "Project History",
+        header: ["Date & Time", "Title"],
+        rows: [
+          ["01/09/2026 10:00", "=cmd"],
+          ["02/09/2026 11:00", "Café <&>"],
+        ],
+        table: true,
+      },
       { name: "Export Info", header: ["Field", "Value"], rows: [["Rows", "2"]] },
     ]);
     expect(bytes[0]).toBe(0x50);
@@ -139,14 +177,18 @@ describe("xlsx writer", () => {
     try {
       out = execFileSync(
         "python3",
-        ["-c", "import sys,openpyxl;wb=openpyxl.load_workbook(sys.argv[1]);print(wb.sheetnames);ws=wb.worksheets[0];print([[c.value for c in r] for r in ws.iter_rows()])", file],
+        [
+          "-c",
+          "import sys,openpyxl;wb=openpyxl.load_workbook(sys.argv[1]);print(wb.sheetnames);ws=wb.worksheets[0];print([[c.value for c in r] for r in ws.iter_rows()])",
+          file,
+        ],
         { encoding: "utf8" },
       );
     } catch {
       return; // openpyxl unavailable in this runner; structural checks above still apply.
     }
     expect(out).toContain("['Project History', 'Export Info']");
-    expect(out).toContain("\"'=cmd\"");
+    expect(out).toContain('"\'=cmd"');
     expect(out).toContain("Café <&>");
   });
 });
@@ -158,7 +200,9 @@ describe("xlsx writer", () => {
 const getProject = vi.fn();
 const queryHistory = vi.fn();
 const collect = vi.fn();
-vi.mock("@/lib/projecthub-projects.server", () => ({ getProject: (...a: unknown[]) => getProject(...a) }));
+vi.mock("@/lib/projecthub-projects.server", () => ({
+  getProject: (...a: unknown[]) => getProject(...a),
+}));
 vi.mock("@/lib/projecthub-history.server", () => ({
   queryHistory: (...a: unknown[]) => queryHistory(...a),
   collectHistoryForExport: (...a: unknown[]) => collect(...a),
@@ -180,8 +224,22 @@ function actor(role: ProjectHubRole, isOwner = false) {
 
 describe("history endpoints", () => {
   beforeEach(() => {
-    getProject.mockReset().mockResolvedValue({ ok: true, project: { enquiry_reference: "ENQ-2026-00001", title: "T" } });
-    queryHistory.mockReset().mockResolvedValue({ ok: true, rows: [], nextCursor: null, pageSize: 50, total: null, appliedFilters: [] });
+    getProject
+      .mockReset()
+      .mockResolvedValue({
+        ok: true,
+        project: { enquiry_reference: "ENQ-2026-00001", title: "T" },
+      });
+    queryHistory
+      .mockReset()
+      .mockResolvedValue({
+        ok: true,
+        rows: [],
+        nextCursor: null,
+        pageSize: 50,
+        total: null,
+        appliedFilters: [],
+      });
     collect.mockReset().mockResolvedValue({ ok: true, rows: [], applied: [] });
   });
 
@@ -194,7 +252,9 @@ describe("history endpoints", () => {
   });
 
   it("serves Global History and export to the exact Owner", async () => {
-    expect((await handleHistoryRequest(actor("owner", true), "global", null, false, {})).status).toBe(200);
+    expect(
+      (await handleHistoryRequest(actor("owner", true), "global", null, false, {})).status,
+    ).toBe(200);
     const res = await handleHistoryRequest(actor("owner", true), "global", null, true, {});
     expect(res.status).toBe(200);
     expect(res.headers.get("content-type")).toContain("spreadsheetml");
@@ -209,14 +269,35 @@ describe("history endpoints", () => {
   });
 
   it("blocks export for view-only roles and scope tampering", async () => {
-    expect((await handleHistoryRequest(actor("viewer"), "project", PID, true, {})).status).toBe(403);
-    expect((await handleHistoryRequest(actor("project_manager"), "project", PID, false, { scope: "global" })).status).toBe(400);
-    expect((await handleHistoryRequest(actor("project_manager"), "project", PID, false, { projectId: "1b1c2d3e-4f50-4a61-8b72-9c8d7e6f5a4b" })).status).toBe(400);
-    expect((await handleHistoryRequest(actor("unassigned"), "project", PID, false, {})).status).toBe(403);
+    expect((await handleHistoryRequest(actor("viewer"), "project", PID, true, {})).status).toBe(
+      403,
+    );
+    expect(
+      (
+        await handleHistoryRequest(actor("project_manager"), "project", PID, false, {
+          scope: "global",
+        })
+      ).status,
+    ).toBe(400);
+    expect(
+      (
+        await handleHistoryRequest(actor("project_manager"), "project", PID, false, {
+          projectId: "1b1c2d3e-4f50-4a61-8b72-9c8d7e6f5a4b",
+        })
+      ).status,
+    ).toBe(400);
+    expect(
+      (await handleHistoryRequest(actor("unassigned"), "project", PID, false, {})).status,
+    ).toBe(403);
   });
 
   it("rejects exports over the row cap", async () => {
-    collect.mockResolvedValue({ ok: false, status: 422, tooMany: true, message: "More than 50,000 rows" });
+    collect.mockResolvedValue({
+      ok: false,
+      status: 422,
+      tooMany: true,
+      message: "More than 50,000 rows",
+    });
     const res = await handleHistoryRequest(actor("owner", true), "global", null, true, {});
     expect(res.status).toBe(422);
   });

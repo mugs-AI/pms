@@ -148,7 +148,9 @@ export async function handleHistoryRequest(
 
   const stamp = generatedAt.toISOString().slice(0, 10).replace(/-/g, "");
   const filename =
-    scope === "global" ? `projecthub-global-history-${stamp}.xlsx` : `project-history-${stamp}.xlsx`;
+    scope === "global"
+      ? `projecthub-global-history-${stamp}.xlsx`
+      : `project-history-${stamp}.xlsx`;
   return new Response(new Blob([workbook as Uint8Array<ArrayBuffer>]), {
     status: 200,
     headers: {
