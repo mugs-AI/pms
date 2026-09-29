@@ -461,6 +461,7 @@ export function parseHistoryQuery(search: Record<string, string>): ParseResult {
     if (raw.length > HISTORY_TEXT_MAX * 2) return { ok: false, message: `${param} is too long` };
     const value = normaliseFilterText(raw);
     if (value.length > HISTORY_TEXT_MAX) return { ok: false, message: `${param} is too long` };
+    // eslint-disable-next-line no-control-regex -- rejecting control characters is the intent
     if (/[\u0000-\u001f\u007f]/.test(value)) {
       return { ok: false, message: `${param} contains invalid characters` };
     }
