@@ -225,22 +225,18 @@ function actor(role: ProjectHubRole, isOwner = false) {
 
 describe("history endpoints", () => {
   beforeEach(() => {
-    getProject
-      .mockReset()
-      .mockResolvedValue({
-        ok: true,
-        project: { enquiry_reference: "ENQ-2026-00001", title: "T" },
-      });
-    queryHistory
-      .mockReset()
-      .mockResolvedValue({
-        ok: true,
-        rows: [],
-        nextCursor: null,
-        pageSize: 50,
-        total: null,
-        appliedFilters: [],
-      });
+    getProject.mockReset().mockResolvedValue({
+      ok: true,
+      project: { enquiry_reference: "ENQ-2026-00001", title: "T" },
+    });
+    queryHistory.mockReset().mockResolvedValue({
+      ok: true,
+      rows: [],
+      nextCursor: null,
+      pageSize: 50,
+      total: null,
+      appliedFilters: [],
+    });
     collect.mockReset().mockResolvedValue({ ok: true, rows: [], applied: [] });
   });
 
