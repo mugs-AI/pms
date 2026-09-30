@@ -174,7 +174,7 @@ describe("mounted HistoryGrid", () => {
     await user.click(chooserBtn);
     expect(chooserBtn).toHaveAttribute("aria-expanded", "true");
     const group = screen.getByRole("group", { name: "Choose and order columns" });
-    expect(within(group).getByRole("checkbox", { name: /Title/ })).toBeDisabled();
+    expect(within(group).getByRole("checkbox", { name: "Title (required)" })).toBeDisabled();
     await user.click(within(group).getByRole("checkbox", { name: "User" }));
     await user.click(within(group).getByRole("button", { name: "Move Title left" }));
     const headers = () =>
