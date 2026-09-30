@@ -147,7 +147,9 @@ describe("mounted HistoryGrid", () => {
     await screen.findByText("Event 1");
     expect(lastQuery()).toMatchObject({ sortKey: "occurredAt", sortDirection: "desc", limit: 50 });
     await user.click(screen.getByRole("button", { name: /Title/ }));
-    await waitFor(() => expect(lastQuery()).toMatchObject({ sortKey: "title", sortDirection: "asc" }));
+    await waitFor(() =>
+      expect(lastQuery()).toMatchObject({ sortKey: "title", sortDirection: "asc" }),
+    );
     expect(screen.getByRole("columnheader", { name: /Title/ })).toHaveAttribute(
       "aria-sort",
       "ascending",
@@ -177,7 +179,15 @@ describe("mounted HistoryGrid", () => {
     await user.click(within(group).getByRole("button", { name: "Move Title left" }));
     const headers = () =>
       screen.getAllByRole("columnheader").map((h) => h.textContent?.replace(/[▲▼↕]/g, ""));
-    expect(headers()).toEqual(["Details", "Title", "Date & Time", "Project", "Module", "Action", "Outcome"]);
+    expect(headers()).toEqual([
+      "Details",
+      "Title",
+      "Date & Time",
+      "Project",
+      "Module",
+      "Action",
+      "Outcome",
+    ]);
     expect(JSON.parse(localStorage.getItem("projecthub:history-columns:global") ?? "[]")).toEqual([
       "title",
       "occurredAt",
@@ -231,7 +241,10 @@ describe("mounted HistoryGrid", () => {
     await user.click(screen.getByRole("button", { name: "Export to Excel" }));
     expect(download).toHaveBeenCalledWith(
       `projects/${PID}/history/export.xlsx`,
-      expect.objectContaining({ actor: "aina", columns: "occurredAt,user,title,module,action,outcome" }),
+      expect.objectContaining({
+        actor: "aina",
+        columns: "occurredAt,user,title,module,action,outcome",
+      }),
       "project-history.xlsx",
     );
     expect(await screen.findByRole("alert")).toHaveTextContent("More than 50,000 rows");
@@ -247,7 +260,9 @@ describe("mounted Global History route", () => {
   it("mounts the global grid with export for the Owner", async () => {
     const Page = await GlobalRoute();
     mount(<Page />);
-    expect(await screen.findByRole("table", { name: "Global ProjectHub history" })).toBeInTheDocument();
+    expect(
+      await screen.findByRole("table", { name: "Global ProjectHub history" }),
+    ).toBeInTheDocument();
     expect(request.mock.calls[0]?.[0]).toBe("history");
     expect(screen.getByRole("button", { name: "Export to Excel" })).toBeInTheDocument();
   });
