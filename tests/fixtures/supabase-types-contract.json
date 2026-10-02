@@ -2526,7 +2526,7 @@
             ]
           }
         },
-        "Views": "{[_innever]:never;}",
+        "Views": "{[_innever]:never}",
         "Functions": {
           "projecthub_clone_boq_version": {
             "Args": {
@@ -2577,7 +2577,7 @@
             ]
           }
         },
-        "CompositeTypes": "{[_innever]:never;}"
+        "CompositeTypes": "{[_innever]:never}"
       }
     }
   }
