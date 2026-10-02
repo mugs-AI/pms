@@ -6,3 +6,7 @@ pnpm-lock.yaml
 package-lock.json
 bun.lock
 routeTree.gen.ts
+src/integrations/supabase/auth-middleware.ts
+src/integrations/supabase/client.ts
+src/integrations/supabase/previewAuthStorage.ts
+src/integrations/supabase/types.ts
