@@ -115,10 +115,17 @@ describe("controlled platform-managed auth files", () => {
     // Clean app plus generated files importing each other: no violation.
     expect(run([["src/routes/a.tsx", 'import "@/lib/safe";']]).violations).toEqual([]);
 
-    const direct = run([["src/routes/a.tsx", 'import { supabase } from "@/integrations/supabase/client";']]);
-    expect(direct.violations[0]?.chain).toEqual(["src/routes/a.tsx", "src/integrations/supabase/client.ts"]);
+    const direct = run([
+      ["src/routes/a.tsx", 'import { supabase } from "@/integrations/supabase/client";'],
+    ]);
+    expect(direct.violations[0]?.chain).toEqual([
+      "src/routes/a.tsx",
+      "src/integrations/supabase/client.ts",
+    ]);
 
-    const reexport = run([["src/routes/a.tsx", 'export * from "../integrations/supabase/auth-middleware";']]);
+    const reexport = run([
+      ["src/routes/a.tsx", 'export * from "../integrations/supabase/auth-middleware";'],
+    ]);
     expect(reexport.violations).toHaveLength(1);
 
     const indirect = run([
@@ -131,22 +138,33 @@ describe("controlled platform-managed auth files", () => {
       "src/integrations/supabase/client.ts",
     ]);
 
-    const dynamic = run([["src/routes/a.tsx", 'const m = () => import("@/integrations/supabase/previewAuthStorage");']]);
+    const dynamic = run([
+      ["src/routes/a.tsx", 'const m = () => import("@/integrations/supabase/previewAuthStorage");'],
+    ]);
     expect(dynamic.violations[0]?.kind).toBe("dynamic");
 
-    const glob = run([["src/routes/a.tsx", 'const m = import.meta.glob("/src/integrations/supabase/*.ts");']]);
+    const glob = run([
+      ["src/routes/a.tsx", 'const m = import.meta.glob("/src/integrations/supabase/*.ts");'],
+    ]);
     expect(glob.violations.map((v) => v.kind)).toContain("glob");
 
     const opaque = run([["src/routes/a.tsx", "const n = 'x'; const m = () => import(n);"]]);
     expect(opaque.problems).toHaveLength(1);
 
     // Type-only imports are erased and do not execute.
-    const typeOnly = run([["src/routes/a.tsx", 'import type { Database } from "@/integrations/supabase/client";']]);
+    const typeOnly = run([
+      ["src/routes/a.tsx", 'import type { Database } from "@/integrations/supabase/client";'],
+    ]);
     expect(typeOnly.violations).toEqual([]);
 
     // Sanity: the edge extractor sees every import form.
     const edges = edgesOf(
-      new Map([["src/a.ts", 'import "./b"; export * from "./c"; import("./d");'], ["src/b.ts", ""], ["src/c.ts", ""], ["src/d.ts", ""]]),
+      new Map([
+        ["src/a.ts", 'import "./b"; export * from "./c"; import("./d");'],
+        ["src/b.ts", ""],
+        ["src/c.ts", ""],
+        ["src/d.ts", ""],
+      ]),
       "src/a.ts",
     ).edges.map((e) => e.to);
     expect(edges).toEqual(["src/b.ts", "src/c.ts", "src/d.ts"]);
@@ -202,7 +220,10 @@ describe("controlled platform-managed auth files", () => {
     expect(typesContract(nullChange).structure).not.toEqual(baseline);
     const optChange = src.replace(/(\n\s+)title\?: string/, "$1title: string");
     expect(typesContract(optChange).structure).not.toEqual(baseline);
-    const relChange = src.replace(/referencedRelation: "projecthub_tenants"/, 'referencedRelation: "x"');
+    const relChange = src.replace(
+      /referencedRelation: "projecthub_tenants"/,
+      'referencedRelation: "x"',
+    );
     expect(typesContract(relChange).structure).not.toEqual(baseline);
     const rpcChange = src.replace(/p_year: number/, "p_year: string");
     expect(typesContract(rpcChange).structure).not.toEqual(baseline);

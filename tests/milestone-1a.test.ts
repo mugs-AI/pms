@@ -690,14 +690,12 @@ describe("Malaysia date handling", () => {
 describe("browser Supabase architecture guards", () => {
   const root = process.cwd();
 
-  it("has no Supabase browser auth modules", () => {
-    for (const file of [
-      "src/integrations/supabase/client.ts",
-      "src/integrations/supabase/auth-attacher.ts",
-      "src/integrations/supabase/auth-middleware.ts",
-    ]) {
-      expect(existsSync(join(root, file)), file).toBe(false);
-    }
+  it("has no Supabase auth attacher and no app module importing browser auth", () => {
+    // Platform-managed generated files may exist (controlled exception); their
+    // unreachability is proven by the resolved graph guard in architecture.test.ts.
+    expect(existsSync(join(root, "src/integrations/supabase/auth-attacher.ts"))).toBe(false);
+    const routeSrc = readFileSync(join(root, "src/routes/__root.tsx"), "utf8");
+    expect(routeSrc).not.toMatch(/integrations\/supabase\/(client|auth-middleware)["']/);
   });
 
   it("keeps functionMiddleware empty in src/start.ts", () => {

@@ -10,7 +10,10 @@ import ts from "typescript";
 export type Shape = string | Shape[] | { [k: string]: Shape };
 
 function text(node: ts.Node, sf: ts.SourceFile): string {
-  return node.getText(sf).replace(/\s+/g, "").replace(/[;,](?=[}\])>])/g, "");
+  return node
+    .getText(sf)
+    .replace(/\s+/g, "")
+    .replace(/[;,](?=[}\])>])/g, "");
 }
 
 function serialise(node: ts.TypeNode, sf: ts.SourceFile): Shape {

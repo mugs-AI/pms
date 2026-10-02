@@ -55,10 +55,7 @@ function globToRegExp(pattern: string): RegExp {
 }
 
 /** Static, re-export, literal dynamic and import.meta.glob edges for one file. */
-export function edgesOf(
-  files: FileMap,
-  file: string,
-): { edges: Edge[]; problems: GraphProblem[] } {
+export function edgesOf(files: FileMap, file: string): { edges: Edge[]; problems: GraphProblem[] } {
   const src = files.get(file) ?? "";
   const edges: Edge[] = [];
   const problems: GraphProblem[] = [];
@@ -136,7 +133,11 @@ export function findGeneratedAuthReach(
   files: FileMap,
   entries: string[],
   generated: readonly string[] = GENERATED_AUTH_FILES,
-): { violations: { chain: string[]; kind: Edge["kind"] }[]; problems: GraphProblem[]; visited: Set<string> } {
+): {
+  violations: { chain: string[]; kind: Edge["kind"] }[];
+  problems: GraphProblem[];
+  visited: Set<string>;
+} {
   const gen = new Set(generated);
   const parent = new Map<string, string | null>();
   const queue: string[] = [];
