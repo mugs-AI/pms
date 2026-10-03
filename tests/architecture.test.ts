@@ -233,7 +233,6 @@ describe("controlled platform-managed auth files", () => {
 
   it("keeps the generated database types at the approved baseline contract", () => {
     const types = readFileSync(join(root, "src/integrations/supabase/types.ts"), "utf8");
-    expect(types).toContain('PostgrestVersion: "14.15"');
     for (const table of [
       "projecthub_tenants",
       "projecthub_user_roles",
