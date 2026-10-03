@@ -53,6 +53,7 @@ ESLint and Prettier ignore exactly the four generated paths. No product file is 
 ## Release conditions
 
 A release is blocked if any of these happen:
+
 - another file appears in the integration directory;
 - the graph guard or build-output scan finds a reachable generated auth module;
 - the structural contract or the PostgrestVersion pin changes without owner approval;

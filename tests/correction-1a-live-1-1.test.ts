@@ -3,6 +3,7 @@
  * server-key classification. Every N3 call is mocked; no N3 write exists.
  */
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { generatedAuthReachInRepo } from "./support/module-graph";
 import { readFileSync, existsSync, globSync } from "node:fs";
 import { resolve } from "node:path";
 import {
@@ -253,14 +254,13 @@ describe("privacy and architecture guards", () => {
     expect(start.replace(/\s+/g, "")).toContain("functionMiddleware:[]");
   });
 
-  it("17. browser Supabase auth files remain absent", () => {
-    for (const file of [
-      "src/integrations/supabase/client.ts",
-      "src/integrations/supabase/auth-attacher.ts",
-      "src/integrations/supabase/auth-middleware.ts",
-    ]) {
-      expect(existsSync(resolve(root, file))).toBe(false);
-    }
+  it("17. browser Supabase auth files remain unreachable", async () => {
+    // Controlled platform-file exception (docs/governance/PLATFORM_MANAGED_FILES.md):
+    // generated files may exist but no application module may reach them.
+    expect(existsSync(resolve(root, "src/integrations/supabase/auth-attacher.ts"))).toBe(false);
+    const reach = await generatedAuthReachInRepo(root);
+    expect(reach.violations).toEqual([]);
+    expect(reach.problems).toEqual([]);
   });
 
   it("18. no owner alias set, isOwner claim consumption or N3 write exists", () => {

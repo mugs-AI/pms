@@ -3,6 +3,7 @@
  * Every N3 call is mocked; no live N3 read or write happens here.
  */
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { generatedAuthReachInRepo } from "./support/module-graph";
 import { readFileSync, existsSync } from "node:fs";
 import { resolve } from "node:path";
 import {
@@ -238,14 +239,13 @@ describe("architecture guards remain intact", () => {
     expect(start.replace(/\s+/g, "")).toContain("functionMiddleware:[]");
   });
 
-  it("16. no browser Supabase auth files exist", () => {
-    for (const file of [
-      "src/integrations/supabase/client.ts",
-      "src/integrations/supabase/auth-attacher.ts",
-      "src/integrations/supabase/auth-middleware.ts",
-    ]) {
-      expect(existsSync(resolve(root, file))).toBe(false);
-    }
+  it("16. no browser Supabase auth files are reachable", async () => {
+    // Controlled platform-file exception (docs/governance/PLATFORM_MANAGED_FILES.md):
+    // generated files may exist but no application module may reach them.
+    expect(existsSync(resolve(root, "src/integrations/supabase/auth-attacher.ts"))).toBe(false);
+    const reach = await generatedAuthReachInRepo(root);
+    expect(reach.violations).toEqual([]);
+    expect(reach.problems).toEqual([]);
   });
 
   it("17. the token reader is server-only and never imported by browser code", async () => {

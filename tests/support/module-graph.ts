@@ -180,3 +180,23 @@ export function findGeneratedAuthReach(
   }
   return { violations, problems, visited: new Set(parent.keys()) };
 }
+
+/** Loads the real src tree and returns graph violations from every non-generated file. */
+export async function generatedAuthReachInRepo(root = process.cwd()) {
+  const { readdirSync, readFileSync, statSync } = await import("node:fs");
+  const { join, relative, sep } = await import("node:path");
+  const walk = (d: string): string[] =>
+    readdirSync(d).flatMap((e) => {
+      const f = join(d, e);
+      return statSync(f).isDirectory() ? walk(f) : [f];
+    });
+  const files: FileMap = new Map();
+  for (const f of walk(join(root, "src")))
+    if (/\.(ts|tsx|js|jsx)$/.test(f))
+      files.set(relative(root, f).split(sep).join("/"), readFileSync(f, "utf8"));
+  const gen = new Set<string>(GENERATED_AUTH_FILES);
+  return findGeneratedAuthReach(
+    files,
+    [...files.keys()].filter((f) => !gen.has(f)),
+  );
+}
