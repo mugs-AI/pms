@@ -9,6 +9,7 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { generatedAuthReachInRepo } from "./support/module-graph";
 import { basicInfo, createMockSupabase, jsonResponse, mockUpstream, OWNER_TOKEN } from "./helpers";
 
 let db = createMockSupabase();
@@ -313,14 +314,23 @@ describe("WP0C-0 boundary guards", () => {
     expect(sql.toLowerCase()).not.toContain("security definer");
   });
 
-  it("15/16. no N3 mutation and no browser Supabase client exist", () => {
+  it("15/16. no N3 mutation and no reachable browser Supabase client", async () => {
     const server = read("src/lib/projecthub-projects.server.ts");
     expect(server).not.toMatch(/method:\s*"(POST|PUT|PATCH|DELETE)"/);
     const diag = read("src/lib/projecthub-diagnostics.server.ts");
     expect(diag).not.toContain('@/integrations/supabase/client"');
-    expect(readdirSync(join(process.cwd(), "src", "integrations", "supabase")).sort()).toEqual([
+    // Controlled platform-file exception: only the documented files may exist,
+    // and none of the generated auth files may be reachable.
+    const allowed = [
+      "auth-middleware.ts",
       "client.server.ts",
+      "client.ts",
+      "previewAuthStorage.ts",
       "types.ts",
-    ]);
+    ];
+    for (const f of readdirSync(join(process.cwd(), "src", "integrations", "supabase")))
+      expect(allowed).toContain(f);
+    const reach = await generatedAuthReachInRepo();
+    expect(reach.violations).toEqual([]);
   });
 });
